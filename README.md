@@ -1,19 +1,74 @@
-# voicethere/cli
+# @voicethere/cli
 
-Official CLI for [VoiceThere](https://voicethere.com) — API login, project management, and agent bundle validate/upload against the control-plane API.
+VoiceThere cloud CLI for API login, project management, and agent bundle upload.
 
-**Package:** [`@voicethere/cli`](https://www.npmjs.com/package/@voicethere/cli) (npm, when published)
+Requires **Node.js 22+**.
 
-**Requires:** Node.js 22+
+## Install
 
-## Status
+```bash
+npm install -g @voicethere/cli
+```
 
-Repository bootstrap. Implementation lands on feature branches and merges here before release.
+Or run without a global install:
 
-## Related
+```bash
+npx @voicethere/cli <command>
+```
 
-| Repo | Role |
-|------|------|
-| [`voicethere/agent`](https://github.com/voicethere/agent) | Build and verify agent bundles |
-| [`voicethere/platform`](https://github.com/voicethere/platform) | Control-plane API (`/api/v1`) |
-| [`voicethere/e2e`](https://github.com/voicethere/e2e) | Cross-repo smoke tests |
+## Quickstart
+
+Build your agent bundle locally:
+
+```bash
+npm install @voicethere/agent
+npx @voicethere/agent build
+```
+
+Log in with your API key (stored in `~/.config/voicethere/credentials.json`, mode `0600`):
+
+```bash
+voicethere login --api-key vth_dev_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# optional staging/local override:
+voicethere login --api-key "$VOICETHERE_API_KEY" --api-base http://localhost:3000/api/v1
+```
+
+Create a project and upload the bundle:
+
+```bash
+voicethere projects create --name "My Voice Agent"
+voicethere projects list
+
+voicethere build validate --file dist/agent.js
+voicethere build upload --project <project-id> --file dist/agent.js
+```
+
+Default API base: `https://app.voicethere.dev/api/v1`
+
+## Commands
+
+| Command                                                    | Description                                        |
+| ---------------------------------------------------------- | -------------------------------------------------- |
+| `login --api-key <key> [--api-base <url>]`                 | Save credentials                                   |
+| `projects list`                                            | List org projects                                  |
+| `projects create --name <name> [--slug <slug>]`            | Create project                                     |
+| `build validate [--file dist/agent.js]`                    | Run `@voicethere/agent verify --no-build --bundle` |
+| `build upload --project <id> [--file …] [--skip-validate]` | Validate then multipart upload                     |
+
+## Development
+
+```bash
+npm ci
+npm run test:ci
+node dist/cli.js --help
+```
+
+Credentials path override for tests:
+
+```bash
+export VOICETHERE_CREDENTIALS_PATH=/tmp/voicethere-credentials.json
+```
+
+## License
+
+UNLICENSED — VoiceThere internal / customer tooling.

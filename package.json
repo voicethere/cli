@@ -1,0 +1,48 @@
+{
+  "name": "@voicethere/cli",
+  "version": "0.1.0",
+  "description": "VoiceThere cloud CLI — login, projects, and agent bundle upload",
+  "type": "module",
+  "bin": {
+    "voicethere": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:ci": "npm run typecheck && npm run test && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voicethere/cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/voicethere/cli/issues"
+  },
+  "homepage": "https://github.com/voicethere/cli#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "voicethere",
+    "voice-agent",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@voicethere/agent": "^0.1.4",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.8"
+  }
+}
