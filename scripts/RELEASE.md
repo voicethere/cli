@@ -1,6 +1,8 @@
 # Release guide — `@voicethere/cli`
 
-Tag-driven npm publish via [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (publish job on `release/*` tags).
+Tag-driven npm publish via [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`publish` job on `release/*` tag push).
+
+**Important:** the workflow must list `tags: ['release/*']` under `on.push` — a tag alone is not enough if triggers are branch-only.
 
 ## Branch vs tag naming
 
