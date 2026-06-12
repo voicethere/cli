@@ -1,5 +1,5 @@
 import { createApi, type Project } from "../../lib/api.js";
-import { logCommandInfo } from "../../lib/command-log.js";
+import { logCommandInfo, logStep, logVerbose } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
 import { isInteractive, promptChoice } from "../../lib/prompt.js";
 import {
@@ -28,12 +28,14 @@ async function resolveProjectToUse(
 ): Promise<{ project: Project; fromExistingConfig: boolean; configPath?: string }> {
   const trimmed = options.projectId?.trim();
   if (trimmed) {
+    logVerbose(`fetching project ${trimmed}`);
     return { project: await api.getProject(trimmed), fromExistingConfig: false };
   }
 
   const linked = await readProjectConfig(options.startDir);
   if (linked?.config.project_id) {
     logCommandInfo(`using project from ${linked.path}`);
+    logVerbose(`fetching project ${linked.config.project_id}`);
     return {
       project: await api.getProject(linked.config.project_id),
       fromExistingConfig: true,
@@ -48,6 +50,7 @@ async function resolveProjectToUse(
   }
 
   const projects = await api.listProjects();
+  logVerbose(`found ${projects.length} project(s) for picker`);
   if (projects.length === 0) {
     throw new Error(
       "No projects found. Create one with: voicethere projects create \"My Agent\"",
@@ -72,6 +75,7 @@ async function resolveProjectToUse(
 export async function runProjectsUse(
   options: ProjectsUseOptions,
 ): Promise<void> {
+  logStep("Selecting project for this repo");
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
   const linked = await readProjectConfig(options.startDir);
@@ -83,6 +87,7 @@ export async function runProjectsUse(
 
   logCommandInfo(`project: ${project.id} (${project.name})`);
 
+  logStep("Writing .voicethere/config.json");
   const path = await writeProjectConfig(
     {
       project_id: project.id,

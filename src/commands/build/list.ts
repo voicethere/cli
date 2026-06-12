@@ -1,5 +1,5 @@
 import { createApi } from "../../lib/api.js";
-import { logResolvedProject } from "../../lib/command-log.js";
+import { logResolvedProject, logStep, logVerbose } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
 import { resolveProjectId } from "../../lib/project-config.js";
 
@@ -20,16 +20,20 @@ function formatUploadedAt(iso: string): string {
 }
 
 export async function runBuildList(options: BuildListOptions = {}): Promise<void> {
+  logStep("Listing builds for active project");
   const project = await resolveProjectId({ startDir: options.startDir });
   logResolvedProject(project);
 
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
 
+  logVerbose("fetching project and build history");
   const [platformProject, builds] = await Promise.all([
     api.getProject(project.projectId),
     api.listBuilds(project.projectId),
   ]);
+
+  logVerbose(`found ${builds.length} build(s)`);
 
   if (builds.length === 0) {
     console.log("No builds uploaded yet.");

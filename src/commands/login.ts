@@ -1,4 +1,4 @@
-import { logCommandInfo } from "../lib/command-log.js";
+import { logCommandInfo, logStep } from "../lib/command-log.js";
 import {
   DEFAULT_API_BASE,
   getCredentialsPath,
@@ -22,7 +22,9 @@ export async function runLogin(options: LoginOptions): Promise<void> {
   );
 
   const credentialsPath = getCredentialsPath();
+  logStep("Saving API credentials");
   logCommandInfo(`credentials: ${credentialsPath}`);
+  logCommandInfo(`api base: ${apiBase}`);
 
   await writeCredentials({
     api_key: apiKey,

@@ -1,7 +1,11 @@
+import { stat } from "node:fs/promises";
+
 import { createApi } from "../../lib/api.js";
 import {
   logResolvedBundle,
   logResolvedProject,
+  logStep,
+  logVerbose,
 } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
 import {
@@ -19,17 +23,24 @@ export interface BuildUploadOptions extends BuildValidateOptions {
 export async function runBuildUpload(
   options: BuildUploadOptions,
 ): Promise<void> {
+  logStep("Uploading agent bundle");
   const project = await resolveProjectId();
   const bundle = await resolveBundlePathDetailed(options.file);
   logResolvedProject(project);
   logResolvedBundle(bundle);
 
   if (!options.skipValidate) {
+    logStep("Validating bundle locally before upload");
     await runBuildValidate({ file: options.file, logContext: false });
   } else {
+    logVerbose("skipping local validation (--skip-validate)");
     await assertBundleExists(bundle.absolutePath);
   }
 
+  const bundleStat = await stat(bundle.absolutePath);
+  logVerbose(`bundle size: ${bundleStat.size} bytes`);
+
+  logStep("Uploading bundle to control plane API");
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
   const build = await api.uploadBuild(

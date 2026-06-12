@@ -1,6 +1,6 @@
 import { createApi } from "../../lib/api.js";
 import { requireCredentials } from "../../lib/config.js";
-import { logCommandInfo } from "../../lib/command-log.js";
+import { logCommandInfo, logStep, logVerbose } from "../../lib/command-log.js";
 import { writeProjectConfig } from "../../lib/project-config.js";
 
 export interface ProjectsCreateOptions {
@@ -38,10 +38,14 @@ export async function runProjectsCreate(
 
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
+
+  logStep(`Creating project "${name}" (slug=${slug})`);
   const project = await api.createProject(name, slug);
+  logVerbose(`project id: ${project.id}`);
 
   const shouldLink = options.link !== false;
   if (shouldLink) {
+    logStep("Writing .voicethere/config.json");
     const configPath = await writeProjectConfig({
       project_id: project.id,
       project_slug: project.slug,
