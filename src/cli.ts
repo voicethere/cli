@@ -6,10 +6,11 @@ import { runProjectsCreate } from "./commands/projects/create.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
+import { runBuildPromote } from "./commands/build/promote.js";
 import { runBuildList } from "./commands/build/list.js";
 import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
-import { runDeploy } from "./commands/deploy.js";
+import { runDeployReserved } from "./commands/deploy.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
 
 async function main(): Promise<void> {
@@ -156,10 +157,10 @@ async function main(): Promise<void> {
       },
     );
 
-  program
-    .command("deploy")
+  build
+    .command("promote")
     .description(
-      "Activate a build for live traffic (promote; default: newest passed upload)",
+      "Set active build in the control plane (platform promote API; no cluster rollout)",
     )
     .option(
       "--project <id>",
@@ -167,10 +168,19 @@ async function main(): Promise<void> {
     )
     .option("--build <id>", "Specific build UUID (default: newest passed)")
     .action(async (options: { project?: string; build?: string }) => {
-      await runDeploy({
+      await runBuildPromote({
         project: options.project,
         build: options.build,
       });
+    });
+
+  program
+    .command("deploy")
+    .description(
+      "[Reserved] Promote + roll out to cluster runners (P5 — use build promote today)",
+    )
+    .action(async () => {
+      await runDeployReserved();
     });
 
   await program.parseAsync(process.argv);

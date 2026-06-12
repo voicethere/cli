@@ -4,6 +4,8 @@ VoiceThere cloud CLI for API login, project management, and agent bundle upload.
 
 Requires **Node.js 22+**.
 
+Release terminology: **[`platform/docs/release-model.md`](../platform/docs/release-model.md)** — upload vs promote vs deploy (cluster rollout).
+
 ## Install
 
 ```bash
@@ -60,16 +62,16 @@ voicethere build upload -m "Add Spanish greeting and fix barge-in"
 
 `build upload` reads `project_id` and `bundle` from `.voicethere/config.json` when flags are omitted.
 
-### 4. Deploy a build (go live)
+### 4. Promote a build (set active in control plane)
 
-**Deploy** activates a build — maps to the platform **promote** API. Runners and the dashboard use the **active** build only after this step.
+**Promote** sets the **active** build in the platform (DB + `active/bundle.js`). It does **not** roll out to cluster runners yet — that will be **`voicethere deploy`** in P5.
 
 ```bash
 # Promote the newest passed upload (usually your latest upload)
-voicethere deploy
+voicethere build promote
 
 # Or pin a specific build id from build list
-voicethere deploy --build <build-uuid>
+voicethere build promote --build <build-uuid>
 ```
 
 List recent uploads with id, timestamp, and message:
@@ -78,12 +80,12 @@ List recent uploads with id, timestamp, and message:
 voicethere build list
 ```
 
-Typical release loop:
+Typical release loop (M2):
 
 ```bash
 npx @voicethere/agent build
 voicethere build upload -m "v0.2 — shorter silence timeout"
-voicethere deploy
+voicethere build promote
 ```
 
 ### 5. Clone an existing repo (config already in git)
@@ -95,6 +97,7 @@ voicethere login --api-key "$VOICETHERE_API_KEY"
 
 npx @voicethere/agent build
 voicethere build upload
+voicethere build promote
 ```
 
 No `projects create` needed — the linked project travels with the repo.
@@ -125,10 +128,14 @@ voicethere projects show
 voicethere login --api-key "$VOICETHERE_API_KEY"
 npx @voicethere/agent build
 voicethere build upload -m "$GITHUB_SHA — $GITHUB_REF_NAME" --skip-validate
-voicethere deploy
+voicethere build promote
 ```
 
-Split upload and deploy in separate jobs if you want a human approval gate between them.
+Split upload and promote in separate jobs if you want a human approval gate between them.
+
+### 8. `deploy` (reserved — P5)
+
+`voicethere deploy` will **promote + roll out to cluster runners** with optional `--wait`. It is **not implemented yet**; use `build promote` today.
 
 ## Repo config (version control)
 
@@ -155,17 +162,18 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 
 ## Commands
 
-| Command                                               | Description                                        |
-| ----------------------------------------------------- | -------------------------------------------------- |
-| `login --api-key <key> [--api-base <url>]`            | Save credentials                                   |
-| `projects list`                                       | List org projects                                  |
-| `projects create --name <name> [--slug <slug>]`       | Create project; writes `.voicethere/config.json`   |
-| `projects use --project <id>`                         | Link repo to existing project                      |
-| `projects show`                                       | Print linked `.voicethere/config.json`             |
-| `build list [--project <id>]`                         | Uploaded builds: id, time, message, active flag    |
-| `build validate [--file dist/agent.js]`               | Run `@voicethere/agent verify --no-build --bundle` |
-| `build upload [-m <msg>] [--project <id>] [--file …]` | Store build in history (does not deploy)           |
-| `deploy [--build <id>] [--project <id>]`              | Activate a build (promote; default: newest passed) |
+| Command                                               | Description                                              |
+| ----------------------------------------------------- | -------------------------------------------------------- |
+| `login --api-key <key> [--api-base <url>]`            | Save credentials                                         |
+| `projects list`                                       | List org projects                                        |
+| `projects create --name <name> [--slug <slug>]`       | Create project; writes `.voicethere/config.json`         |
+| `projects use --project <id>`                         | Link repo to existing project                            |
+| `projects show`                                       | Print linked `.voicethere/config.json`                   |
+| `build list [--project <id>]`                         | Uploaded builds: id, time, message, active flag          |
+| `build validate [--file dist/agent.js]`               | Run `@voicethere/agent verify --no-build --bundle`       |
+| `build upload [-m <msg>] [--project <id>] [--file …]` | Store build in history (does not promote)                |
+| `build promote [--build <id>] [--project <id>]`       | Set active build in control plane (M2)                   |
+| `deploy`                                              | **Reserved (P5)** — promote + cluster rollout + wait     |
 
 ## Development
 
