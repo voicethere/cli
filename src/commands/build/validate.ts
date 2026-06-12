@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 
-import { logResolvedBundle } from "../../lib/command-log.js";
+import { logResolvedBundle, logStep, logVerbose } from "../../lib/command-log.js";
 import {
   assertBundleExists,
   resolveBundlePathDetailed,
@@ -17,11 +17,14 @@ export interface BuildValidateOptions {
 export async function runBuildValidate(
   options: BuildValidateOptions,
 ): Promise<void> {
+  logStep("Validating agent bundle");
   const bundle = await resolveBundlePathDetailed(options.file);
   if (options.logContext !== false) {
     logResolvedBundle(bundle);
   }
   await assertBundleExists(bundle.absolutePath);
+  logStep("Running @voicethere/agent verify on bundle");
+  logVerbose(`verify bundle: ${bundle.absolutePath}`);
   await spawnAgentVerify(bundle.absolutePath);
   console.log(`Bundle validated: ${bundle.absolutePath}`);
 }

@@ -49,11 +49,15 @@ export interface PromoteResult {
   active_storage_path: string;
 }
 
+import { logApiBase, logVerbose } from "./command-log.js";
+
 export class VoicethereApi {
   constructor(
     private readonly apiKey: string,
     private readonly apiBase: string,
-  ) {}
+  ) {
+    logApiBase(apiBase);
+  }
 
   async listProjects(): Promise<Project[]> {
     const response = await this.request<{ projects: Project[] } | Project[]>(
@@ -124,6 +128,22 @@ export class VoicethereApi {
     );
   }
 
+  async deleteProject(
+    projectId: string,
+    options?: { force?: boolean; confirmName?: string },
+  ): Promise<void> {
+    const query = options?.force ? "?force=true" : "";
+    await this.request<Record<string, never>>(
+      "DELETE",
+      `/projects/${projectId}${query}`,
+      {
+        json: options?.confirmName
+          ? { confirm_name: options.confirmName }
+          : undefined,
+      },
+    );
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -148,7 +168,20 @@ export class VoicethereApi {
       body = options.body;
     }
 
+    const pathWithQuery = `${url.pathname}${url.search}`;
+    logVerbose(`${method} ${pathWithQuery}`);
+    if (options?.json !== undefined) {
+      logVerbose(`request body: ${JSON.stringify(options.json)}`);
+    }
+    if (options?.body instanceof FormData) {
+      logVerbose("request body: multipart/form-data (bundle upload)");
+    }
+
+    const started = performance.now();
     const response = await fetch(url, { method, headers, body });
+    logVerbose(
+      `response: ${response.status} (${Math.round(performance.now() - started)}ms)`,
+    );
     const text = await response.text();
     const payload =
       text.length > 0 ? (JSON.parse(text) as T | ApiErrorBody) : null;
@@ -161,6 +194,9 @@ export class VoicethereApi {
       const message =
         errorBody?.error?.message ??
         `Request failed: ${method} ${url.pathname} (${response.status})`;
+      logVerbose(
+        `error: ${errorBody?.error?.code ?? "unknown"} — ${message}`,
+      );
       throw new ApiError(response.status, message, errorBody);
     }
 

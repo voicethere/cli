@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { runLogin } from "./commands/login.js";
 import { runProjectsCreate } from "./commands/projects/create.js";
+import { runProjectsDelete } from "./commands/projects/delete.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
@@ -11,15 +12,22 @@ import { runBuildList } from "./commands/build/list.js";
 import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
 import { runDeployReserved } from "./commands/deploy.js";
+import { configureLogging } from "./lib/command-log.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
 
 async function main(): Promise<void> {
+  configureLogging();
+
   const program = new Command();
 
   program
     .name("voicethere")
     .description("VoiceThere cloud CLI")
-    .version("0.2.0");
+    .version("0.2.2")
+    .option("-v, --verbose", "Detailed logs on stderr (API calls, timings)")
+    .hook("preAction", (_thisCommand, actionCommand) => {
+      configureLogging({ verbose: actionCommand.optsWithGlobals().verbose });
+    });
 
   program
     .command("login")
@@ -111,6 +119,21 @@ async function main(): Promise<void> {
     .description("Show the active project (.voicethere/config.json)")
     .action(async () => {
       await runProjectsShow();
+    });
+
+  projects
+    .command("delete")
+    .description("Delete a project and all its builds")
+    .argument(
+      "[projectId]",
+      "Project UUID (default: active project from .voicethere/config.json)",
+    )
+    .option("--force", "Skip interactive name confirmation")
+    .action(async (projectId: string | undefined, options: { force?: boolean }) => {
+      await runProjectsDelete({
+        projectId,
+        force: options.force,
+      });
     });
 
   const build = program.command("build").description("Agent bundle operations");

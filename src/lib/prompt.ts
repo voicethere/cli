@@ -41,3 +41,26 @@ export async function promptChoice(
     rl.close();
   }
 }
+
+/** Prompt until the user types exactly `expected` (used for destructive confirmations). */
+export async function promptConfirmText(
+  prompt: string,
+  expected: string,
+): Promise<void> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stderr,
+  });
+
+  try {
+    while (true) {
+      const answer = await rl.question(prompt);
+      if (answer.trim() === expected) {
+        return;
+      }
+      console.error("Confirmation did not match — try again or Ctrl+C to cancel.");
+    }
+  } finally {
+    rl.close();
+  }
+}

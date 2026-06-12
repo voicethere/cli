@@ -189,11 +189,40 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects create <name> [--slug <slug>]`       | Create project; uses it (writes config)                  |
 | `projects use [projectId]`                     | Use project (picker or existing config when omitted)     |
 | `projects show`                                | Print `.voicethere/config.json`                          |
+| `projects delete [projectId] [--force]`        | Delete project + builds (type name to confirm, or `--force`) |
 | `build list`                                   | Builds for the active project                            |
 | `build validate [file]`                        | Sandbox verify (default bundle from config)              |
 | `build upload [file] [-m <msg>]`               | Upload to active project                                 |
 | `build promote [buildId]`                      | Promote on active project (picker when omitted in TTY)   |
 | `deploy`                                       | **Coming soon** — promote + cloud rollout + wait         |
+
+## Logging
+
+Progress and resolved paths go to **stderr** as `[voicethere] …` so **stdout** stays clean for JSON/tables (scripts can pipe stdout).
+
+| Mode | Flag / env | What you get |
+| ---- | ---------- | ------------ |
+| **Default** | *(always on)* | High-level steps: “Creating project…”, “Uploading bundle…”, resolved project/bundle paths |
+| **Verbose** | `-v` / `--verbose` or `VOICETHERE_VERBOSE=1` | API method + path, request bodies (no secrets), response status + timing, counts |
+
+Examples:
+
+```bash
+voicethere build upload
+# stderr: [voicethere] Uploading agent bundle
+#         [voicethere] project: …
+#         [voicethere] bundle: …
+#         [voicethere] Validating bundle locally before upload
+#         [voicethere] Running @voicethere/agent verify on bundle
+#         [voicethere] Uploading bundle to control plane API
+
+voicethere -v build upload
+# …plus [voicethere:verbose] api: https://…
+#           [voicethere:verbose] POST /projects/…/builds
+#           [voicethere:verbose] response: 201 (842ms)
+```
+
+Global `-v` works on any subcommand: `voicethere -v projects list`.
 
 ## Development
 
