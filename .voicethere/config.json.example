@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "project_id": "550e8400-e29b-41d4-a716-446655440000",
+  "project_slug": "my-voice-agent",
+  "name": "My Voice Agent",
+  "bundle": "dist/agent.js"
+}
