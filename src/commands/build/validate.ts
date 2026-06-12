@@ -2,6 +2,8 @@ import { access } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
 
+import { resolveBundlePath } from "../../lib/project-config.js";
+
 export const DEFAULT_BUNDLE_PATH = "dist/agent.js";
 
 export interface BuildValidateOptions {
@@ -11,7 +13,7 @@ export interface BuildValidateOptions {
 export async function runBuildValidate(
   options: BuildValidateOptions,
 ): Promise<void> {
-  const bundlePath = options.file?.trim() || DEFAULT_BUNDLE_PATH;
+  const bundlePath = await resolveBundlePath(options.file);
   await assertBundleExists(bundlePath);
   await spawnAgentVerify(bundlePath);
   console.log(`Bundle validated: ${bundlePath}`);

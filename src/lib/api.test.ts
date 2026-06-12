@@ -1,4 +1,4 @@
-import { chmod, mkdir, readFile, rm, stat } from "node:fs/promises";
+import { chmod, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -194,6 +194,42 @@ describe("VoicethereApi", () => {
       message: "Invalid API key",
       requestId: "req-1",
     } satisfies Partial<ApiError>);
+  });
+
+  it("uploads a build with optional message field", async () => {
+    const bundleDir = join(
+      tmpdir(),
+      `voicethere-cli-upload-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    );
+    await mkdir(bundleDir, { recursive: true });
+    const bundlePath = join(bundleDir, "agent.js");
+    await writeFile(bundlePath, "export default {};\n");
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "build-1",
+          project_id: "proj-1",
+          size_bytes: 100,
+          checksum_sha256: "abc",
+          validation_status: "passed",
+          message: "Fix greeting",
+          created_at: "2026-06-09T12:00:00.000Z",
+        }),
+        { status: 201 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const build = await api.uploadBuild("proj-1", bundlePath, "Fix greeting");
+
+    expect(build.message).toBe("Fix greeting");
+    const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeInstanceOf(FormData);
+    expect((init.body as FormData).get("message")).toBe("Fix greeting");
+
+    await rm(bundleDir, { recursive: true, force: true });
   });
 
   it("promotes a build", async () => {

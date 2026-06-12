@@ -39,6 +39,7 @@ export interface Build {
   size_bytes: number;
   checksum_sha256: string;
   validation_status: string;
+  message?: string | null;
   created_at: string;
 }
 
@@ -80,7 +81,11 @@ export class VoicethereApi {
     return response.builds;
   }
 
-  async uploadBuild(projectId: string, bundlePath: string): Promise<Build> {
+  async uploadBuild(
+    projectId: string,
+    bundlePath: string,
+    message?: string,
+  ): Promise<Build> {
     const buffer = await readFile(bundlePath);
     const form = new FormData();
     form.append(
@@ -88,6 +93,11 @@ export class VoicethereApi {
       new Blob([buffer], { type: "application/javascript" }),
       basename(bundlePath),
     );
+
+    const trimmedMessage = message?.trim();
+    if (trimmedMessage) {
+      form.append("message", trimmedMessage);
+    }
 
     return this.request<Build>("POST", `/projects/${projectId}/builds`, {
       body: form,

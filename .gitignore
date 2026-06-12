@@ -3,3 +3,6 @@ dist/
 .test-logs/
 *.log
 .DS_Store
+
+# Optional per-machine overrides (never commit secrets)
+.voicethere/local.json

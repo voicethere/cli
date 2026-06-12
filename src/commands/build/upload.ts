@@ -1,25 +1,19 @@
 import { createApi } from "../../lib/api.js";
 import { requireCredentials } from "../../lib/config.js";
-import {
-  DEFAULT_BUNDLE_PATH,
-  runBuildValidate,
-  type BuildValidateOptions,
-} from "./validate.js";
+import { requireProjectId, resolveBundlePath } from "../../lib/project-config.js";
+import { runBuildValidate, type BuildValidateOptions } from "./validate.js";
 
 export interface BuildUploadOptions extends BuildValidateOptions {
-  project: string;
+  project?: string;
+  message?: string;
   skipValidate?: boolean;
 }
 
 export async function runBuildUpload(
   options: BuildUploadOptions,
 ): Promise<void> {
-  const projectId = options.project.trim();
-  if (!projectId) {
-    throw new Error("--project is required");
-  }
-
-  const bundlePath = options.file?.trim() || DEFAULT_BUNDLE_PATH;
+  const projectId = await requireProjectId({ projectFlag: options.project });
+  const bundlePath = await resolveBundlePath(options.file);
 
   if (!options.skipValidate) {
     await runBuildValidate({ file: bundlePath });
@@ -27,7 +21,15 @@ export async function runBuildUpload(
 
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
-  const build = await api.uploadBuild(projectId, bundlePath);
+  const build = await api.uploadBuild(projectId, bundlePath, options.message);
 
-  console.log(JSON.stringify(build, null, 2));
+  console.log(`Uploaded build ${build.id}`);
+  if (build.message) {
+    console.log(`Message: ${build.message}`);
+  }
+  console.log(`Uploaded at: ${build.created_at}`);
+  console.log("");
+  console.log("Upload stored in history. Deploy when ready:");
+  console.log(`  voicethere deploy --build ${build.id}`);
+  console.log("  voicethere deploy   # newest passed build");
 }
