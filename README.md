@@ -4,7 +4,7 @@ VoiceThere cloud CLI for API login, project management, and agent bundle upload.
 
 Requires **Node.js 22+**.
 
-Release terminology: **[`platform/docs/release-model.md`](../platform/docs/release-model.md)** — upload vs promote vs deploy (cluster rollout).
+**Release flow:** `build upload` stores a bundle in history; `build promote <buildId>` sets the active build in the control plane; `deploy` (coming later) will also roll out to cloud runners.
 
 ## Install
 
@@ -25,8 +25,8 @@ npx @voicethere/cli <command>
 API keys live in `~/.config/voicethere/credentials.json` (mode `0600`) — **not** in your agent repo.
 
 ```bash
-voicethere login --api-key vth_dev_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# staging / local platform:
+voicethere login --api-key vth_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# local platform dev server:
 voicethere login --api-key "$VOICETHERE_API_KEY" --api-base http://localhost:3000/api/v1
 ```
 
@@ -64,7 +64,7 @@ voicethere build upload -m "Add Spanish greeting and fix barge-in"
 
 ### 4. Promote a build (set active in control plane)
 
-**Promote** sets the **active** build in the platform (DB + `active/bundle.js`). It does **not** roll out to cluster runners yet — that will be **`voicethere deploy`** in P5.
+**Promote** sets the **active** build in the VoiceThere control plane. It does **not** roll out to cloud runners yet — use **`voicethere deploy`** when that command ships.
 
 Pass the build UUID from **`build list`** or from the **`build upload`** output:
 
@@ -73,7 +73,7 @@ voicethere build list
 voicethere build promote <build-uuid>
 ```
 
-Typical release loop (M2):
+Typical release loop:
 
 ```bash
 npx @voicethere/agent build
@@ -127,9 +127,9 @@ voicethere build promote <build-uuid>
 
 Split upload and promote in separate jobs if you want a human approval gate between them.
 
-### 8. `deploy` (reserved — P5)
+### 8. `deploy` (coming soon)
 
-`voicethere deploy` will **promote + roll out to cluster runners** with optional `--wait`. It is **not implemented yet**; use `build promote` today.
+`voicethere deploy` will **promote and roll out to cloud runners** with optional `--wait`. It is **not implemented yet**; use `build promote` today.
 
 ## Repo config (version control)
 
@@ -166,8 +166,8 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `build list [--project <id>]`                         | Uploaded builds: id, time, message, active flag          |
 | `build validate [--file dist/agent.js]`               | Run `@voicethere/agent verify --no-build --bundle`       |
 | `build upload [-m <msg>] [--project <id>] [--file …]` | Store build in history (does not promote)                |
-| `build promote <buildId> [--project <id>]`            | Set active build in control plane (M2)                   |
-| `deploy`                                              | **Reserved (P5)** — promote + cluster rollout + wait     |
+| `build promote <buildId> [--project <id>]`            | Set active build in the control plane                    |
+| `deploy`                                              | **Coming soon** — promote + cloud rollout + wait         |
 
 ## Development
 
@@ -185,4 +185,4 @@ export VOICETHERE_CREDENTIALS_PATH=/tmp/voicethere-credentials.json
 
 ## License
 
-UNLICENSED — VoiceThere internal / customer tooling.
+MIT — see [LICENSE](./LICENSE).

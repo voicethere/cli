@@ -9,7 +9,7 @@ export interface BuildPromoteOptions {
 
 /**
  * Promote sets the active build in the control plane (platform `POST …/promote`).
- * Does not roll out to cluster runners — use `voicethere deploy` when P5 lands.
+ * Does not roll out to cloud runners — use `voicethere deploy` when available.
  */
 export async function runBuildPromote(options: BuildPromoteOptions): Promise<void> {
   const buildId = options.buildId.trim();
@@ -30,6 +30,6 @@ export async function runBuildPromote(options: BuildPromoteOptions): Promise<voi
   );
   console.log(`Active artifact: ${result.active_storage_path}`);
   console.log(
-    "Control plane only — cluster rollout is not configured yet (future: voicethere deploy --wait).",
+    "Control plane updated — cloud runner rollout is not available yet (future: voicethere deploy --wait).",
   );
 }

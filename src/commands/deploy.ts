@@ -1,13 +1,12 @@
 /**
- * Reserved for P5: promote + orchestrator rollout + optional wait/poll.
- * See platform/docs/release-model.md and voicethere/cli README.
+ * Placeholder until deploy rolls out to cloud runners after promote.
  */
 export async function runDeployReserved(): Promise<void> {
   console.error(
-    "voicethere deploy is not available yet — it will promote and roll out to cluster runners (P5).",
+    "voicethere deploy is not available yet — it will promote and roll out to cloud runners.",
   );
   console.error(
-    "Use: voicethere build promote <buildId>   # set active build in the control plane (M2)",
+    "Use: voicethere build promote <buildId>   # set the active build in the control plane",
   );
   process.exitCode = 1;
 }

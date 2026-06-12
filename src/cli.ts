@@ -177,7 +177,7 @@ async function main(): Promise<void> {
   program
     .command("deploy")
     .description(
-      "[Reserved] Promote + roll out to cluster runners (P5 — use build promote today)",
+      "[Coming soon] Promote + roll out to cloud runners (use build promote today)",
     )
     .action(async () => {
       await runDeployReserved();
