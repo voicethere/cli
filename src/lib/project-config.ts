@@ -1,8 +1,10 @@
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 export const PROJECT_CONFIG_DIR = ".voicethere";
 export const PROJECT_CONFIG_FILENAME = "config.json";
+export const DEFAULT_BUNDLE = "dist/agent.js";
 
 export interface ProjectConfig {
   /** Platform project UUID — safe to commit; links this repo to a cloud project. */
@@ -21,9 +23,34 @@ export interface ProjectConfigFile {
   bundle?: string;
 }
 
+export type BundlePathSource = "argument" | "config" | "default";
+
+export interface ResolvedBundlePath {
+  relativePath: string;
+  absolutePath: string;
+  source: BundlePathSource;
+  configPath?: string;
+}
+
+export type ProjectIdSource = "config";
+
+export interface ResolvedProjectId {
+  projectId: string;
+  source: ProjectIdSource;
+  configPath: string;
+}
+
+export const NO_PROJECT_SELECTED_MESSAGE =
+  "No project selected. Commit .voicethere/config.json in this repo or run: voicethere projects use <projectId>";
+
 export function getProjectConfigOverridePath(): string | null {
   const override = process.env.VOICETHERE_PROJECT_CONFIG?.trim();
   return override || null;
+}
+
+/** Repo root: parent of `.voicethere/` containing config.json. */
+export function repoRootFromConfigPath(configPath: string): string {
+  return dirname(dirname(configPath));
 }
 
 /** Walk upward from startDir to find `.voicethere/config.json`. */
@@ -98,23 +125,26 @@ export async function readProjectConfig(
   return { config: parseProjectConfig(raw), path };
 }
 
-export async function requireProjectId(options: {
-  projectFlag?: string;
+export async function resolveProjectId(options?: {
+  startDir?: string;
+}): Promise<ResolvedProjectId> {
+  const linked = await readProjectConfig(options?.startDir);
+  if (linked?.config.project_id) {
+    return {
+      projectId: linked.config.project_id,
+      source: "config",
+      configPath: linked.path,
+    };
+  }
+
+  throw new Error(NO_PROJECT_SELECTED_MESSAGE);
+}
+
+export async function requireProjectId(options?: {
   startDir?: string;
 }): Promise<string> {
-  const fromFlag = options.projectFlag?.trim();
-  if (fromFlag) {
-    return fromFlag;
-  }
-
-  const linked = await readProjectConfig(options.startDir);
-  if (linked?.config.project_id) {
-    return linked.config.project_id;
-  }
-
-  throw new Error(
-    "No project selected. Pass --project <id> or run: voicethere projects use --project <id>",
-  );
+  const resolved = await resolveProjectId(options);
+  return resolved.projectId;
 }
 
 export async function writeProjectConfig(
@@ -145,22 +175,49 @@ export async function writeProjectConfig(
   return path;
 }
 
-const DEFAULT_BUNDLE = "dist/agent.js";
-
-/** Bundle path: CLI flag → `.voicethere/config.json` → default. */
-export async function resolveBundlePath(
-  fileFlag?: string,
+/** Bundle path: CLI arg → `.voicethere/config.json` bundle → default `dist/agent.js`. */
+export async function resolveBundlePathDetailed(
+  fileArg?: string,
   startDir?: string,
-): Promise<string> {
-  const fromFlag = fileFlag?.trim();
-  if (fromFlag) {
-    return fromFlag;
+): Promise<ResolvedBundlePath> {
+  const cwd = resolve(startDir ?? process.cwd());
+  const fromArg = fileArg?.trim();
+
+  if (fromArg) {
+    return {
+      relativePath: fromArg,
+      absolutePath: resolve(cwd, fromArg),
+      source: "argument",
+    };
   }
 
   const linked = await readProjectConfig(startDir);
-  if (linked?.config.bundle) {
-    return linked.config.bundle;
-  }
+  const relativePath = linked?.config.bundle?.trim() || DEFAULT_BUNDLE;
+  const baseDir = linked ? repoRootFromConfigPath(linked.path) : cwd;
 
-  return DEFAULT_BUNDLE;
+  return {
+    relativePath,
+    absolutePath: resolve(baseDir, relativePath),
+    source: linked?.config.bundle ? "config" : "default",
+    configPath: linked?.path,
+  };
+}
+
+/** @deprecated Prefer resolveBundlePathDetailed for logging and absolute paths. */
+export async function resolveBundlePath(
+  fileArg?: string,
+  startDir?: string,
+): Promise<string> {
+  const resolved = await resolveBundlePathDetailed(fileArg, startDir);
+  return resolved.absolutePath;
+}
+
+export async function assertBundleExists(absolutePath: string): Promise<void> {
+  try {
+    await access(absolutePath, constants.R_OK);
+  } catch {
+    throw new Error(
+      `Bundle not found or not readable: ${absolutePath} — run: npx @voicethere/agent build`,
+    );
+  }
 }

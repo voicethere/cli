@@ -1,32 +1,29 @@
-import { access } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { constants } from "node:fs";
 
-import { resolveBundlePath } from "../../lib/project-config.js";
+import { logResolvedBundle } from "../../lib/command-log.js";
+import {
+  assertBundleExists,
+  resolveBundlePathDetailed,
+} from "../../lib/project-config.js";
 
 export const DEFAULT_BUNDLE_PATH = "dist/agent.js";
 
 export interface BuildValidateOptions {
   file?: string;
+  /** When false, skip startup path logging (caller already logged). Default true. */
+  logContext?: boolean;
 }
 
 export async function runBuildValidate(
   options: BuildValidateOptions,
 ): Promise<void> {
-  const bundlePath = await resolveBundlePath(options.file);
-  await assertBundleExists(bundlePath);
-  await spawnAgentVerify(bundlePath);
-  console.log(`Bundle validated: ${bundlePath}`);
-}
-
-async function assertBundleExists(bundlePath: string): Promise<void> {
-  try {
-    await access(bundlePath, constants.R_OK);
-  } catch {
-    throw new Error(
-      `Bundle not found or not readable: ${bundlePath} — run: npx @voicethere/agent build`,
-    );
+  const bundle = await resolveBundlePathDetailed(options.file);
+  if (options.logContext !== false) {
+    logResolvedBundle(bundle);
   }
+  await assertBundleExists(bundle.absolutePath);
+  await spawnAgentVerify(bundle.absolutePath);
+  console.log(`Bundle validated: ${bundle.absolutePath}`);
 }
 
 async function spawnAgentVerify(bundlePath: string): Promise<void> {
