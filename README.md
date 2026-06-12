@@ -66,18 +66,11 @@ voicethere build upload -m "Add Spanish greeting and fix barge-in"
 
 **Promote** sets the **active** build in the platform (DB + `active/bundle.js`). It does **not** roll out to cluster runners yet — that will be **`voicethere deploy`** in P5.
 
-```bash
-# Promote the newest passed upload (usually your latest upload)
-voicethere build promote
-
-# Or pin a specific build id from build list
-voicethere build promote --build <build-uuid>
-```
-
-List recent uploads with id, timestamp, and message:
+Pass the build UUID from **`build list`** or from the **`build upload`** output:
 
 ```bash
 voicethere build list
+voicethere build promote <build-uuid>
 ```
 
 Typical release loop (M2):
@@ -85,7 +78,7 @@ Typical release loop (M2):
 ```bash
 npx @voicethere/agent build
 voicethere build upload -m "v0.2 — shorter silence timeout"
-voicethere build promote
+voicethere build promote <build-uuid-from-upload-or-list>
 ```
 
 ### 5. Clone an existing repo (config already in git)
@@ -97,7 +90,8 @@ voicethere login --api-key "$VOICETHERE_API_KEY"
 
 npx @voicethere/agent build
 voicethere build upload
-voicethere build promote
+voicethere build list
+voicethere build promote <build-uuid>
 ```
 
 No `projects create` needed — the linked project travels with the repo.
@@ -128,7 +122,7 @@ voicethere projects show
 voicethere login --api-key "$VOICETHERE_API_KEY"
 npx @voicethere/agent build
 voicethere build upload -m "$GITHUB_SHA — $GITHUB_REF_NAME" --skip-validate
-voicethere build promote
+voicethere build promote <build-uuid>
 ```
 
 Split upload and promote in separate jobs if you want a human approval gate between them.
@@ -172,7 +166,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `build list [--project <id>]`                         | Uploaded builds: id, time, message, active flag          |
 | `build validate [--file dist/agent.js]`               | Run `@voicethere/agent verify --no-build --bundle`       |
 | `build upload [-m <msg>] [--project <id>] [--file …]` | Store build in history (does not promote)                |
-| `build promote [--build <id>] [--project <id>]`       | Set active build in control plane (M2)                   |
+| `build promote <buildId> [--project <id>]`            | Set active build in control plane (M2)                   |
 | `deploy`                                              | **Reserved (P5)** — promote + cluster rollout + wait     |
 
 ## Development

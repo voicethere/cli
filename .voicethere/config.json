@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "project_id": "14faf2d8-a0f8-40c4-b72b-07d87a959032",
+  "project_slug": "smoke-agent",
+  "name": "Smoke Agent",
+  "bundle": "dist/agent.js"
+}

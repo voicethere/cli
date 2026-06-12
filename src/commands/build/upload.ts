@@ -29,7 +29,6 @@ export async function runBuildUpload(
   }
   console.log(`Uploaded at: ${build.created_at}`);
   console.log("");
-  console.log("Upload stored in history. Deploy when ready:");
-  console.log(`  voicethere build promote --build ${build.id}`);
-  console.log("  voicethere build promote   # newest passed build");
+  console.log("Upload stored in history. Promote when ready:");
+  console.log(`  voicethere build promote ${build.id}`);
 }

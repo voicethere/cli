@@ -162,15 +162,15 @@ async function main(): Promise<void> {
     .description(
       "Set active build in the control plane (platform promote API; no cluster rollout)",
     )
+    .argument("<buildId>", "Build UUID to promote (from build list or upload output)")
     .option(
       "--project <id>",
       "Project UUID (default: .voicethere/config.json project_id)",
     )
-    .option("--build <id>", "Specific build UUID (default: newest passed)")
-    .action(async (options: { project?: string; build?: string }) => {
+    .action(async (buildId: string, options: { project?: string }) => {
       await runBuildPromote({
         project: options.project,
-        build: options.build,
+        buildId,
       });
     });
 
