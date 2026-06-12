@@ -4,11 +4,14 @@ import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_BUNDLE,
   findProjectConfigPath,
   parseProjectConfig,
   readProjectConfig,
   requireProjectId,
   resolveBundlePath,
+  resolveBundlePathDetailed,
+  resolveProjectId,
   writeProjectConfig,
 } from "./project-config.js";
 
@@ -78,22 +81,63 @@ describe("project-config", () => {
     );
   });
 
-  it("requireProjectId prefers CLI flag over linked config", async () => {
-    await writeProjectConfig(
-      { project_id: "from-file" },
-      { startDir: tempDir },
+  it("resolveProjectId reads selected project from linked config", async () => {
+    await writeProjectConfig({ project_id: "from-file" }, { startDir: tempDir });
+
+    await expect(resolveProjectId({ startDir: tempDir })).resolves.toMatchObject(
+      {
+        projectId: "from-file",
+        source: "config",
+      },
     );
+  });
 
-    await expect(
-      requireProjectId({ projectFlag: "from-flag", startDir: tempDir }),
-    ).resolves.toBe("from-flag");
+  it("resolveProjectId fails when no project is selected", async () => {
+    await expect(resolveProjectId({ startDir: tempDir })).rejects.toThrow(
+      /No project selected/,
+    );
+  });
 
+  it("requireProjectId returns project id string", async () => {
+    await writeProjectConfig({ project_id: "from-file" }, { startDir: tempDir });
     await expect(requireProjectId({ startDir: tempDir })).resolves.toBe(
       "from-file",
     );
   });
 
-  it("resolveBundlePath uses config default", async () => {
+  it("resolveBundlePathDetailed uses default relative to cwd when no config", async () => {
+    await expect(
+      resolveBundlePathDetailed(undefined, tempDir),
+    ).resolves.toMatchObject({
+      relativePath: DEFAULT_BUNDLE,
+      absolutePath: join(tempDir, DEFAULT_BUNDLE),
+      source: "default",
+    });
+  });
+
+  it("resolveBundlePathDetailed uses config bundle relative to repo root", async () => {
+    const configPath = await writeProjectConfig(
+      {
+        project_id: "p1",
+        bundle: "build/out.js",
+      },
+      { startDir: tempDir },
+    );
+
+    const nested = join(tempDir, "packages", "agent");
+    await mkdir(nested, { recursive: true });
+
+    await expect(
+      resolveBundlePathDetailed(undefined, nested),
+    ).resolves.toMatchObject({
+      relativePath: "build/out.js",
+      absolutePath: join(tempDir, "build/out.js"),
+      source: "config",
+      configPath,
+    });
+  });
+
+  it("resolveBundlePath returns absolute paths", async () => {
     await writeProjectConfig(
       {
         project_id: "p1",
@@ -103,10 +147,10 @@ describe("project-config", () => {
     );
 
     await expect(resolveBundlePath(undefined, tempDir)).resolves.toBe(
-      "build/out.js",
+      join(tempDir, "build/out.js"),
     );
     await expect(resolveBundlePath("override.js", tempDir)).resolves.toBe(
-      "override.js",
+      join(tempDir, "override.js"),
     );
   });
 

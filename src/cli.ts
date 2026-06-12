@@ -19,7 +19,7 @@ async function main(): Promise<void> {
   program
     .name("voicethere")
     .description("VoiceThere cloud CLI")
-    .version("0.1.0");
+    .version("0.2.0");
 
   program
     .command("login")
@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   projects
     .command("create")
     .description("Create a new project")
-    .requiredOption("--name <name>", "Project display name")
+    .argument("<name>", "Project display name")
     .option("--slug <slug>", "URL-safe slug (derived from name when omitted)")
     .option(
       "--no-link",
@@ -59,14 +59,16 @@ async function main(): Promise<void> {
       "dist/agent.js",
     )
     .action(
-      async (options: {
-        name: string;
-        slug?: string;
-        noLink?: boolean;
-        bundle?: string;
-      }) => {
+      async (
+        name: string,
+        options: {
+          slug?: string;
+          noLink?: boolean;
+          bundle?: string;
+        },
+      ) => {
         await runProjectsCreate({
-          name: options.name,
+          name,
           slug: options.slug,
           link: !options.noLink,
           bundle: options.bundle,
@@ -76,20 +78,27 @@ async function main(): Promise<void> {
 
   projects
     .command("use")
-    .description("Link this repo to a platform project (.voicethere/config.json)")
-    .requiredOption("--project <id>", "Project UUID")
-    .option("--slug <slug>", "Project slug (metadata only)")
-    .option("--name <name>", "Project display name (metadata only)")
+    .description(
+      "Use a project for this repo (.voicethere/config.json)",
+    )
+    .argument(
+      "[projectId]",
+      "Project UUID (interactive picker when omitted in a TTY)",
+    )
+    .option("--slug <slug>", "Override project slug in local config")
+    .option("--name <name>", "Override display name in local config")
     .option("--bundle <path>", "Default bundle path", "dist/agent.js")
     .action(
-      async (options: {
-        project: string;
-        slug?: string;
-        name?: string;
-        bundle?: string;
-      }) => {
+      async (
+        projectId: string | undefined,
+        options: {
+          slug?: string;
+          name?: string;
+          bundle?: string;
+        },
+      ) => {
         await runProjectsUse({
-          project: options.project,
+          projectId,
           slug: options.slug,
           name: options.name,
           bundle: options.bundle,
@@ -99,7 +108,7 @@ async function main(): Promise<void> {
 
   projects
     .command("show")
-    .description("Show linked .voicethere/config.json for this repo")
+    .description("Show the active project (.voicethere/config.json)")
     .action(async () => {
       await runProjectsShow();
     });
@@ -109,48 +118,40 @@ async function main(): Promise<void> {
   build
     .command("validate")
     .description("Run @voicethere/agent sandbox verify on a bundle")
-    .option(
-      "--file <path>",
+    .argument(
+      "[file]",
       "Bundle path (default: config bundle or dist/agent.js)",
     )
-    .action(async (options: { file?: string }) => {
-      await runBuildValidate({ file: options.file });
+    .action(async (file?: string) => {
+      await runBuildValidate({ file });
     });
 
   build
     .command("list")
-    .description("List uploaded builds (newest first)")
-    .option(
-      "--project <id>",
-      "Project UUID (default: .voicethere/config.json project_id)",
-    )
-    .action(async (options: { project?: string }) => {
-      await runBuildList({ project: options.project });
+    .description("List uploaded builds for the active project (newest first)")
+    .action(async () => {
+      await runBuildList();
     });
 
   build
     .command("upload")
     .description("Validate (unless skipped) and upload a bundle")
-    .option(
-      "--project <id>",
-      "Project UUID (default: .voicethere/config.json project_id)",
-    )
-    .option(
-      "--file <path>",
+    .argument(
+      "[file]",
       "Bundle path (default: config bundle or dist/agent.js)",
     )
     .option("-m, --message <text>", "Build label (like a git commit message)")
     .option("--skip-validate", "Upload without local sandbox verify")
     .action(
-      async (options: {
-        project?: string;
-        file?: string;
-        message?: string;
-        skipValidate?: boolean;
-      }) => {
+      async (
+        file: string | undefined,
+        options: {
+          message?: string;
+          skipValidate?: boolean;
+        },
+      ) => {
         await runBuildUpload({
-          project: options.project,
-          file: options.file,
+          file,
           message: options.message,
           skipValidate: options.skipValidate,
         });
@@ -162,16 +163,12 @@ async function main(): Promise<void> {
     .description(
       "Set active build in the control plane (platform promote API; no cluster rollout)",
     )
-    .argument("<buildId>", "Build UUID to promote (from build list or upload output)")
-    .option(
-      "--project <id>",
-      "Project UUID (default: .voicethere/config.json project_id)",
+    .argument(
+      "[buildId]",
+      "Build UUID (interactive picker when omitted in a TTY)",
     )
-    .action(async (buildId: string, options: { project?: string }) => {
-      await runBuildPromote({
-        project: options.project,
-        buildId,
-      });
+    .action(async (buildId?: string) => {
+      await runBuildPromote({ buildId });
     });
 
   program

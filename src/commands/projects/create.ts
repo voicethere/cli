@@ -1,5 +1,6 @@
 import { createApi } from "../../lib/api.js";
 import { requireCredentials } from "../../lib/config.js";
+import { logCommandInfo } from "../../lib/command-log.js";
 import { writeProjectConfig } from "../../lib/project-config.js";
 
 export interface ProjectsCreateOptions {
@@ -24,7 +25,7 @@ export async function runProjectsCreate(
 ): Promise<void> {
   const name = options.name.trim();
   if (!name) {
-    throw new Error("--name is required");
+    throw new Error("project name is required");
   }
 
   const slug = (options.slug?.trim() || slugifyName(name)).replace(
@@ -47,7 +48,10 @@ export async function runProjectsCreate(
       name: project.name,
       bundle: options.bundle?.trim() || undefined,
     });
-    console.error(`Linked ${configPath} (commit this file to version control)`);
+    logCommandInfo(`project config: ${configPath}`);
+    console.error(
+      `Using project ${project.name} (${project.id}) — commit ${configPath}`,
+    );
   }
 
   console.log(JSON.stringify(project, null, 2));

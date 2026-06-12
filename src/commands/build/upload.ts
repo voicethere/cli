@@ -1,10 +1,17 @@
 import { createApi } from "../../lib/api.js";
+import {
+  logResolvedBundle,
+  logResolvedProject,
+} from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
-import { requireProjectId, resolveBundlePath } from "../../lib/project-config.js";
+import {
+  assertBundleExists,
+  resolveBundlePathDetailed,
+  resolveProjectId,
+} from "../../lib/project-config.js";
 import { runBuildValidate, type BuildValidateOptions } from "./validate.js";
 
 export interface BuildUploadOptions extends BuildValidateOptions {
-  project?: string;
   message?: string;
   skipValidate?: boolean;
 }
@@ -12,16 +19,24 @@ export interface BuildUploadOptions extends BuildValidateOptions {
 export async function runBuildUpload(
   options: BuildUploadOptions,
 ): Promise<void> {
-  const projectId = await requireProjectId({ projectFlag: options.project });
-  const bundlePath = await resolveBundlePath(options.file);
+  const project = await resolveProjectId();
+  const bundle = await resolveBundlePathDetailed(options.file);
+  logResolvedProject(project);
+  logResolvedBundle(bundle);
 
   if (!options.skipValidate) {
-    await runBuildValidate({ file: bundlePath });
+    await runBuildValidate({ file: options.file, logContext: false });
+  } else {
+    await assertBundleExists(bundle.absolutePath);
   }
 
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
-  const build = await api.uploadBuild(projectId, bundlePath, options.message);
+  const build = await api.uploadBuild(
+    project.projectId,
+    bundle.absolutePath,
+    options.message,
+  );
 
   console.log(`Uploaded build ${build.id}`);
   if (build.message) {

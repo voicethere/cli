@@ -4,7 +4,7 @@ export async function runProjectsShow(): Promise<void> {
   const path = await findProjectConfigPath();
   if (!path) {
     console.log("No .voicethere/config.json found in this directory or parents.");
-    console.log("Run: voicethere projects use --project <uuid>");
+    console.log("Run: voicethere projects use <projectId>");
     return;
   }
 
