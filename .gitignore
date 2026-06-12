@@ -6,3 +6,4 @@ dist/
 
 # Optional per-machine overrides (never commit secrets)
 .voicethere/local.json
+.voicethere/config.json
