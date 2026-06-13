@@ -49,6 +49,28 @@ export interface PromoteResult {
   active_storage_path: string;
 }
 
+export type DeploymentStatus = "queued" | "active" | "completed" | "failed";
+
+export interface DeploymentJob {
+  id: string;
+  org_id: string;
+  project_id: string;
+  build_id: string;
+  status: DeploymentStatus;
+  mode: "drain" | "force";
+  bullmq_job_id: string | null;
+  error: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface CreateDeploymentInput {
+  project_id: string;
+  build_id?: string;
+  mode?: "drain" | "force";
+  trace_id?: string;
+}
+
 import { logApiBase, logVerbose } from "./command-log.js";
 
 export class VoicethereApi {
@@ -116,6 +138,16 @@ export class VoicethereApi {
         json: buildId ? { build_id: buildId } : {},
       },
     );
+  }
+
+  async createDeployment(input: CreateDeploymentInput): Promise<DeploymentJob> {
+    return this.request<DeploymentJob>("POST", "/deployments", {
+      json: input,
+    });
+  }
+
+  async getDeployment(jobId: string): Promise<DeploymentJob> {
+    return this.request<DeploymentJob>("GET", `/deployments/${jobId}`);
   }
 
   async rollback(projectId: string, buildId?: string): Promise<PromoteResult> {
@@ -194,9 +226,7 @@ export class VoicethereApi {
       const message =
         errorBody?.error?.message ??
         `Request failed: ${method} ${url.pathname} (${response.status})`;
-      logVerbose(
-        `error: ${errorBody?.error?.code ?? "unknown"} — ${message}`,
-      );
+      logVerbose(`error: ${errorBody?.error?.code ?? "unknown"} — ${message}`);
       throw new ApiError(response.status, message, errorBody);
     }
 

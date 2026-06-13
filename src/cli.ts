@@ -11,7 +11,7 @@ import { runBuildPromote } from "./commands/build/promote.js";
 import { runBuildList } from "./commands/build/list.js";
 import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
-import { runDeployReserved } from "./commands/deploy.js";
+import { runDeploy } from "./commands/deploy.js";
 import { configureLogging } from "./lib/command-log.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
 
@@ -86,9 +86,7 @@ async function main(): Promise<void> {
 
   projects
     .command("use")
-    .description(
-      "Use a project for this repo (.voicethere/config.json)",
-    )
+    .description("Use a project for this repo (.voicethere/config.json)")
     .argument(
       "[projectId]",
       "Project UUID (interactive picker when omitted in a TTY)",
@@ -129,22 +127,21 @@ async function main(): Promise<void> {
       "Project UUID (default: active project from .voicethere/config.json)",
     )
     .option("--force", "Skip interactive name confirmation")
-    .action(async (projectId: string | undefined, options: { force?: boolean }) => {
-      await runProjectsDelete({
-        projectId,
-        force: options.force,
-      });
-    });
+    .action(
+      async (projectId: string | undefined, options: { force?: boolean }) => {
+        await runProjectsDelete({
+          projectId,
+          force: options.force,
+        });
+      },
+    );
 
   const build = program.command("build").description("Agent bundle operations");
 
   build
     .command("validate")
     .description("Run @voicethere/agent sandbox verify on a bundle")
-    .argument(
-      "[file]",
-      "Bundle path (default: config bundle or dist/agent.js)",
-    )
+    .argument("[file]", "Bundle path (default: config bundle or dist/agent.js)")
     .action(async (file?: string) => {
       await runBuildValidate({ file });
     });
@@ -159,10 +156,7 @@ async function main(): Promise<void> {
   build
     .command("upload")
     .description("Validate (unless skipped) and upload a bundle")
-    .argument(
-      "[file]",
-      "Bundle path (default: config bundle or dist/agent.js)",
-    )
+    .argument("[file]", "Bundle path (default: config bundle or dist/agent.js)")
     .option("-m, --message <text>", "Build label (like a git commit message)")
     .option("--skip-validate", "Upload without local sandbox verify")
     .action(
@@ -196,12 +190,30 @@ async function main(): Promise<void> {
 
   program
     .command("deploy")
-    .description(
-      "[Coming soon] Promote + roll out to cloud runners (use build promote today)",
+    .description("Promote (if needed) and roll out to cloud runners")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option(
+      "--build-id <id>",
+      "Build UUID (default: active or newest passed build)",
     )
-    .action(async () => {
-      await runDeployReserved();
-    });
+    .option("--mode <mode>", "Rollout mode: drain or force", "drain")
+    .option("--wait", "Poll until deployment completes or fails")
+    .action(
+      async (options: {
+        project?: string;
+        buildId?: string;
+        mode?: string;
+        wait?: boolean;
+      }) => {
+        const mode = options.mode === "force" ? "force" : "drain";
+        await runDeploy({
+          projectId: options.project,
+          buildId: options.buildId,
+          mode,
+          wait: options.wait,
+        });
+      },
+    );
 
   await program.parseAsync(process.argv);
 }
