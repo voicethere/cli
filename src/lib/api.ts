@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 
+import { logApiBase, logVerbose } from "./command-log.js";
+
 export interface ApiErrorBody {
   error?: {
     code?: string;
@@ -64,14 +66,34 @@ export interface DeploymentJob {
   completed_at: string | null;
 }
 
+export interface ProjectSecretEntry {
+  name: string;
+  masked_value: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectEnvEntry {
+  key: string;
+  value: string;
+}
+
+export interface ProjectEnvListResponse {
+  project_id: string;
+  variables: ProjectEnvEntry[];
+}
+
+export interface ProjectSecretListResponse {
+  project_id: string;
+  secrets: ProjectSecretEntry[];
+}
+
 export interface CreateDeploymentInput {
   project_id: string;
   build_id?: string;
   mode?: "drain" | "force";
   trace_id?: string;
 }
-
-import { logApiBase, logVerbose } from "./command-log.js";
 
 export class VoicethereApi {
   constructor(
@@ -173,6 +195,77 @@ export class VoicethereApi {
           ? { confirm_name: options.confirmName }
           : undefined,
       },
+    );
+  }
+
+  async listProjectEnvironment(
+    projectId: string,
+  ): Promise<ProjectEnvListResponse> {
+    return this.request<ProjectEnvListResponse>(
+      "GET",
+      `/projects/${projectId}/environment`,
+    );
+  }
+
+  async getProjectEnvironmentVariable(
+    projectId: string,
+    key: string,
+  ): Promise<ProjectEnvEntry> {
+    return this.request<ProjectEnvEntry>(
+      "GET",
+      `/projects/${projectId}/environment/${encodeURIComponent(key)}`,
+    );
+  }
+
+  async upsertProjectEnvironmentVariable(
+    projectId: string,
+    key: string,
+    value: string,
+  ): Promise<ProjectEnvEntry> {
+    return this.request<ProjectEnvEntry>(
+      "PUT",
+      `/projects/${projectId}/environment/${encodeURIComponent(key)}`,
+      { json: { value } },
+    );
+  }
+
+  async deleteProjectEnvironmentVariable(
+    projectId: string,
+    key: string,
+  ): Promise<void> {
+    await this.request<Record<string, never>>(
+      "DELETE",
+      `/projects/${projectId}/environment/${encodeURIComponent(key)}`,
+    );
+  }
+
+  async listProjectSecrets(
+    projectId: string,
+  ): Promise<ProjectSecretListResponse> {
+    return this.request<ProjectSecretListResponse>(
+      "GET",
+      `/projects/${projectId}/secrets`,
+    );
+  }
+
+  async createProjectSecret(
+    projectId: string,
+    name: string,
+    value: string,
+  ): Promise<ProjectSecretEntry> {
+    return this.request<ProjectSecretEntry>(
+      "POST",
+      `/projects/${projectId}/secrets`,
+      {
+        json: { name, value },
+      },
+    );
+  }
+
+  async deleteProjectSecret(projectId: string, name: string): Promise<void> {
+    await this.request<Record<string, never>>(
+      "DELETE",
+      `/projects/${projectId}/secrets/${encodeURIComponent(name)}`,
     );
   }
 

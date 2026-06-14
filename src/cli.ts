@@ -4,6 +4,13 @@ import { Command } from "commander";
 import { runLogin } from "./commands/login.js";
 import { runProjectsCreate } from "./commands/projects/create.js";
 import { runProjectsDelete } from "./commands/projects/delete.js";
+import { runProjectsEnvironmentDelete } from "./commands/projects/environment/delete.js";
+import { runProjectsEnvironmentList } from "./commands/projects/environment/list.js";
+import { runProjectsEnvironmentUpsert } from "./commands/projects/environment/upsert.js";
+import { runProjectsEnvironmentView } from "./commands/projects/environment/view.js";
+import { runProjectsSecretsCreate } from "./commands/projects/secrets/create.js";
+import { runProjectsSecretsDelete } from "./commands/projects/secrets/delete.js";
+import { runProjectsSecretsList } from "./commands/projects/secrets/list.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
@@ -135,6 +142,105 @@ async function main(): Promise<void> {
         });
       },
     );
+
+  const environment = projects
+    .command("environment")
+    .description("Manage non-secret AGENT_* variables for the active project");
+
+  environment
+    .command("list")
+    .description("List environment variables")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(async (options: { project?: string }) => {
+      await runProjectsEnvironmentList({ projectId: options.project });
+    });
+
+  environment
+    .command("view")
+    .description("View one environment variable")
+    .argument("<key>", "Variable name (e.g. AGENT_GREETING)")
+    .option("--project <id>", "Project UUID")
+    .action(async (key: string, options: { project?: string }) => {
+      await runProjectsEnvironmentView({ key, projectId: options.project });
+    });
+
+  environment
+    .command("create")
+    .description("Create an environment variable")
+    .argument("<key>", "Variable name")
+    .argument("<value>", "Variable value")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (key: string, value: string, options: { project?: string }) => {
+        await runProjectsEnvironmentUpsert({
+          key,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
+
+  environment
+    .command("update")
+    .description("Create or update an environment variable")
+    .argument("<key>", "Variable name")
+    .argument("<value>", "Variable value")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (key: string, value: string, options: { project?: string }) => {
+        await runProjectsEnvironmentUpsert({
+          key,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
+
+  environment
+    .command("delete")
+    .description("Delete an environment variable")
+    .argument("<key>", "Variable name")
+    .option("--project <id>", "Project UUID")
+    .action(async (key: string, options: { project?: string }) => {
+      await runProjectsEnvironmentDelete({ key, projectId: options.project });
+    });
+
+  const secrets = projects
+    .command("secrets")
+    .description("Manage encrypted AGENT_* secrets for the active project");
+
+  secrets
+    .command("list")
+    .description("List secrets (masked values only)")
+    .option("--project <id>", "Project UUID")
+    .action(async (options: { project?: string }) => {
+      await runProjectsSecretsList({ projectId: options.project });
+    });
+
+  secrets
+    .command("create")
+    .description("Create a secret (delete + recreate to change value)")
+    .argument("<name>", "Secret name (e.g. AGENT_API_KEY)")
+    .argument("<value>", "Secret value")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (name: string, value: string, options: { project?: string }) => {
+        await runProjectsSecretsCreate({
+          name,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
+
+  secrets
+    .command("delete")
+    .description("Delete a secret")
+    .argument("<name>", "Secret name")
+    .option("--project <id>", "Project UUID")
+    .action(async (name: string, options: { project?: string }) => {
+      await runProjectsSecretsDelete({ name, projectId: options.project });
+    });
 
   const build = program.command("build").description("Agent bundle operations");
 
