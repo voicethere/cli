@@ -252,4 +252,204 @@ describe("VoicethereApi", () => {
     expect(url.toString()).toBe(`${apiBase}/projects/proj-1/promote`);
     expect(init.body).toBe(JSON.stringify({ build_id: "build-1" }));
   });
+
+  it("lists project environment variables", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          project_id: "proj-1",
+          variables: [{ key: "LOG_LEVEL", value: "debug" }],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const result = await api.listProjectEnvironment("proj-1");
+
+    expect(result.variables).toHaveLength(1);
+    expect(result.variables[0]?.key).toBe("LOG_LEVEL");
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.toString()).toBe(`${apiBase}/projects/proj-1/environment`);
+    expect(init.method).toBe("GET");
+  });
+
+  it("gets a single environment variable with encoded key", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ key: "MY/KEY", value: "secret-ish" }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const entry = await api.getProjectEnvironmentVariable("proj-1", "MY/KEY");
+
+    expect(entry.value).toBe("secret-ish");
+    const [url] = fetchMock.mock.calls[0] as [URL];
+    expect(url.pathname).toBe(
+      "/api/v1/projects/proj-1/environment/MY%2FKEY",
+    );
+  });
+
+  it("upserts an environment variable", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ key: "REGION", value: "us-east" }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const entry = await api.upsertProjectEnvironmentVariable(
+      "proj-1",
+      "REGION",
+      "us-east",
+    );
+
+    expect(entry.key).toBe("REGION");
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.pathname).toBe("/api/v1/projects/proj-1/environment/REGION");
+    expect(init.method).toBe("PUT");
+    expect(init.body).toBe(JSON.stringify({ value: "us-east" }));
+  });
+
+  it("deletes an environment variable", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("{}", { status: 200 }),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    await api.deleteProjectEnvironmentVariable("proj-1", "OLD_KEY");
+
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.pathname).toBe(
+      "/api/v1/projects/proj-1/environment/OLD_KEY",
+    );
+    expect(init.method).toBe("DELETE");
+  });
+
+  it("lists project secrets", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          project_id: "proj-1",
+          secrets: [
+            {
+              name: "OPENAI_API_KEY",
+              masked_value: "sk-***",
+              created_at: "2026-06-09T12:00:00.000Z",
+              updated_at: "2026-06-09T12:00:00.000Z",
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const result = await api.listProjectSecrets("proj-1");
+
+    expect(result.secrets[0]?.name).toBe("OPENAI_API_KEY");
+    const [url] = fetchMock.mock.calls[0] as [URL];
+    expect(url.toString()).toBe(`${apiBase}/projects/proj-1/secrets`);
+  });
+
+  it("creates a project secret", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          name: "DB_PASSWORD",
+          masked_value: "****",
+          created_at: "2026-06-09T12:00:00.000Z",
+          updated_at: "2026-06-09T12:00:00.000Z",
+        }),
+        { status: 201 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const secret = await api.createProjectSecret(
+      "proj-1",
+      "DB_PASSWORD",
+      "hunter2",
+    );
+
+    expect(secret.name).toBe("DB_PASSWORD");
+    const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(init.method).toBe("POST");
+    expect(init.body).toBe(
+      JSON.stringify({ name: "DB_PASSWORD", value: "hunter2" }),
+    );
+  });
+
+  it("deletes a project secret with encoded name", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("{}", { status: 200 }),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    await api.deleteProjectSecret("proj-1", "legacy/key");
+
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.pathname).toBe(
+      "/api/v1/projects/proj-1/secrets/legacy%2Fkey",
+    );
+    expect(init.method).toBe("DELETE");
+  });
+
+  it("deletes a project with force query and confirm name", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("{}", { status: 200 }),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    await api.deleteProject("proj-1", {
+      force: true,
+      confirmName: "Demo",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.search).toBe("?force=true");
+    expect(init.method).toBe("DELETE");
+    expect(init.body).toBe(JSON.stringify({ confirm_name: "Demo" }));
+  });
+
+  it("creates a deployment job", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "dep-1",
+          org_id: "org-1",
+          project_id: "proj-1",
+          build_id: "build-1",
+          status: "queued",
+          mode: "drain",
+          bullmq_job_id: "job-1",
+          error: null,
+          created_at: "2026-06-09T12:00:00.000Z",
+          completed_at: null,
+        }),
+        { status: 201 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const job = await api.createDeployment({
+      project_id: "proj-1",
+      build_id: "build-1",
+      mode: "force",
+    });
+
+    expect(job.id).toBe("dep-1");
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.toString()).toBe(`${apiBase}/deployments`);
+    expect(init.body).toBe(
+      JSON.stringify({
+        project_id: "proj-1",
+        build_id: "build-1",
+        mode: "force",
+      }),
+    );
+  });
 });
