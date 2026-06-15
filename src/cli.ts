@@ -21,6 +21,7 @@ import { runBuildList } from "./commands/build/list.js";
 import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
 import { runDeploy } from "./commands/deploy.js";
+import { runUndeploy } from "./commands/undeploy.js";
 import { configureLogging } from "./lib/command-log.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
 
@@ -353,6 +354,18 @@ async function main(): Promise<void> {
         });
       },
     );
+
+  program
+    .command("undeploy")
+    .description("Remove runner deployments for a project from the cluster")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--wait", "Poll until undeploy completes or fails")
+    .action(async (options: { project?: string; wait?: boolean }) => {
+      await runUndeploy({
+        projectId: options.project,
+        wait: options.wait,
+      });
+    });
 
   await program.parseAsync(process.argv);
 }

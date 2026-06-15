@@ -31,6 +31,9 @@ export interface Project {
   name: string;
   slug: string;
   active_build_id: string | null;
+  deployed_build_id: string | null;
+  deployed_at: string | null;
+  is_deployed: boolean;
   created_at: string;
 }
 
@@ -53,13 +56,15 @@ export interface PromoteResult {
 
 export type DeploymentStatus = "queued" | "active" | "completed" | "failed";
 
+export type DeploymentMode = "drain" | "force" | "undeploy";
+
 export interface DeploymentJob {
   id: string;
   org_id: string;
   project_id: string;
   build_id: string;
   status: DeploymentStatus;
-  mode: "drain" | "force";
+  mode: DeploymentMode;
   bullmq_job_id: string | null;
   error: string | null;
   created_at: string;
@@ -180,6 +185,13 @@ export class VoicethereApi {
     return this.request<DeploymentJob>("POST", "/deployments", {
       json: input,
     });
+  }
+
+  async undeployProject(projectId: string): Promise<DeploymentJob> {
+    return this.request<DeploymentJob>(
+      "POST",
+      `/projects/${projectId}/undeploy`,
+    );
   }
 
   async getDeployment(jobId: string): Promise<DeploymentJob> {
