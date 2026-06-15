@@ -11,6 +11,8 @@ import { runProjectsEnvironmentView } from "./commands/projects/environment/view
 import { runProjectsSecretsCreate } from "./commands/projects/secrets/create.js";
 import { runProjectsSecretsDelete } from "./commands/projects/secrets/delete.js";
 import { runProjectsSecretsList } from "./commands/projects/secrets/list.js";
+import { runProjectsSettingsList } from "./commands/projects/settings/list.js";
+import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
@@ -19,6 +21,7 @@ import { runBuildList } from "./commands/build/list.js";
 import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
 import { runDeploy } from "./commands/deploy.js";
+import { runUndeploy } from "./commands/undeploy.js";
 import { configureLogging } from "./lib/command-log.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
 
@@ -242,6 +245,37 @@ async function main(): Promise<void> {
       await runProjectsSecretsDelete({ name, projectId: options.project });
     });
 
+  const settings = projects
+    .command("settings")
+    .description("Runner pool settings (warm pool, idle scale-down)");
+
+  settings
+    .command("list")
+    .description("List runner settings for the active project")
+    .option("--project <id>", "Project UUID")
+    .action(async (options: { project?: string }) => {
+      await runProjectsSettingsList({ projectId: options.project });
+    });
+
+  settings
+    .command("set")
+    .description("Set a runner setting")
+    .argument(
+      "<name>",
+      "Setting name (warm_pool_enabled, idle_scale_down_seconds)",
+    )
+    .argument("<value>", "Setting value")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (name: string, value: string, options: { project?: string }) => {
+        await runProjectsSettingsSet({
+          name,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
+
   const build = program.command("build").description("Agent bundle operations");
 
   build
@@ -320,6 +354,18 @@ async function main(): Promise<void> {
         });
       },
     );
+
+  program
+    .command("undeploy")
+    .description("Remove runner deployments for a project from the cluster")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--wait", "Poll until undeploy completes or fails")
+    .action(async (options: { project?: string; wait?: boolean }) => {
+      await runUndeploy({
+        projectId: options.project,
+        wait: options.wait,
+      });
+    });
 
   await program.parseAsync(process.argv);
 }

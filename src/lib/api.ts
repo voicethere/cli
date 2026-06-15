@@ -31,6 +31,9 @@ export interface Project {
   name: string;
   slug: string;
   active_build_id: string | null;
+  deployed_build_id: string | null;
+  deployed_at: string | null;
+  is_deployed: boolean;
   created_at: string;
 }
 
@@ -53,13 +56,15 @@ export interface PromoteResult {
 
 export type DeploymentStatus = "queued" | "active" | "completed" | "failed";
 
+export type DeploymentMode = "drain" | "force" | "undeploy";
+
 export interface DeploymentJob {
   id: string;
   org_id: string;
   project_id: string;
   build_id: string;
   status: DeploymentStatus;
-  mode: "drain" | "force";
+  mode: DeploymentMode;
   bullmq_job_id: string | null;
   error: string | null;
   created_at: string;
@@ -94,6 +99,20 @@ export interface CreateDeploymentInput {
   mode?: "drain" | "force";
   trace_id?: string;
 }
+
+export interface ProjectSettingsResponse {
+  project_id: string;
+  settings: {
+    warm_pool_enabled: boolean;
+    idle_scale_down_seconds: number;
+  };
+  defaults?: {
+    warm_pool_enabled: boolean;
+    idle_scale_down_seconds: number;
+  };
+}
+
+export type ProjectSettingKey = "warm_pool_enabled" | "idle_scale_down_seconds";
 
 export class VoicethereApi {
   constructor(
@@ -166,6 +185,13 @@ export class VoicethereApi {
     return this.request<DeploymentJob>("POST", "/deployments", {
       json: input,
     });
+  }
+
+  async undeployProject(projectId: string): Promise<DeploymentJob> {
+    return this.request<DeploymentJob>(
+      "POST",
+      `/projects/${projectId}/undeploy`,
+    );
   }
 
   async getDeployment(jobId: string): Promise<DeploymentJob> {
@@ -266,6 +292,27 @@ export class VoicethereApi {
     await this.request<Record<string, never>>(
       "DELETE",
       `/projects/${projectId}/secrets/${encodeURIComponent(name)}`,
+    );
+  }
+
+  async listProjectSettings(
+    projectId: string,
+  ): Promise<ProjectSettingsResponse> {
+    return this.request<ProjectSettingsResponse>(
+      "GET",
+      `/projects/${projectId}/settings`,
+    );
+  }
+
+  async setProjectSetting(
+    projectId: string,
+    key: ProjectSettingKey,
+    value: boolean | number,
+  ): Promise<ProjectSettingsResponse> {
+    return this.request<ProjectSettingsResponse>(
+      "PATCH",
+      `/projects/${projectId}/settings`,
+      { json: { key, value } },
     );
   }
 
