@@ -6,6 +6,31 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-15
+
+### Added
+
+- `voicethere deploy --wait` — poll platform deploy job until cluster rollout completes or fails
+- `voicethere undeploy --wait` — remove runner pools for a project and optionally wait for completion
+- `voicethere projects environment` — list, view, upsert, delete agent env vars for a project
+- `voicethere projects secrets` — list, create, delete encrypted project secrets
+- `voicethere projects settings list|set` — read/update runner pool settings (`warm_pool_enabled`, idle timeout, etc.)
+- `voicethere api-keys list|create|revoke` — manage admin and client API keys from the CLI
+
+### Changed
+
+- Dev dependency `@voicethere/agent` ^0.1.7 (echo + echo-dc templates for local verify)
+
+## [0.2.2] - 2026-06-14
+
+### Added
+
+- `voicethere projects delete --force` — remove a project from the control plane
+
+### Changed
+
+- Verbose path logging on stderr for debugging linked project/bundle resolution
+
 ## [0.2.0] - 2026-06-12
 
 ### Changed
