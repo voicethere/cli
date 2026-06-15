@@ -95,6 +95,20 @@ export interface CreateDeploymentInput {
   trace_id?: string;
 }
 
+export interface ProjectSettingsResponse {
+  project_id: string;
+  settings: {
+    warm_pool_enabled: boolean;
+    idle_scale_down_seconds: number;
+  };
+  defaults?: {
+    warm_pool_enabled: boolean;
+    idle_scale_down_seconds: number;
+  };
+}
+
+export type ProjectSettingKey = "warm_pool_enabled" | "idle_scale_down_seconds";
+
 export class VoicethereApi {
   constructor(
     private readonly apiKey: string,
@@ -266,6 +280,27 @@ export class VoicethereApi {
     await this.request<Record<string, never>>(
       "DELETE",
       `/projects/${projectId}/secrets/${encodeURIComponent(name)}`,
+    );
+  }
+
+  async listProjectSettings(
+    projectId: string,
+  ): Promise<ProjectSettingsResponse> {
+    return this.request<ProjectSettingsResponse>(
+      "GET",
+      `/projects/${projectId}/settings`,
+    );
+  }
+
+  async setProjectSetting(
+    projectId: string,
+    key: ProjectSettingKey,
+    value: boolean | number,
+  ): Promise<ProjectSettingsResponse> {
+    return this.request<ProjectSettingsResponse>(
+      "PATCH",
+      `/projects/${projectId}/settings`,
+      { json: { key, value } },
     );
   }
 

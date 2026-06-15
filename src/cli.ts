@@ -11,6 +11,8 @@ import { runProjectsEnvironmentView } from "./commands/projects/environment/view
 import { runProjectsSecretsCreate } from "./commands/projects/secrets/create.js";
 import { runProjectsSecretsDelete } from "./commands/projects/secrets/delete.js";
 import { runProjectsSecretsList } from "./commands/projects/secrets/list.js";
+import { runProjectsSettingsList } from "./commands/projects/settings/list.js";
+import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
@@ -241,6 +243,37 @@ async function main(): Promise<void> {
     .action(async (name: string, options: { project?: string }) => {
       await runProjectsSecretsDelete({ name, projectId: options.project });
     });
+
+  const settings = projects
+    .command("settings")
+    .description("Runner pool settings (warm pool, idle scale-down)");
+
+  settings
+    .command("list")
+    .description("List runner settings for the active project")
+    .option("--project <id>", "Project UUID")
+    .action(async (options: { project?: string }) => {
+      await runProjectsSettingsList({ projectId: options.project });
+    });
+
+  settings
+    .command("set")
+    .description("Set a runner setting")
+    .argument(
+      "<name>",
+      "Setting name (warm_pool_enabled, idle_scale_down_seconds)",
+    )
+    .argument("<value>", "Setting value")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (name: string, value: string, options: { project?: string }) => {
+        await runProjectsSettingsSet({
+          name,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
 
   const build = program.command("build").description("Agent bundle operations");
 
