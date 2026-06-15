@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
+import { runApiKeysCreate } from "./commands/api-keys/create.js";
+import { runApiKeysList } from "./commands/api-keys/list.js";
+import { runApiKeysRevoke } from "./commands/api-keys/revoke.js";
 import { runLogin } from "./commands/login.js";
 import { runProjectsCreate } from "./commands/projects/create.js";
 import { runProjectsDelete } from "./commands/projects/delete.js";
@@ -326,6 +329,51 @@ async function main(): Promise<void> {
     )
     .action(async (buildId?: string) => {
       await runBuildPromote({ buildId });
+    });
+
+  const apiKeys = program
+    .command("api-keys")
+    .description("Manage organization API keys");
+
+  apiKeys
+    .command("list")
+    .description("List API keys (prefix and permissions only)")
+    .action(async () => {
+      await runApiKeysList();
+    });
+
+  apiKeys
+    .command("create")
+    .description("Create an API key (plaintext shown once)")
+    .requiredOption("--name <name>", "Display name for the key")
+    .option("--kind <kind>", "admin or client", "admin")
+    .option("--project-id <id>", "Project UUID (required for client keys)")
+    .option("--expires-in-days <days>", "Lifetime in days (max 180)", (value) =>
+      Number.parseInt(value, 10),
+    )
+    .action(
+      async (options: {
+        name: string;
+        kind?: string;
+        projectId?: string;
+        expiresInDays?: number;
+      }) => {
+        const kind = options.kind === "client" ? "client" : "admin";
+        await runApiKeysCreate({
+          name: options.name,
+          kind,
+          projectId: options.projectId,
+          expiresInDays: options.expiresInDays,
+        });
+      },
+    );
+
+  apiKeys
+    .command("revoke")
+    .description("Revoke an API key by id")
+    .argument("<id>", "API key UUID")
+    .action(async (id: string) => {
+      await runApiKeysRevoke({ id });
     });
 
   program

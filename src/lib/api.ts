@@ -112,6 +112,36 @@ export interface ProjectSettingsResponse {
   };
 }
 
+export type ApiKeyKind = "admin" | "client";
+
+export interface ApiKeyEntry {
+  id: string;
+  name: string;
+  kind: ApiKeyKind;
+  key_prefix: string;
+  project_id: string | null;
+  project_name: string | null;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  last_used_at: string | null;
+}
+
+export interface ApiKeyListResponse {
+  api_keys: ApiKeyEntry[];
+}
+
+export interface CreateApiKeyInput {
+  name: string;
+  kind?: ApiKeyKind;
+  project_id?: string;
+  expires_in_days?: number;
+}
+
+export interface CreateApiKeyResponse extends ApiKeyEntry {
+  api_key: string;
+}
+
 export type ProjectSettingKey = "warm_pool_enabled" | "idle_scale_down_seconds";
 
 export class VoicethereApi {
@@ -314,6 +344,20 @@ export class VoicethereApi {
       `/projects/${projectId}/settings`,
       { json: { key, value } },
     );
+  }
+
+  async listApiKeys(): Promise<ApiKeyListResponse> {
+    return this.request<ApiKeyListResponse>("GET", "/api-keys");
+  }
+
+  async createApiKey(input: CreateApiKeyInput): Promise<CreateApiKeyResponse> {
+    return this.request<CreateApiKeyResponse>("POST", "/api-keys", {
+      json: input,
+    });
+  }
+
+  async revokeApiKey(id: string): Promise<ApiKeyEntry> {
+    return this.request<ApiKeyEntry>("DELETE", `/api-keys/${id}`);
   }
 
   private async request<T>(
