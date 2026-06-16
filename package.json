@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "@voicethere/agent": "^0.1.7",
+    "@voicethere/agent": "^0.1.8",
     "typescript": "^5.7.0",
     "vitest": "^2.1.8"
   }
