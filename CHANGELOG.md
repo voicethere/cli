@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-16
+
+### Changed
+
+- Dev dependency `@voicethere/agent` **^0.1.9** (CJS `default`/`require` export conditions for `./verify` — aligns with platform workers and local verify under tsx)
+
 ## [0.3.0] - 2026-06-15
 
 ### Added
