@@ -6,6 +6,8 @@ import { requireProjectId } from "../../../lib/project-config.js";
 export const PROJECT_SETTING_KEYS = [
   "warm_pool_enabled",
   "idle_scale_down_seconds",
+  "data_only",
+  "shared_agent_child",
 ] as const;
 
 export type ProjectSettingKey = (typeof PROJECT_SETTING_KEYS)[number];
