@@ -234,6 +234,8 @@ voicethere sessions list <projectId> --start 0 --end 50
 voicethere sessions list --start 0 --end 50
 ```
 
+The API returns `{ sessions, start, end, count }` (max 50 rows per page). The CLI prints a `Showing X–Y of Z sessions` footer.
+
 After a call ends (runner keep-alive billing), fetch billable duration:
 
 ```bash

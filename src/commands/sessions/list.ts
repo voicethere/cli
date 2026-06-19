@@ -19,15 +19,17 @@ export async function runSessionsList(
   logStep(`Listing sessions for project ${projectId}`);
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
-  const sessions = await api.listProjectSessions(projectId, { start, end });
-  logVerbose(`found ${sessions.length} session(s)`);
+  const page = await api.listProjectSessions(projectId, { start, end });
+  logVerbose(
+    `page ${page.start}-${page.end} of ${page.count} (${page.sessions.length} row(s))`,
+  );
 
-  if (sessions.length === 0) {
-    console.log("No sessions found.");
+  if (page.sessions.length === 0) {
+    console.log(`No sessions found (${page.count} total).`);
     return;
   }
 
-  for (const session of sessions) {
+  for (const session of page.sessions) {
     const billable =
       session.billable_seconds != null ? String(session.billable_seconds) : "-";
     console.log(
@@ -42,4 +44,8 @@ export async function runSessionsList(
         .join("\t"),
     );
   }
+
+  console.log(
+    `\nShowing ${page.start + 1}-${page.end} of ${page.count} sessions`,
+  );
 }

@@ -275,13 +275,11 @@ describe("VoicethereApi", () => {
   });
 
   it("gets a single environment variable with encoded key", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(JSON.stringify({ key: "MY/KEY", value: "secret-ish" }), {
-          status: 200,
-        }),
-      );
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ key: "MY/KEY", value: "secret-ish" }), {
+        status: 200,
+      }),
+    );
 
     const api = new VoicethereApi(apiKey, apiBase);
     const entry = await api.getProjectEnvironmentVariable("proj-1", "MY/KEY");
@@ -292,13 +290,11 @@ describe("VoicethereApi", () => {
   });
 
   it("upserts an environment variable", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(JSON.stringify({ key: "REGION", value: "us-east" }), {
-          status: 200,
-        }),
-      );
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ key: "REGION", value: "us-east" }), {
+        status: 200,
+      }),
+    );
 
     const api = new VoicethereApi(apiKey, apiBase);
     const entry = await api.upsertProjectEnvironmentVariable(
@@ -428,18 +424,24 @@ describe("VoicethereApi", () => {
               expires_at: null,
             },
           ],
+          start: 0,
+          end: 1,
+          count: 10,
         }),
         { status: 200 },
       ),
     );
 
     const api = new VoicethereApi(apiKey, apiBase);
-    const sessions = await api.listProjectSessions("proj-1", {
+    const page = await api.listProjectSessions("proj-1", {
       start: 0,
       end: 25,
     });
 
-    expect(sessions).toHaveLength(1);
+    expect(page.sessions).toHaveLength(1);
+    expect(page.start).toBe(0);
+    expect(page.end).toBe(1);
+    expect(page.count).toBe(10);
     const [url] = fetchMock.mock.calls[0] as [URL];
     expect(url.search).toBe("?start=0&end=25");
   });

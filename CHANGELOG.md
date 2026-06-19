@@ -6,6 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-19
+
+### Added
+
+- `voicethere sessions list` — paginated voice session list for a project
+- `voicethere sessions billing` — billable seconds and status for one orchestrator session id
+
+### Changed
+
+- Sessions list API returns `{ sessions, start, end, count }` with a 50-row page cap; CLI prints a page footer
+
 ## [0.3.1] - 2026-06-16
 
 ### Changed

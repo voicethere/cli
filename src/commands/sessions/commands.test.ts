@@ -39,19 +39,24 @@ describe("sessions commands", () => {
 
   describe("runSessionsList", () => {
     it("lists sessions with pagination args", async () => {
-      listProjectSessions.mockResolvedValue([
-        {
-          id: "db-1",
-          orchestrator_session_id: "orch-1",
-          status: "ended",
-          build_id: null,
-          created_at: "2026-06-19T00:00:00.000Z",
-          ended_at: "2026-06-19T00:01:00.000Z",
-          end_reason: "client_disconnected",
-          billable_seconds: 42,
-          expires_at: null,
-        },
-      ]);
+      listProjectSessions.mockResolvedValue({
+        sessions: [
+          {
+            id: "db-1",
+            orchestrator_session_id: "orch-1",
+            status: "ended",
+            build_id: null,
+            created_at: "2026-06-19T00:00:00.000Z",
+            ended_at: "2026-06-19T00:01:00.000Z",
+            end_reason: "client_disconnected",
+            billable_seconds: 42,
+            expires_at: null,
+          },
+        ],
+        start: 0,
+        end: 1,
+        count: 3,
+      });
 
       await runSessionsList({ start: 0, end: 10 });
 
@@ -62,6 +67,7 @@ describe("sessions commands", () => {
       expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining("orch-1\tended\tbillable=42"),
       );
+      expect(console.log).toHaveBeenCalledWith("\nShowing 1-1 of 3 sessions");
     });
   });
 

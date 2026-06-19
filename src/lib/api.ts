@@ -168,6 +168,9 @@ export interface ProjectSessionEntry {
 
 export interface ProjectSessionListResponse {
   sessions: ProjectSessionEntry[];
+  start: number;
+  end: number;
+  count: number;
 }
 
 export class VoicethereApi {
@@ -389,7 +392,7 @@ export class VoicethereApi {
   async listProjectSessions(
     projectId: string,
     options?: { start?: number; end?: number },
-  ): Promise<ProjectSessionEntry[]> {
+  ): Promise<ProjectSessionListResponse> {
     const params = new URLSearchParams();
     if (options?.start != null) {
       params.set("start", String(options.start));
@@ -399,11 +402,7 @@ export class VoicethereApi {
     }
     const query = params.toString();
     const path = `/projects/${projectId}/sessions${query ? `?${query}` : ""}`;
-    const response = await this.request<ProjectSessionListResponse>(
-      "GET",
-      path,
-    );
-    return response.sessions;
+    return this.request<ProjectSessionListResponse>("GET", path);
   }
 
   async getProjectSession(
