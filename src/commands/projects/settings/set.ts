@@ -8,7 +8,8 @@ function parseSettingValue(
   key: ProjectSettingKey,
   raw: string,
 ): boolean | number {
-  if (key === "warm_pool_enabled") {
+  const def = key === "idle_scale_down_seconds" ? "number" : "boolean";
+  if (def === "boolean") {
     const normalized = raw.trim().toLowerCase();
     if (normalized === "true" || normalized === "1" || normalized === "yes") {
       return true;

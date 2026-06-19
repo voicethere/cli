@@ -224,6 +224,25 @@ voicethere -v build upload
 
 Global `-v` works on any subcommand: `voicethere -v projects list`.
 
+## Sessions and billing
+
+List recent voice sessions (orchestrator session id, status, billable seconds):
+
+```bash
+voicethere sessions list <projectId> --start 0 --end 50
+# or with .voicethere/config.json:
+voicethere sessions list --start 0 --end 50
+```
+
+After a call ends (runner keep-alive billing), fetch billable duration:
+
+```bash
+voicethere sessions billing <orchestratorSessionId> --project <projectId>
+voicethere sessions billing <orchestratorSessionId> --json
+```
+
+These commands call the platform control-plane API (`GET /api/v1/projects/:id/sessions`).
+
 ## Development
 
 ```bash

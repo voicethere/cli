@@ -25,6 +25,8 @@ import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
 import { runDeploy } from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
+import { runSessionsBilling } from "./commands/sessions/billing.js";
+import { runSessionsList } from "./commands/sessions/list.js";
 import { configureLogging } from "./lib/command-log.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
 
@@ -375,6 +377,65 @@ async function main(): Promise<void> {
     .action(async (id: string) => {
       await runApiKeysRevoke({ id });
     });
+
+  const sessions = program
+    .command("sessions")
+    .description("Explore voice sessions and billing");
+
+  sessions
+    .command("list")
+    .description("List sessions for a project (newest first)")
+    .argument("[projectId]", "Project UUID (default: .voicethere/config.json)")
+    .option("--project <id>", "Project UUID (alias for positional projectId)")
+    .option(
+      "--start <n>",
+      "Start index for pagination (default 0)",
+      (value) => Number.parseInt(value, 10),
+      0,
+    )
+    .option(
+      "--end <n>",
+      "Exclusive end index (default: start + 50 when omitted)",
+      (value) => Number.parseInt(value, 10),
+    )
+    .action(
+      async (
+        projectIdArg: string | undefined,
+        options: {
+          project?: string;
+          start: number;
+          end?: number;
+        },
+      ) => {
+        await runSessionsList({
+          projectId: options.project ?? projectIdArg,
+          start: options.start,
+          end: options.end,
+        });
+      },
+    );
+
+  sessions
+    .command("billing")
+    .description("Show billing for one session (orchestrator session id)")
+    .argument(
+      "<sessionId>",
+      "Orchestrator session id from list or startSession",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--json", "Print JSON")
+    .action(
+      async (
+        sessionId: string,
+        options: { project?: string; json?: boolean },
+      ) => {
+        await runSessionsBilling({
+          sessionId,
+          projectId: options.project,
+          json: options.json,
+        });
+      },
+    );
 
   program
     .command("deploy")
