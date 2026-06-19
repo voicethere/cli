@@ -105,10 +105,14 @@ export interface ProjectSettingsResponse {
   settings: {
     warm_pool_enabled: boolean;
     idle_scale_down_seconds: number;
+    data_only?: boolean;
+    shared_agent_child?: boolean;
   };
   defaults?: {
     warm_pool_enabled: boolean;
     idle_scale_down_seconds: number;
+    data_only?: boolean;
+    shared_agent_child?: boolean;
   };
 }
 
@@ -142,7 +146,29 @@ export interface CreateApiKeyResponse extends ApiKeyEntry {
   api_key: string;
 }
 
-export type ProjectSettingKey = "warm_pool_enabled" | "idle_scale_down_seconds";
+export type ProjectSettingKey =
+  | "warm_pool_enabled"
+  | "idle_scale_down_seconds"
+  | "data_only"
+  | "shared_agent_child";
+
+export type ProjectSessionStatus = "active" | "ended" | "failed";
+
+export interface ProjectSessionEntry {
+  id: string;
+  orchestrator_session_id: string;
+  status: ProjectSessionStatus;
+  build_id: string | null;
+  created_at: string;
+  ended_at: string | null;
+  end_reason: string | null;
+  billable_seconds: number | null;
+  expires_at: string | null;
+}
+
+export interface ProjectSessionListResponse {
+  sessions: ProjectSessionEntry[];
+}
 
 export class VoicethereApi {
   constructor(
@@ -358,6 +384,36 @@ export class VoicethereApi {
 
   async revokeApiKey(id: string): Promise<ApiKeyEntry> {
     return this.request<ApiKeyEntry>("DELETE", `/api-keys/${id}`);
+  }
+
+  async listProjectSessions(
+    projectId: string,
+    options?: { start?: number; end?: number },
+  ): Promise<ProjectSessionEntry[]> {
+    const params = new URLSearchParams();
+    if (options?.start != null) {
+      params.set("start", String(options.start));
+    }
+    if (options?.end != null) {
+      params.set("end", String(options.end));
+    }
+    const query = params.toString();
+    const path = `/projects/${projectId}/sessions${query ? `?${query}` : ""}`;
+    const response = await this.request<ProjectSessionListResponse>(
+      "GET",
+      path,
+    );
+    return response.sessions;
+  }
+
+  async getProjectSession(
+    projectId: string,
+    orchestratorSessionId: string,
+  ): Promise<ProjectSessionEntry> {
+    return this.request<ProjectSessionEntry>(
+      "GET",
+      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}`,
+    );
   }
 
   private async request<T>(
