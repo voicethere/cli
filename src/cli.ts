@@ -16,6 +16,9 @@ import { runProjectsSecretsDelete } from "./commands/projects/secrets/delete.js"
 import { runProjectsSecretsList } from "./commands/projects/secrets/list.js";
 import { runProjectsSettingsList } from "./commands/projects/settings/list.js";
 import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
+import { runProjectsVoiceCatalog } from "./commands/projects/voice/catalog.js";
+import { runProjectsVoiceShow } from "./commands/projects/voice/show.js";
+import { runProjectsVoiceSet, type ProjectsVoiceSetOptions } from "./commands/projects/voice/set.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
@@ -280,6 +283,41 @@ async function main(): Promise<void> {
         });
       },
     );
+
+  const voice = projects
+    .command("voice")
+    .description("STT/TTS vendor and model settings for voice sessions");
+
+  voice
+    .command("catalog")
+    .description("List available STT/TTS providers and Sherpa models")
+    .action(async () => {
+      await runProjectsVoiceCatalog();
+    });
+
+  voice
+    .command("show")
+    .description("Show voice settings for the active project")
+    .option("--project <id>", "Project UUID")
+    .action(async (options: { project?: string }) => {
+      await runProjectsVoiceShow({ projectId: options.project });
+    });
+
+  voice
+    .command("set")
+    .description("Update voice settings (requires redeploy to apply)")
+    .option("--project <id>", "Project UUID")
+    .option("--stt-provider <id>", "STT provider id")
+    .option("--tts-provider <id>", "TTS provider id")
+    .option("--stt-model-id <id>", "Sherpa STT catalog id (when STT is local-sherpa)")
+    .option("--tts-model-id <id>", "Sherpa TTS catalog id (when TTS is local-sherpa)")
+    .option("--stt-model <name>", "Cloud STT model name")
+    .option("--stt-language <code>", "Cloud STT language code")
+    .option("--tts-model <name>", "Cloud TTS model name")
+    .option("--tts-voice <id>", "Cloud TTS voice id")
+    .action(async (options: ProjectsVoiceSetOptions) => {
+      await runProjectsVoiceSet(options);
+    });
 
   const build = program.command("build").description("Agent bundle operations");
 

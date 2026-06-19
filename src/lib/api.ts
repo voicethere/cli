@@ -116,6 +116,71 @@ export interface ProjectSettingsResponse {
   };
 }
 
+export type VoiceProviderId =
+  | "local-sherpa"
+  | "openai"
+  | "deepgram"
+  | "assemblyai"
+  | "google"
+  | "elevenlabs"
+  | "cartesia";
+
+export interface ProjectVoiceSettings {
+  stt_provider: VoiceProviderId;
+  tts_provider: VoiceProviderId;
+  stt_model_id: string;
+  tts_model_id: string;
+  stt_model?: string;
+  stt_language?: string;
+  tts_model?: string;
+  tts_voice?: string;
+}
+
+export interface VoiceCatalogResponse {
+  default_stt_model_id: string;
+  default_tts_model_id: string;
+  default_stt_provider: VoiceProviderId;
+  default_tts_provider: VoiceProviderId;
+  stt_models: Array<{ id: string; label: string; language: string }>;
+  tts_models: Array<{ id: string; label: string; language: string }>;
+  stt_providers: Array<{
+    id: VoiceProviderId;
+    label: string;
+    notes: string;
+    required_credentials: Array<{
+      runner_key: string;
+      agent_secret_key: string;
+      label: string;
+      description: string;
+    }>;
+    optional_env: Array<{
+      runner_key: string;
+      agent_env_key: string;
+      label: string;
+      description: string;
+      placeholder?: string;
+    }>;
+  }>;
+  tts_providers: Array<{
+    id: VoiceProviderId;
+    label: string;
+    notes: string;
+    required_credentials: Array<{
+      runner_key: string;
+      agent_secret_key: string;
+      label: string;
+      description: string;
+    }>;
+    optional_env: Array<{
+      runner_key: string;
+      agent_env_key: string;
+      label: string;
+      description: string;
+      placeholder?: string;
+    }>;
+  }>;
+}
+
 export type ApiKeyKind = "admin" | "client";
 
 export interface ApiKeyEntry {
@@ -372,6 +437,35 @@ export class VoicethereApi {
       "PATCH",
       `/projects/${projectId}/settings`,
       { json: { key, value } },
+    );
+  }
+
+  async listVoiceModels(): Promise<VoiceCatalogResponse> {
+    return this.request<VoiceCatalogResponse>("GET", "/voice/models");
+  }
+
+  async getProjectVoiceSettings(
+    projectId: string,
+  ): Promise<ProjectVoiceSettings> {
+    return this.request<ProjectVoiceSettings>(
+      "GET",
+      `/projects/${projectId}/voice-settings`,
+    );
+  }
+
+  async updateProjectVoiceSettings(
+    projectId: string,
+    input: Partial<ProjectVoiceSettings> & {
+      stt_provider: VoiceProviderId;
+      tts_provider: VoiceProviderId;
+      stt_model_id: string;
+      tts_model_id: string;
+    },
+  ): Promise<ProjectVoiceSettings> {
+    return this.request<ProjectVoiceSettings>(
+      "PATCH",
+      `/projects/${projectId}/voice-settings`,
+      { json: input },
     );
   }
 

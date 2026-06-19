@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-06-19
+
+### Added
+
+- `voicethere projects voice catalog` — list STT/TTS providers, Sherpa models, and required credential keys
+- `voicethere projects voice show` — read project voice settings (vendors, models)
+- `voicethere projects voice set` — update STT/TTS vendors and models (apply on next `deploy --wait`)
+
 ## [0.3.2] - 2026-06-19
 
 ### Added
