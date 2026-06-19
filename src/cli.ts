@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { createRequire } from "node:module";
 import { Command } from "commander";
 import { runApiKeysCreate } from "./commands/api-keys/create.js";
 import { runApiKeysList } from "./commands/api-keys/list.js";
@@ -18,6 +19,10 @@ import { runProjectsSettingsList } from "./commands/projects/settings/list.js";
 import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
 import { runProjectsSessionSettingsList } from "./commands/projects/session-settings/list.js";
 import { runProjectsSessionSettingsSet } from "./commands/projects/session-settings/set.js";
+import {
+  formatSessionSettingsGroupHelp,
+  sessionSettingNamesHelp,
+} from "./commands/projects/session-settings/defs.js";
 import { runProjectsVoiceCatalog } from "./commands/projects/voice/catalog.js";
 import { runProjectsVoiceShow } from "./commands/projects/voice/show.js";
 import {
@@ -38,6 +43,11 @@ import { runSessionsList } from "./commands/sessions/list.js";
 import { configureLogging } from "./lib/command-log.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
 
+const require = createRequire(import.meta.url);
+const { version: CLI_VERSION } = require("../package.json") as {
+  version: string;
+};
+
 async function main(): Promise<void> {
   configureLogging();
 
@@ -46,7 +56,7 @@ async function main(): Promise<void> {
   program
     .name("voicethere")
     .description("VoiceThere cloud CLI")
-    .version("0.2.2")
+    .version(CLI_VERSION)
     .option("-v, --verbose", "Detailed logs on stderr (API calls, timings)")
     .hook("preAction", (_thisCommand, actionCommand) => {
       configureLogging({ verbose: actionCommand.optsWithGlobals().verbose });
@@ -291,22 +301,29 @@ async function main(): Promise<void> {
 
   const sessionSettings = projects
     .command("session-settings")
-    .description("WebRTC session idle timeout and error message settings");
+    .description(
+      "WebRTC idle timeout and crash error message (apply on next deploy)",
+    )
+    .addHelpText("after", formatSessionSettingsGroupHelp());
 
   sessionSettings
     .command("list")
-    .description("List session settings for the active project")
-    .option("--project <id>", "Project UUID")
+    .description("List session settings for the active project (key=value lines)")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .addHelpText(
+      "after",
+      "\nOutput: one line per configured key, e.g. idle_timeout_seconds=600\n",
+    )
     .action(async (options: { project?: string }) => {
       await runProjectsSessionSettingsList({ projectId: options.project });
     });
 
   sessionSettings
     .command("set")
-    .description("Set a session setting")
-    .argument("<name>", "Setting name (idle_timeout_seconds, …)")
-    .argument("<value>", "Setting value")
-    .option("--project <id>", "Project UUID")
+    .description("Set one session setting; prints updated settings as JSON")
+    .argument("<name>", `Setting name: ${sessionSettingNamesHelp()}`)
+    .argument("<value>", "Boolean, number, or string (see session-settings --help)")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .action(
       async (name: string, value: string, options: { project?: string }) => {
         await runProjectsSessionSettingsSet({

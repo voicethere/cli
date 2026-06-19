@@ -190,6 +190,9 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects use [projectId]`                     | Use project (picker or existing config when omitted)     |
 | `projects show`                                | Print `.voicethere/config.json`                          |
 | `projects delete [projectId] [--force]`        | Delete project + builds (type name to confirm, or `--force`) |
+| `projects settings list|set`                     | Runner pool settings (warm pool, scale-down)             |
+| `projects session-settings list|set`             | WebRTC idle timeout + crash error message (see below)    |
+| `projects voice catalog|show|set`                | STT/TTS vendors and models                               |
 | `build list`                                   | Builds for the active project                            |
 | `build validate [file]`                        | Sandbox verify (default bundle from config)              |
 | `build upload [file] [-m <msg>]`               | Upload to active project                                 |
@@ -223,6 +226,29 @@ voicethere -v build upload
 ```
 
 Global `-v` works on any subcommand: `voicethere -v projects list`.
+
+## Session settings (idle timeout)
+
+Per-project WebRTC idle timeout and crash TTS message. Changes apply on the next **`voicethere deploy --wait`** (runner env).
+
+```bash
+voicethere projects session-settings --help   # all keys, defaults, ranges
+voicethere projects session-settings list
+voicethere projects session-settings set idle_timeout_seconds 300
+voicethere projects session-settings set data_only_idle_timeout_seconds 90
+voicethere projects session-settings set error_message "Sorry, something went wrong."
+```
+
+| Key | Type | Default | Notes |
+| --- | ---- | ------- | ----- |
+| `idle_timeout_enabled` | bool | `true` | `false` keeps sessions billable longer |
+| `idle_timeout_seconds` | 30–86400 | `600` | Voice / both projects |
+| `data_only_idle_timeout_seconds` | 30–86400 | `120` | Data-only: no client→server DC traffic |
+| `idle_timeout_voice_activity` | bool | `true` | Reset on speech / agent TTS (voice / both) |
+| `idle_timeout_dc_inbound` | bool | `true` | Reset on client data-channel sends |
+| `error_message` | string | *(none)* | Crash TTS in voice mode |
+
+Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
 
 ## Sessions and billing
 

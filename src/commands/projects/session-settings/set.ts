@@ -2,18 +2,23 @@ import { createApi } from "../../../lib/api.js";
 import { logStep } from "../../../lib/command-log.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
-import { SESSION_SETTING_KEYS, type SessionSettingKey } from "./list.js";
+import {
+  SESSION_SETTING_DEFS,
+  SESSION_SETTING_KEYS,
+  type SessionSettingKey,
+} from "./defs.js";
 
 function parseValue(
   key: SessionSettingKey,
   raw: string,
 ): boolean | number | string {
-  if (key === "error_message") return raw;
-  if (
-    key === "idle_timeout_enabled" ||
-    key === "idle_timeout_voice_activity" ||
-    key === "idle_timeout_dc_inbound"
-  ) {
+  const def = SESSION_SETTING_DEFS[key];
+
+  if (def.type === "string") {
+    return raw.trim().slice(0, 500);
+  }
+
+  if (def.type === "boolean") {
     const normalized = raw.trim().toLowerCase();
     if (normalized === "true" || normalized === "1" || normalized === "yes") {
       return true;
@@ -23,9 +28,15 @@ function parseValue(
     }
     throw new Error(`Invalid boolean for ${key}: use true or false`);
   }
+
   const n = Number(raw);
   if (!Number.isFinite(n)) {
     throw new Error(`Invalid number for ${key}`);
+  }
+  const min = def.min ?? 0;
+  const max = def.max ?? Number.MAX_SAFE_INTEGER;
+  if (n < min || n > max) {
+    throw new Error(`${key} must be between ${min} and ${max}`);
   }
   return Math.floor(n);
 }

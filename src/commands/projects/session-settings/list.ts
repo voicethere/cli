@@ -2,17 +2,9 @@ import { createApi } from "../../../lib/api.js";
 import { logStep, logVerbose } from "../../../lib/command-log.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
+import { SESSION_SETTING_KEYS, type SessionSettingKey } from "./defs.js";
 
-export const SESSION_SETTING_KEYS = [
-  "error_message",
-  "idle_timeout_enabled",
-  "idle_timeout_seconds",
-  "data_only_idle_timeout_seconds",
-  "idle_timeout_voice_activity",
-  "idle_timeout_dc_inbound",
-] as const;
-
-export type SessionSettingKey = (typeof SESSION_SETTING_KEYS)[number];
+export { SESSION_SETTING_KEYS, type SessionSettingKey };
 
 export interface ProjectsSessionSettingsListOptions {
   projectId?: string;

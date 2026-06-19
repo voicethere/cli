@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-06-19
+
+### Added
+
+- `voicethere projects session-settings list` — read WebRTC idle timeout and crash error message settings
+- `voicethere projects session-settings set` — update one setting (apply on next `deploy --wait`)
+- `--help` on `session-settings` documents every key, default, range, and billing notes
+
+### Changed
+
+- CLI `--version` reads from `package.json` (was stuck at 0.2.2 in help output)
+
 ## [0.3.3] - 2026-06-19
 
 ### Added
