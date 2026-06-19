@@ -116,6 +116,21 @@ export interface ProjectSettingsResponse {
   };
 }
 
+export interface ProjectSessionSettingsResponse {
+  project_id: string;
+  settings: {
+    error_message?: string;
+    idle_timeout_enabled?: boolean;
+    idle_timeout_seconds?: number;
+    data_only_idle_timeout_seconds?: number;
+    idle_timeout_voice_activity?: boolean;
+    idle_timeout_dc_inbound?: boolean;
+  };
+}
+
+export type ProjectSessionSettingKey =
+  keyof ProjectSessionSettingsResponse["settings"];
+
 export type VoiceProviderId =
   | "local-sherpa"
   | "openai"
@@ -436,6 +451,27 @@ export class VoicethereApi {
     return this.request<ProjectSettingsResponse>(
       "PATCH",
       `/projects/${projectId}/settings`,
+      { json: { key, value } },
+    );
+  }
+
+  async listProjectSessionSettings(
+    projectId: string,
+  ): Promise<ProjectSessionSettingsResponse> {
+    return this.request<ProjectSessionSettingsResponse>(
+      "GET",
+      `/projects/${projectId}/session-settings`,
+    );
+  }
+
+  async setProjectSessionSetting(
+    projectId: string,
+    key: ProjectSessionSettingKey,
+    value: boolean | number | string,
+  ): Promise<ProjectSessionSettingsResponse> {
+    return this.request<ProjectSessionSettingsResponse>(
+      "PATCH",
+      `/projects/${projectId}/session-settings`,
       { json: { key, value } },
     );
   }

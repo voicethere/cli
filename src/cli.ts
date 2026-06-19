@@ -16,9 +16,14 @@ import { runProjectsSecretsDelete } from "./commands/projects/secrets/delete.js"
 import { runProjectsSecretsList } from "./commands/projects/secrets/list.js";
 import { runProjectsSettingsList } from "./commands/projects/settings/list.js";
 import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
+import { runProjectsSessionSettingsList } from "./commands/projects/session-settings/list.js";
+import { runProjectsSessionSettingsSet } from "./commands/projects/session-settings/set.js";
 import { runProjectsVoiceCatalog } from "./commands/projects/voice/catalog.js";
 import { runProjectsVoiceShow } from "./commands/projects/voice/show.js";
-import { runProjectsVoiceSet, type ProjectsVoiceSetOptions } from "./commands/projects/voice/set.js";
+import {
+  runProjectsVoiceSet,
+  type ProjectsVoiceSetOptions,
+} from "./commands/projects/voice/set.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
@@ -284,6 +289,34 @@ async function main(): Promise<void> {
       },
     );
 
+  const sessionSettings = projects
+    .command("session-settings")
+    .description("WebRTC session idle timeout and error message settings");
+
+  sessionSettings
+    .command("list")
+    .description("List session settings for the active project")
+    .option("--project <id>", "Project UUID")
+    .action(async (options: { project?: string }) => {
+      await runProjectsSessionSettingsList({ projectId: options.project });
+    });
+
+  sessionSettings
+    .command("set")
+    .description("Set a session setting")
+    .argument("<name>", "Setting name (idle_timeout_seconds, …)")
+    .argument("<value>", "Setting value")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (name: string, value: string, options: { project?: string }) => {
+        await runProjectsSessionSettingsSet({
+          name,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
+
   const voice = projects
     .command("voice")
     .description("STT/TTS vendor and model settings for voice sessions");
@@ -309,8 +342,14 @@ async function main(): Promise<void> {
     .option("--project <id>", "Project UUID")
     .option("--stt-provider <id>", "STT provider id")
     .option("--tts-provider <id>", "TTS provider id")
-    .option("--stt-model-id <id>", "Sherpa STT catalog id (when STT is local-sherpa)")
-    .option("--tts-model-id <id>", "Sherpa TTS catalog id (when TTS is local-sherpa)")
+    .option(
+      "--stt-model-id <id>",
+      "Sherpa STT catalog id (when STT is local-sherpa)",
+    )
+    .option(
+      "--tts-model-id <id>",
+      "Sherpa TTS catalog id (when TTS is local-sherpa)",
+    )
     .option("--stt-model <name>", "Cloud STT model name")
     .option("--stt-language <code>", "Cloud STT language code")
     .option("--tts-model <name>", "Cloud TTS model name")
