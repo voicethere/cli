@@ -253,6 +253,22 @@ export interface ProjectSessionListResponse {
   count: number;
 }
 
+export interface ProjectSessionErrorEntry {
+  id: string;
+  orchestrator_session_id: string;
+  source: "agent" | "runner" | "provisioning";
+  code: string;
+  message: string;
+  stack_trace: string | null;
+  created_at: string;
+}
+
+export interface ProjectSessionErrorsResponse {
+  project_id: string;
+  orchestrator_session_id?: string;
+  errors: ProjectSessionErrorEntry[];
+}
+
 export class VoicethereApi {
   constructor(
     private readonly apiKey: string,
@@ -542,6 +558,27 @@ export class VoicethereApi {
     return this.request<ProjectSessionEntry>(
       "GET",
       `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}`,
+    );
+  }
+
+  async listProjectSessionErrors(
+    projectId: string,
+    limit = 20,
+  ): Promise<ProjectSessionErrorsResponse> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    return this.request<ProjectSessionErrorsResponse>(
+      "GET",
+      `/projects/${projectId}/session-errors?${params.toString()}`,
+    );
+  }
+
+  async listSessionErrors(
+    projectId: string,
+    orchestratorSessionId: string,
+  ): Promise<ProjectSessionErrorsResponse> {
+    return this.request<ProjectSessionErrorsResponse>(
+      "GET",
+      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/errors`,
     );
   }
 

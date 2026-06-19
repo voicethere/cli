@@ -19,6 +19,7 @@ import { runProjectsSettingsList } from "./commands/projects/settings/list.js";
 import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
 import { runProjectsSessionSettingsList } from "./commands/projects/session-settings/list.js";
 import { runProjectsSessionSettingsSet } from "./commands/projects/session-settings/set.js";
+import { runProjectsErrorsList } from "./commands/projects/errors/list.js";
 import {
   formatSessionSettingsGroupHelp,
   sessionSettingNamesHelp,
@@ -330,6 +331,30 @@ async function main(): Promise<void> {
           name,
           value,
           projectId: options.project,
+        });
+      },
+    );
+
+  const errors = projects
+    .command("errors")
+    .description("List structured session errors for the active project");
+
+  errors
+    .command("list")
+    .description("List recent session errors (default: last 20 for project)")
+    .option("--project <id>", "Project UUID")
+    .option("--limit <n>", "Max rows when listing project errors", "20")
+    .option("--session <id>", "Filter to one orchestrator session id")
+    .action(
+      async (options: {
+        project?: string;
+        limit?: string;
+        session?: string;
+      }) => {
+        await runProjectsErrorsList({
+          projectId: options.project,
+          limit: options.limit ? Number.parseInt(options.limit, 10) : undefined,
+          sessionId: options.session,
         });
       },
     );
