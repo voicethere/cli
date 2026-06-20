@@ -465,7 +465,7 @@ export class VoicethereApi {
   async setProjectSetting(
     projectId: string,
     key: ProjectSettingKey,
-    value: boolean | number,
+    value: boolean | number | string,
   ): Promise<ProjectSettingsResponse> {
     return this.request<ProjectSettingsResponse>(
       "PATCH",

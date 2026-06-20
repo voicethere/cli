@@ -279,6 +279,8 @@ npm run test:ci
 node dist/cli.js --help
 ```
 
+**Contributing:** every new command, setting key, or API field needs Vitest coverage in the same PR (`src/**/*.test.ts`). See workspace rule `feature-tests-required.mdc` in the development repo.
+
 Credentials path override for tests:
 
 ```bash
