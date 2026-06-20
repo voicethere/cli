@@ -9,6 +9,7 @@ export const PROJECT_SETTING_KEYS = [
   "data_only",
   "shared_child_per_session",
   "agent_crash_policy",
+  "agent_child_ipc_debug",
 ] as const;
 
 export type ProjectSettingKey = (typeof PROJECT_SETTING_KEYS)[number];

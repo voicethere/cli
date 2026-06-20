@@ -108,6 +108,7 @@ export interface ProjectSettingsResponse {
     data_only?: boolean;
     shared_child_per_session?: boolean;
     agent_crash_policy?: "disconnect_all" | "restart_child";
+    agent_child_ipc_debug?: boolean;
   };
   defaults?: {
     warm_pool_enabled: boolean;
@@ -115,6 +116,7 @@ export interface ProjectSettingsResponse {
     data_only?: boolean;
     shared_child_per_session?: boolean;
     agent_crash_policy?: "disconnect_all" | "restart_child";
+    agent_child_ipc_debug?: boolean;
   };
 }
 
@@ -233,7 +235,8 @@ export type ProjectSettingKey =
   | "idle_scale_down_seconds"
   | "data_only"
   | "shared_child_per_session"
-  | "agent_crash_policy";
+  | "agent_crash_policy"
+  | "agent_child_ipc_debug";
 
 export type ProjectSessionStatus = "active" | "ended" | "failed";
 
