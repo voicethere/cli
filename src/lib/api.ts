@@ -106,13 +106,15 @@ export interface ProjectSettingsResponse {
     warm_pool_enabled: boolean;
     idle_scale_down_seconds: number;
     data_only?: boolean;
-    shared_agent_child?: boolean;
+    shared_child_per_session?: boolean;
+    agent_crash_policy?: "disconnect_all" | "restart_child";
   };
   defaults?: {
     warm_pool_enabled: boolean;
     idle_scale_down_seconds: number;
     data_only?: boolean;
-    shared_agent_child?: boolean;
+    shared_child_per_session?: boolean;
+    agent_crash_policy?: "disconnect_all" | "restart_child";
   };
 }
 
@@ -230,7 +232,8 @@ export type ProjectSettingKey =
   | "warm_pool_enabled"
   | "idle_scale_down_seconds"
   | "data_only"
-  | "shared_agent_child";
+  | "shared_child_per_session"
+  | "agent_crash_policy";
 
 export type ProjectSessionStatus = "active" | "ended" | "failed";
 
@@ -462,7 +465,7 @@ export class VoicethereApi {
   async setProjectSetting(
     projectId: string,
     key: ProjectSettingKey,
-    value: boolean | number,
+    value: boolean | number | string,
   ): Promise<ProjectSettingsResponse> {
     return this.request<ProjectSettingsResponse>(
       "PATCH",

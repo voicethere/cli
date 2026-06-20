@@ -7,29 +7,38 @@ import { PROJECT_SETTING_KEYS, type ProjectSettingKey } from "./list.js";
 function parseSettingValue(
   key: ProjectSettingKey,
   raw: string,
-): boolean | number {
-  const def = key === "idle_scale_down_seconds" ? "number" : "boolean";
-  if (def === "boolean") {
-    const normalized = raw.trim().toLowerCase();
-    if (normalized === "true" || normalized === "1" || normalized === "yes") {
-      return true;
+): boolean | number | string {
+  if (key === "agent_crash_policy") {
+    const normalized = raw.trim();
+    if (normalized === "disconnect_all" || normalized === "restart_child") {
+      return normalized;
     }
-    if (normalized === "false" || normalized === "0" || normalized === "no") {
-      return false;
-    }
-    throw new Error(`Invalid boolean for ${key}: use true or false`);
+    throw new Error(
+      "Invalid agent_crash_policy: use disconnect_all or restart_child",
+    );
   }
 
-  const n = Number(raw);
-  if (!Number.isFinite(n)) {
-    throw new Error(`Invalid number for ${key}`);
+  if (key === "idle_scale_down_seconds") {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) {
+      throw new Error(`Invalid number for ${key}`);
+    }
+    const min = 60;
+    const max = 86_400;
+    if (n < min || n > max) {
+      throw new Error(`${key} must be between ${min} and ${max}`);
+    }
+    return Math.floor(n);
   }
-  const min = 60;
-  const max = 86_400;
-  if (n < min || n > max) {
-    throw new Error(`${key} must be between ${min} and ${max}`);
+
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "true" || normalized === "1" || normalized === "yes") {
+    return true;
   }
-  return Math.floor(n);
+  if (normalized === "false" || normalized === "0" || normalized === "no") {
+    return false;
+  }
+  throw new Error(`Invalid boolean for ${key}: use true or false`);
 }
 
 export interface ProjectsSettingsSetOptions {
