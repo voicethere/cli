@@ -6,6 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-06-20
+
+### Added
+
+- `voicethere projects settings list` / `set` — `shared_child_per_session` and `agent_crash_policy` runner settings
+- `voicethere projects errors list` — session error rows for a project (optional `--session` filter)
+
+### Changed
+
+- `agent_crash_policy` set accepts `disconnect_all` or `restart_child` (enum, not boolean)
+
 ## [0.3.4] - 2026-06-19
 
 ### Added
