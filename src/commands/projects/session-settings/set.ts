@@ -3,6 +3,8 @@ import { logStep } from "../../../lib/command-log.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 import {
+  ABSOLUTE_IDLE_TIMEOUT_MAX_SECONDS,
+  isIdleTimeoutSecondsKey,
   SESSION_SETTING_DEFS,
   SESSION_SETTING_KEYS,
   type SessionSettingKey,
@@ -34,7 +36,9 @@ function parseValue(
     throw new Error(`Invalid number for ${key}`);
   }
   const min = def.min ?? 0;
-  const max = def.max ?? Number.MAX_SAFE_INTEGER;
+  const max = isIdleTimeoutSecondsKey(key)
+    ? ABSOLUTE_IDLE_TIMEOUT_MAX_SECONDS
+    : (def.max ?? Number.MAX_SAFE_INTEGER);
   if (n < min || n > max) {
     throw new Error(`${key} must be between ${min} and ${max}`);
   }

@@ -9,6 +9,11 @@ export const SESSION_SETTING_KEYS = [
 
 export type SessionSettingKey = (typeof SESSION_SETTING_KEYS)[number];
 
+export const DEFAULT_IDLE_TIMEOUT_SECONDS = 30;
+export const PLATFORM_IDLE_TIMEOUT_MAX_SECONDS = 120;
+export const ABSOLUTE_IDLE_TIMEOUT_MAX_SECONDS = 86_400;
+export const IDLE_TIMEOUT_MIN_SECONDS = 30;
+
 export const SESSION_SETTING_DEFS: Record<
   SessionSettingKey,
   {
@@ -35,18 +40,18 @@ export const SESSION_SETTING_DEFS: Record<
   },
   idle_timeout_seconds: {
     type: "number",
-    default: 600,
-    min: 30,
-    max: 86_400,
+    default: DEFAULT_IDLE_TIMEOUT_SECONDS,
+    min: IDLE_TIMEOUT_MIN_SECONDS,
+    max: PLATFORM_IDLE_TIMEOUT_MAX_SECONDS,
     description:
       "Seconds without activity before disconnect (voice / both projects).",
     billingWarning: true,
   },
   data_only_idle_timeout_seconds: {
     type: "number",
-    default: 120,
-    min: 30,
-    max: 86_400,
+    default: DEFAULT_IDLE_TIMEOUT_SECONDS,
+    min: IDLE_TIMEOUT_MIN_SECONDS,
+    max: PLATFORM_IDLE_TIMEOUT_MAX_SECONDS,
     description:
       "Seconds without client→server data-channel traffic (data-only projects).",
     billingWarning: true,
@@ -71,6 +76,12 @@ export function sessionSettingNamesHelp(): string {
   return SETTING_NAMES_HELP;
 }
 
+function isIdleTimeoutSecondsKey(key: SessionSettingKey): boolean {
+  return (
+    key === "idle_timeout_seconds" || key === "data_only_idle_timeout_seconds"
+  );
+}
+
 /** Shown by `voicethere projects session-settings --help`. */
 export function formatSessionSettingsGroupHelp(): string {
   const lines = [
@@ -86,7 +97,9 @@ export function formatSessionSettingsGroupHelp(): string {
       def.default === undefined ? "none" : String(def.default);
     const range =
       def.type === "number" && def.min !== undefined && def.max !== undefined
-        ? ` [${def.min}–${def.max}]`
+        ? isIdleTimeoutSecondsKey(key)
+          ? ` [${def.min}–${def.max} default max; org may allow higher via API]`
+          : ` [${def.min}–${def.max}]`
         : "";
     const billing = def.billingWarning ? " (billing)" : "";
     lines.push(`  ${key} (${defaultLabel})${range}${billing}`);
@@ -97,7 +110,7 @@ export function formatSessionSettingsGroupHelp(): string {
   lines.push("Examples:");
   lines.push("  $ voicethere projects session-settings list");
   lines.push(
-    "  $ voicethere projects session-settings set idle_timeout_seconds 300",
+    "  $ voicethere projects session-settings set idle_timeout_seconds 90",
   );
   lines.push(
     "  $ voicethere projects session-settings set idle_timeout_enabled false --project <uuid>",
@@ -105,3 +118,5 @@ export function formatSessionSettingsGroupHelp(): string {
 
   return lines.join("\n");
 }
+
+export { isIdleTimeoutSecondsKey };

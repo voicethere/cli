@@ -318,11 +318,13 @@ async function main(): Promise<void> {
 
   sessionSettings
     .command("list")
-    .description("List session settings for the active project (key=value lines)")
+    .description(
+      "List session settings for the active project (key=value lines)",
+    )
     .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .addHelpText(
       "after",
-      "\nOutput: one line per configured key, e.g. idle_timeout_seconds=600\n",
+      "\nOutput: one line per configured key, e.g. idle_timeout_seconds=30\n",
     )
     .action(async (options: { project?: string }) => {
       await runProjectsSessionSettingsList({ projectId: options.project });
@@ -332,7 +334,10 @@ async function main(): Promise<void> {
     .command("set")
     .description("Set one session setting; prints updated settings as JSON")
     .argument("<name>", `Setting name: ${sessionSettingNamesHelp()}`)
-    .argument("<value>", "Boolean, number, or string (see session-settings --help)")
+    .argument(
+      "<value>",
+      "Boolean, number, or string (see session-settings --help)",
+    )
     .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .action(
       async (name: string, value: string, options: { project?: string }) => {
@@ -411,7 +416,9 @@ async function main(): Promise<void> {
 
   const voiceAdvanced = projects
     .command("voice-advanced")
-    .description("Advanced voice pipeline settings (VAD, barge-in, STT lifecycle)");
+    .description(
+      "Advanced voice pipeline settings (VAD, barge-in, STT lifecycle)",
+    );
 
   voiceAdvanced
     .command("list")
@@ -428,11 +435,7 @@ async function main(): Promise<void> {
     .argument("<value>", "New value")
     .option("--project <id>", "Project UUID")
     .action(
-      async (
-        name: string,
-        value: string,
-        options: { project?: string },
-      ) => {
+      async (name: string, value: string, options: { project?: string }) => {
         await runProjectsVoiceAdvancedSet({
           name,
           value,
@@ -493,7 +496,7 @@ async function main(): Promise<void> {
   build
     .command("promote")
     .description(
-      "Set active build in the control plane (platform promote API; no cluster rollout)",
+      "Set active build in the control plane (use deploy --wait to roll out to runners)",
     )
     .argument(
       "[buildId]",
