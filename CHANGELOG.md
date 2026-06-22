@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-06-22
+
+### Added
+
+- `voicethere projects voice-advanced list` — read resolved VAD, barge-in, and speech-event settings
+- `voicethere projects voice-advanced set` — update one dotted key (apply on next `deploy --wait`)
+- `voicethere projects voice-advanced reset` — clear all advanced voice overrides
+- `--help` on `voice-advanced` documents every key, default, range, and enum values
+
 ## [0.3.5] - 2026-06-20
 
 ### Added
