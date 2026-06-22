@@ -44,7 +44,7 @@ describe("projects session-settings commands", () => {
         project_id: "proj-1",
         settings: {
           idle_timeout_enabled: true,
-          idle_timeout_seconds: 600,
+          idle_timeout_seconds: 30,
         },
       });
 
@@ -52,13 +52,13 @@ describe("projects session-settings commands", () => {
 
       expect(listProjectSessionSettings).toHaveBeenCalledWith("proj-1");
       expect(console.log).toHaveBeenCalledWith("idle_timeout_enabled=true");
-      expect(console.log).toHaveBeenCalledWith("idle_timeout_seconds=600");
+      expect(console.log).toHaveBeenCalledWith("idle_timeout_seconds=30");
     });
 
     it("uses explicit project id over linked config", async () => {
       listProjectSessionSettings.mockResolvedValue({
         project_id: "proj-2",
-        settings: { idle_timeout_seconds: 120 },
+        settings: { idle_timeout_seconds: 90 },
       });
 
       await runProjectsSessionSettingsList({ projectId: "proj-2" });
@@ -73,19 +73,19 @@ describe("projects session-settings commands", () => {
       setProjectSessionSetting.mockResolvedValue({
         project_id: "proj-1",
         settings: {
-          idle_timeout_seconds: 300,
+          idle_timeout_seconds: 90,
         },
       });
 
       await runProjectsSessionSettingsSet({
         name: "idle_timeout_seconds",
-        value: "300",
+        value: "90",
       });
 
       expect(setProjectSessionSetting).toHaveBeenCalledWith(
         "proj-1",
         "idle_timeout_seconds",
-        300,
+        90,
       );
     });
 
@@ -117,7 +117,7 @@ describe("projects session-settings commands", () => {
       expect(setProjectSessionSetting).not.toHaveBeenCalled();
     });
 
-    it("rejects out-of-range idle timeout seconds", async () => {
+    it("rejects idle timeout below minimum seconds", async () => {
       await expect(
         runProjectsSessionSettingsSet({
           name: "idle_timeout_seconds",

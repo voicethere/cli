@@ -4,7 +4,7 @@ VoiceThere cloud CLI for API login, project management, and agent bundle upload.
 
 Requires **Node.js 22+**.
 
-**Release flow:** `build upload` stores a bundle in history; `build promote <buildId>` sets the active build in the control plane; `deploy` (coming later) will also roll out to cloud runners.
+**Release flow:** `build upload` stores a bundle in history; `build promote <buildId>` sets the active build in the control plane only; `deploy --wait` promotes (if needed) and rolls out to cloud runners.
 
 ## Install
 
@@ -83,7 +83,7 @@ voicethere build upload -m "Add Spanish greeting and fix barge-in"
 
 ### 4. Promote a build (set active in control plane)
 
-**Promote** sets the **active** build in the VoiceThere control plane. It does **not** roll out to cloud runners yet — use **`voicethere deploy`** when that command ships.
+**Promote** sets the **active** build in the VoiceThere control plane only. To roll out to cloud runners, run **`voicethere deploy --wait`** (promote + cluster rollout in one step).
 
 Pass the build UUID from **`build upload`** or **`build list`**, or omit it in an interactive terminal to pick from a list:
 
@@ -162,9 +162,17 @@ Other CI notes:
 
 Split upload and promote across jobs if you want a human approval gate between them.
 
-### 8. `deploy` (coming soon)
+### 8. Deploy to cloud runners
 
-`voicethere deploy` will **promote and roll out to cloud runners** with optional `--wait`. It is **not implemented yet**; use `build promote` today.
+`voicethere deploy --wait` **promotes the build (when needed) and rolls out to cloud runners**, blocking until the deployment is active (or failed).
+
+```bash
+voicethere build upload -m "v0.2 — shorter silence timeout"
+voicethere deploy --wait
+# or pin a build: voicethere deploy --wait --build-id <build-uuid>
+```
+
+Use **`build promote`** alone when you only need to update the control plane (e.g. smoke tests); use **`deploy --wait`** for anything that must run on staging runners.
 
 ## Repo config (version control)
 
@@ -197,7 +205,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `build validate [file]`                        | Sandbox verify (default bundle from config)              |
 | `build upload [file] [-m <msg>]`               | Upload to active project                                 |
 | `build promote [buildId]`                      | Promote on active project (picker when omitted in TTY)   |
-| `deploy`                                       | **Coming soon** — promote + cloud rollout + wait         |
+| `deploy [--wait] [--build-id]`                 | Promote (if needed) + cloud rollout; `--wait` blocks     |
 
 ## Logging
 
@@ -234,16 +242,16 @@ Per-project WebRTC idle timeout and crash TTS message. Changes apply on the next
 ```bash
 voicethere projects session-settings --help   # all keys, defaults, ranges
 voicethere projects session-settings list
-voicethere projects session-settings set idle_timeout_seconds 300
-voicethere projects session-settings set data_only_idle_timeout_seconds 90
+voicethere projects session-settings set idle_timeout_seconds 90
+voicethere projects session-settings set data_only_idle_timeout_seconds 60
 voicethere projects session-settings set error_message "Sorry, something went wrong."
 ```
 
 | Key | Type | Default | Notes |
 | --- | ---- | ------- | ----- |
 | `idle_timeout_enabled` | bool | `true` | `false` keeps sessions billable longer |
-| `idle_timeout_seconds` | 30–86400 | `600` | Voice / both projects |
-| `data_only_idle_timeout_seconds` | 30–86400 | `120` | Data-only: no client→server DC traffic |
+| `idle_timeout_seconds` | 30–120 (org may allow higher via API) | `30` | Voice / both projects |
+| `data_only_idle_timeout_seconds` | 30–120 (org may allow higher via API) | `30` | Data-only: no client→server DC traffic |
 | `idle_timeout_voice_activity` | bool | `true` | Reset on speech / agent TTS (voice / both) |
 | `idle_timeout_dc_inbound` | bool | `true` | Reset on client data-channel sends |
 | `error_message` | string | *(none)* | Crash TTS in voice mode |
