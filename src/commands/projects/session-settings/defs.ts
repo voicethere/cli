@@ -9,7 +9,7 @@ export const SESSION_SETTING_KEYS = [
 
 export type SessionSettingKey = (typeof SESSION_SETTING_KEYS)[number];
 
-export const DEFAULT_IDLE_TIMEOUT_SECONDS = 30;
+export const DEFAULT_IDLE_TIMEOUT_SECONDS = 120;
 export const PLATFORM_IDLE_TIMEOUT_MAX_SECONDS = 120;
 export const ABSOLUTE_IDLE_TIMEOUT_MAX_SECONDS = 86_400;
 export const IDLE_TIMEOUT_MIN_SECONDS = 30;

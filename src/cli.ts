@@ -324,7 +324,7 @@ async function main(): Promise<void> {
     .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .addHelpText(
       "after",
-      "\nOutput: one line per configured key, e.g. idle_timeout_seconds=30\n",
+      "\nOutput: one line per configured key, e.g. idle_timeout_seconds=120\n",
     )
     .action(async (options: { project?: string }) => {
       await runProjectsSessionSettingsList({ projectId: options.project });

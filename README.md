@@ -33,11 +33,11 @@ Use this when a command fails to confirm which project and bundle file were pick
 
 The CLI remembers the **active project** in **`.voicethere/config.json`** (safe to commit — no API keys).
 
-| Situation | What happens |
-| --------- | -------------- |
-| Config file present | `build upload`, `build list`, `build promote` use its `project_id` automatically |
-| No config, interactive terminal | `projects use` shows a numbered project picker |
-| No config, CI / script | Run `voicethere projects use <projectId>` once (or commit config from `projects create`) |
+| Situation                       | What happens                                                                             |
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
+| Config file present             | `build upload`, `build list`, `build promote` use its `project_id` automatically         |
+| No config, interactive terminal | `projects use` shows a numbered project picker                                           |
+| No config, CI / script          | Run `voicethere projects use <projectId>` once (or commit config from `projects create`) |
 
 You do **not** need to run `projects use` on every command when the config file is already in the repo.
 
@@ -178,11 +178,11 @@ Use **`build promote`** alone when you only need to update the control plane (e.
 
 Per-agent-repo file: **`.voicethere/config.json`**
 
-| Field                  | Purpose                                              |
-| ---------------------- | ---------------------------------------------------- |
-| `project_id`           | Active platform project UUID                         |
-| `project_slug`, `name` | Human-readable metadata (optional)                   |
-| `bundle`               | Default bundle path (default `dist/agent.js`)        |
+| Field                  | Purpose                                       |
+| ---------------------- | --------------------------------------------- |
+| `project_id`           | Active platform project UUID                  |
+| `project_slug`, `name` | Human-readable metadata (optional)            |
+| `bundle`               | Default bundle path (default `dist/agent.js`) |
 
 **Secrets stay global:** `~/.config/voicethere/credentials.json` (from `voicethere login`).
 
@@ -190,31 +190,31 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 
 ## Commands
 
-| Command                                        | Description                                              |
-| ---------------------------------------------- | -------------------------------------------------------- |
-| `login --api-key <key> [--api-base <url>]`     | Save credentials                                         |
-| `projects list`                                | List org projects                                        |
-| `projects create <name> [--slug <slug>]`       | Create project; uses it (writes config)                  |
-| `projects use [projectId]`                     | Use project (picker or existing config when omitted)     |
-| `projects show`                                | Print `.voicethere/config.json`                          |
-| `projects delete [projectId] [--force]`        | Delete project + builds (type name to confirm, or `--force`) |
-| `projects settings list|set`                     | Runner pool settings (warm pool, scale-down)             |
-| `projects session-settings list|set`             | WebRTC idle timeout + crash error message (see below)    |
-| `projects voice catalog|show|set`                | STT/TTS vendors and models                               |
-| `build list`                                   | Builds for the active project                            |
-| `build validate [file]`                        | Sandbox verify (default bundle from config)              |
-| `build upload [file] [-m <msg>]`               | Upload to active project                                 |
-| `build promote [buildId]`                      | Promote on active project (picker when omitted in TTY)   |
-| `deploy [--wait] [--build-id]`                 | Promote (if needed) + cloud rollout; `--wait` blocks     |
+| Command                                    | Description                                                  |
+| ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------- | -------------------------- |
+| `login --api-key <key> [--api-base <url>]` | Save credentials                                             |
+| `projects list`                            | List org projects                                            |
+| `projects create <name> [--slug <slug>]`   | Create project; uses it (writes config)                      |
+| `projects use [projectId]`                 | Use project (picker or existing config when omitted)         |
+| `projects show`                            | Print `.voicethere/config.json`                              |
+| `projects delete [projectId] [--force]`    | Delete project + builds (type name to confirm, or `--force`) |
+| `projects settings list                    | set`                                                         | Runner pool settings (warm pool, scale-down)          |
+| `projects session-settings list            | set`                                                         | WebRTC idle timeout + crash error message (see below) |
+| `projects voice catalog                    | show                                                         | set`                                                  | STT/TTS vendors and models |
+| `build list`                               | Builds for the active project                                |
+| `build validate [file]`                    | Sandbox verify (default bundle from config)                  |
+| `build upload [file] [-m <msg>]`           | Upload to active project                                     |
+| `build promote [buildId]`                  | Promote on active project (picker when omitted in TTY)       |
+| `deploy [--wait] [--build-id]`             | Promote (if needed) + cloud rollout; `--wait` blocks         |
 
 ## Logging
 
 Progress and resolved paths go to **stderr** as `[voicethere] …` so **stdout** stays clean for JSON/tables (scripts can pipe stdout).
 
-| Mode | Flag / env | What you get |
-| ---- | ---------- | ------------ |
-| **Default** | *(always on)* | High-level steps: “Creating project…”, “Uploading bundle…”, resolved project/bundle paths |
-| **Verbose** | `-v` / `--verbose` or `VOICETHERE_VERBOSE=1` | API method + path, request bodies (no secrets), response status + timing, counts |
+| Mode        | Flag / env                                   | What you get                                                                              |
+| ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Default** | _(always on)_                                | High-level steps: “Creating project…”, “Uploading bundle…”, resolved project/bundle paths |
+| **Verbose** | `-v` / `--verbose` or `VOICETHERE_VERBOSE=1` | API method + path, request bodies (no secrets), response status + timing, counts          |
 
 Examples:
 
@@ -247,14 +247,14 @@ voicethere projects session-settings set data_only_idle_timeout_seconds 60
 voicethere projects session-settings set error_message "Sorry, something went wrong."
 ```
 
-| Key | Type | Default | Notes |
-| --- | ---- | ------- | ----- |
-| `idle_timeout_enabled` | bool | `true` | `false` keeps sessions billable longer |
-| `idle_timeout_seconds` | 30–120 (org may allow higher via API) | `30` | Voice / both projects |
-| `data_only_idle_timeout_seconds` | 30–120 (org may allow higher via API) | `30` | Data-only: no client→server DC traffic |
-| `idle_timeout_voice_activity` | bool | `true` | Reset on speech / agent TTS (voice / both) |
-| `idle_timeout_dc_inbound` | bool | `true` | Reset on client data-channel sends |
-| `error_message` | string | *(none)* | Crash TTS in voice mode |
+| Key                              | Type                                  | Default  | Notes                                      |
+| -------------------------------- | ------------------------------------- | -------- | ------------------------------------------ |
+| `idle_timeout_enabled`           | bool                                  | `true`   | `false` keeps sessions billable longer     |
+| `idle_timeout_seconds`           | 30–120 (org may allow higher via API) | `120`    | Voice / both projects                      |
+| `data_only_idle_timeout_seconds` | 30–120 (org may allow higher via API) | `120`    | Data-only: no client→server DC traffic     |
+| `idle_timeout_voice_activity`    | bool                                  | `true`   | Reset on speech / agent TTS (voice / both) |
+| `idle_timeout_dc_inbound`        | bool                                  | `true`   | Reset on client data-channel sends         |
+| `error_message`                  | string                                | _(none)_ | Crash TTS in voice mode                    |
 
 Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
 
