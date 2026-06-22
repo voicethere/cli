@@ -30,6 +30,15 @@ import {
   runProjectsVoiceSet,
   type ProjectsVoiceSetOptions,
 } from "./commands/projects/voice/set.js";
+import { runProjectsVoiceAdvancedList } from "./commands/projects/voice-advanced/list.js";
+import {
+  runProjectsVoiceAdvancedReset,
+  runProjectsVoiceAdvancedSet,
+} from "./commands/projects/voice-advanced/set.js";
+import {
+  formatVoiceAdvancedSettingsGroupHelp,
+  voiceAdvancedSettingNamesHelp,
+} from "./commands/projects/voice-advanced/defs.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
@@ -399,6 +408,48 @@ async function main(): Promise<void> {
     .action(async (options: ProjectsVoiceSetOptions) => {
       await runProjectsVoiceSet(options);
     });
+
+  const voiceAdvanced = projects
+    .command("voice-advanced")
+    .description("Advanced voice pipeline settings (VAD, barge-in, STT lifecycle)");
+
+  voiceAdvanced
+    .command("list")
+    .description("List resolved advanced voice settings for the active project")
+    .option("--project <id>", "Project UUID")
+    .action(async (options: { project?: string }) => {
+      await runProjectsVoiceAdvancedList({ projectId: options.project });
+    });
+
+  voiceAdvanced
+    .command("set")
+    .description("Set one advanced voice setting (requires redeploy to apply)")
+    .argument("<name>", `Setting key (${voiceAdvancedSettingNamesHelp()})`)
+    .argument("<value>", "New value")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (
+        name: string,
+        value: string,
+        options: { project?: string },
+      ) => {
+        await runProjectsVoiceAdvancedSet({
+          name,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
+
+  voiceAdvanced
+    .command("reset")
+    .description("Clear all advanced voice overrides (library defaults)")
+    .option("--project <id>", "Project UUID")
+    .action(async (options: { project?: string }) => {
+      await runProjectsVoiceAdvancedReset({ projectId: options.project });
+    });
+
+  voiceAdvanced.addHelpText("after", formatVoiceAdvancedSettingsGroupHelp);
 
   const build = program.command("build").description("Agent bundle operations");
 

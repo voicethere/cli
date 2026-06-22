@@ -155,6 +155,33 @@ export interface ProjectVoiceSettings {
   tts_voice?: string;
 }
 
+export type VoiceAdvancedSettingKey =
+  | "vad.enabled"
+  | "vad.provider"
+  | "vad.threshold"
+  | "vad.minSpeechDurationMs"
+  | "vad.minSilenceDurationMs"
+  | "vad.speechPadMs"
+  | "vad.sampleRate"
+  | "vad.gateStt"
+  | "vad.gateSttOpenOnPending"
+  | "vad.sttGateHoldMs"
+  | "vad.sttListenTimeoutMs"
+  | "vad.utteranceFinalizeTimeoutMs"
+  | "vad.bargeIn.enabled"
+  | "vad.bargeIn.useVad"
+  | "vad.bargeIn.flushTts"
+  | "vad.bargeIn.requireSttPartial"
+  | "vad.bargeIn.minSttPartialChars"
+  | "vad.bargeIn.agentPlaybackGuardMs"
+  | "events.mode";
+
+export interface ProjectVoiceAdvancedSettingsResponse {
+  project_id: string;
+  settings: Record<string, unknown>;
+  overrides?: Record<string, unknown>;
+}
+
 export interface VoiceCatalogResponse {
   default_stt_model_id: string;
   default_tts_model_id: string;
@@ -524,6 +551,37 @@ export class VoicethereApi {
       "PATCH",
       `/projects/${projectId}/voice-settings`,
       { json: input },
+    );
+  }
+
+  async listProjectVoiceAdvancedSettings(
+    projectId: string,
+  ): Promise<ProjectVoiceAdvancedSettingsResponse> {
+    return this.request<ProjectVoiceAdvancedSettingsResponse>(
+      "GET",
+      `/projects/${projectId}/voice-advanced-settings`,
+    );
+  }
+
+  async setProjectVoiceAdvancedSetting(
+    projectId: string,
+    key: VoiceAdvancedSettingKey,
+    value: boolean | number | string,
+  ): Promise<ProjectVoiceAdvancedSettingsResponse> {
+    return this.request<ProjectVoiceAdvancedSettingsResponse>(
+      "PATCH",
+      `/projects/${projectId}/voice-advanced-settings`,
+      { json: { key, value } },
+    );
+  }
+
+  async resetProjectVoiceAdvancedSettings(
+    projectId: string,
+  ): Promise<ProjectVoiceAdvancedSettingsResponse> {
+    return this.request<ProjectVoiceAdvancedSettingsResponse>(
+      "PATCH",
+      `/projects/${projectId}/voice-advanced-settings`,
+      { json: { reset: true } },
     );
   }
 
