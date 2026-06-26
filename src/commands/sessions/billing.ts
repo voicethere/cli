@@ -36,6 +36,7 @@ export async function runSessionsBilling(
           status: session.status,
           billable_seconds: session.billable_seconds,
           end_reason: session.end_reason,
+          billing_started_at: session.billing_started_at,
           ended_at: session.ended_at,
           created_at: session.created_at,
         },
@@ -52,6 +53,7 @@ export async function runSessionsBilling(
     `billable_seconds=${session.billable_seconds != null ? session.billable_seconds : "-"}`,
   );
   console.log(`end_reason=${session.end_reason ?? "-"}`);
+  console.log(`billing_started_at=${session.billing_started_at ?? "-"}`);
   console.log(`ended_at=${session.ended_at ?? "-"}`);
   console.log(`created_at=${session.created_at}`);
 }

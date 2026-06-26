@@ -273,6 +273,7 @@ export interface ProjectSessionEntry {
   status: ProjectSessionStatus;
   build_id: string | null;
   created_at: string;
+  billing_started_at: string | null;
   ended_at: string | null;
   end_reason: string | null;
   billable_seconds: number | null;
