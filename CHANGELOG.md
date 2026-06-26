@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-06-26
+
+### Added
+
+- `billing_started_at` on session API types and `voicethere sessions billing` output (text + `--json`)
+
 ## [0.3.6] - 2026-06-22
 
 ### Added
