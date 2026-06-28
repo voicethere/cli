@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-06-28
+
+### Changed
+
+- Release 0.3.8 version bump.
+
 ## [0.3.7] - 2026-06-26
 
 ### Added
