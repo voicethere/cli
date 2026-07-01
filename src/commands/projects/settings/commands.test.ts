@@ -42,6 +42,7 @@ describe("projects settings commands", () => {
       listProjectSettings.mockResolvedValue({
         project_id: "proj-1",
         settings: {
+          mode: "voice",
           warm_pool_enabled: false,
           idle_scale_down_seconds: 600,
           data_only: false,
@@ -68,6 +69,7 @@ describe("projects settings commands", () => {
       listProjectSettings.mockResolvedValue({
         project_id: "proj-2",
         settings: {
+          mode: "voice",
           warm_pool_enabled: true,
           idle_scale_down_seconds: 120,
         },
@@ -85,6 +87,7 @@ describe("projects settings commands", () => {
       setProjectSetting.mockResolvedValue({
         project_id: "proj-1",
         settings: {
+          mode: "voice",
           warm_pool_enabled: true,
           idle_scale_down_seconds: 600,
         },
@@ -102,7 +105,11 @@ describe("projects settings commands", () => {
       );
       expect(console.log).toHaveBeenCalledWith(
         JSON.stringify(
-          { warm_pool_enabled: true, idle_scale_down_seconds: 600 },
+          {
+            mode: "voice",
+            warm_pool_enabled: true,
+            idle_scale_down_seconds: 600,
+          },
           null,
           2,
         ),
@@ -113,6 +120,7 @@ describe("projects settings commands", () => {
       setProjectSetting.mockResolvedValue({
         project_id: "proj-1",
         settings: {
+          mode: "voice",
           warm_pool_enabled: false,
           idle_scale_down_seconds: 300,
         },
@@ -190,6 +198,36 @@ describe("projects settings commands", () => {
           value: "panic",
         }),
       ).rejects.toThrow(/Invalid agent_crash_policy/);
+      expect(setProjectSetting).not.toHaveBeenCalled();
+    });
+
+    it("sets mode enum", async () => {
+      setProjectSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {
+          mode: "voice+data",
+        },
+      });
+
+      await runProjectsSettingsSet({
+        name: "mode",
+        value: "voice+data",
+      });
+
+      expect(setProjectSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "mode",
+        "voice+data",
+      );
+    });
+
+    it("rejects invalid mode values", async () => {
+      await expect(
+        runProjectsSettingsSet({
+          name: "mode",
+          value: "both",
+        }),
+      ).rejects.toThrow(/Invalid mode/);
       expect(setProjectSetting).not.toHaveBeenCalled();
     });
   });

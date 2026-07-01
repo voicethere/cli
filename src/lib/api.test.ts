@@ -509,4 +509,88 @@ describe("VoicethereApi", () => {
       }),
     );
   });
+
+  it("lists subscriptions", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          subscriptions: [
+            {
+              id: "sub-1",
+              org_id: "org-1",
+              project_id: null,
+              tier: "free",
+              price_id: "price_free",
+              status: "active",
+              created_at: "2026-07-01T00:00:00.000Z",
+              updated_at: "2026-07-01T00:00:00.000Z",
+              canceled_at: null,
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const subscriptions = await api.listSubscriptions();
+
+    expect(subscriptions).toHaveLength(1);
+    expect(subscriptions[0]?.id).toBe("sub-1");
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.toString()).toBe(`${apiBase}/subscriptions`);
+    expect(init.method).toBe("GET");
+  });
+
+  it("gets project subscription assignment", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          project_id: "proj-1",
+          subscription: {
+            id: "sub-1",
+            org_id: "org-1",
+            project_id: "proj-1",
+            tier: "free",
+            price_id: "price_free",
+            status: "active",
+            created_at: "2026-07-01T00:00:00.000Z",
+            updated_at: "2026-07-01T00:00:00.000Z",
+            canceled_at: null,
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const result = await api.getProjectSubscription("proj-1");
+
+    expect(result.project_id).toBe("proj-1");
+    expect(result.subscription?.id).toBe("sub-1");
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.toString()).toBe(`${apiBase}/projects/proj-1/subscription`);
+    expect(init.method).toBe("GET");
+  });
+
+  it("sets project subscription assignment", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          project_id: "proj-1",
+          subscription: null,
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const result = await api.setProjectSubscription("proj-1", null);
+
+    expect(result.subscription).toBeNull();
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.toString()).toBe(`${apiBase}/projects/proj-1/subscription`);
+    expect(init.method).toBe("PATCH");
+    expect(init.body).toBe(JSON.stringify({ subscription_id: null }));
+  });
 });
