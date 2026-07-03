@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-07-03
+
+### Added
+
+- **`voicethere projects subscription list`** — list organization subscriptions (tier, status, assigned project).
+- **`voicethere projects subscription show`** — show the subscription assigned to a project (JSON).
+- **`voicethere projects subscription set <subscriptionId>`** — assign a subscription to a project, or pass `none` to clear.
+- **Subscription API client** — `listSubscriptions`, `getProjectSubscription`, and `setProjectSubscription` on the platform API wrapper.
+- **`mode` project setting** — `voicethere projects settings list` / `set` now supports runner mode (`voice`, `data`, `voice+data`).
+
 ## [0.3.8] - 2026-06-28
 
 ### Changed
