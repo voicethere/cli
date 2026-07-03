@@ -17,6 +17,9 @@ import { runProjectsSecretsDelete } from "./commands/projects/secrets/delete.js"
 import { runProjectsSecretsList } from "./commands/projects/secrets/list.js";
 import { runProjectsSettingsList } from "./commands/projects/settings/list.js";
 import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
+import { runProjectsSubscriptionList } from "./commands/projects/subscription/list.js";
+import { runProjectsSubscriptionSet } from "./commands/projects/subscription/set.js";
+import { runProjectsSubscriptionShow } from "./commands/projects/subscription/show.js";
 import { runProjectsSessionSettingsList } from "./commands/projects/session-settings/list.js";
 import { runProjectsSessionSettingsSet } from "./commands/projects/session-settings/set.js";
 import { runProjectsErrorsList } from "./commands/projects/errors/list.js";
@@ -295,7 +298,7 @@ async function main(): Promise<void> {
     .description("Set a runner setting")
     .argument(
       "<name>",
-      "Setting name (warm_pool_enabled, idle_scale_down_seconds)",
+      "Setting name (mode, warm_pool_enabled, idle_scale_down_seconds, ...)",
     )
     .argument("<value>", "Setting value")
     .option("--project <id>", "Project UUID")
@@ -305,6 +308,39 @@ async function main(): Promise<void> {
           name,
           value,
           projectId: options.project,
+        });
+      },
+    );
+
+  const subscription = projects
+    .command("subscription")
+    .description("List and assign project subscriptions");
+
+  subscription
+    .command("list")
+    .description("List organization subscriptions")
+    .action(async () => {
+      await runProjectsSubscriptionList();
+    });
+
+  subscription
+    .command("show")
+    .description("Show assigned subscription for a project")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(async (options: { project?: string }) => {
+      await runProjectsSubscriptionShow({ projectId: options.project });
+    });
+
+  subscription
+    .command("set")
+    .description("Assign or clear subscription for a project")
+    .argument("<subscriptionId>", "Subscription UUID, or 'none' to clear")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(
+      async (subscriptionId: string, options: { project?: string }) => {
+        await runProjectsSubscriptionSet({
+          projectId: options.project,
+          subscriptionId,
         });
       },
     );

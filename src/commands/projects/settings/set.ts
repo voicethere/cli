@@ -8,6 +8,18 @@ function parseSettingValue(
   key: ProjectSettingKey,
   raw: string,
 ): boolean | number | string {
+  if (key === "mode") {
+    const normalized = raw.trim();
+    if (
+      normalized === "voice" ||
+      normalized === "data" ||
+      normalized === "voice+data"
+    ) {
+      return normalized;
+    }
+    throw new Error("Invalid mode: use voice, data, or voice+data");
+  }
+
   if (key === "agent_crash_policy") {
     const normalized = raw.trim();
     if (normalized === "disconnect_all" || normalized === "restart_child") {

@@ -103,6 +103,7 @@ export interface CreateDeploymentInput {
 export interface ProjectSettingsResponse {
   project_id: string;
   settings: {
+    mode?: "voice" | "data" | "voice+data";
     warm_pool_enabled: boolean;
     idle_scale_down_seconds: number;
     data_only?: boolean;
@@ -111,6 +112,7 @@ export interface ProjectSettingsResponse {
     agent_child_ipc_debug?: boolean;
   };
   defaults?: {
+    mode?: "voice" | "data" | "voice+data";
     warm_pool_enabled: boolean;
     idle_scale_down_seconds: number;
     data_only?: boolean;
@@ -258,12 +260,33 @@ export interface CreateApiKeyResponse extends ApiKeyEntry {
 }
 
 export type ProjectSettingKey =
+  | "mode"
   | "warm_pool_enabled"
   | "idle_scale_down_seconds"
   | "data_only"
   | "shared_child_per_session"
   | "agent_crash_policy"
   | "agent_child_ipc_debug";
+
+export type ProjectSubscriptionTier = "free" | "ultimate";
+export type OrgSubscriptionStatus = "active" | "canceled";
+
+export interface OrgSubscription {
+  id: string;
+  org_id: string;
+  project_id: string | null;
+  tier: ProjectSubscriptionTier;
+  price_id: string | null;
+  status: OrgSubscriptionStatus;
+  created_at: string;
+  updated_at: string;
+  canceled_at: string | null;
+}
+
+export interface ProjectSubscriptionResponse {
+  project_id: string;
+  subscription: OrgSubscription | null;
+}
 
 export type ProjectSessionStatus = "active" | "ended" | "failed";
 
@@ -502,6 +525,38 @@ export class VoicethereApi {
       "PATCH",
       `/projects/${projectId}/settings`,
       { json: { key, value } },
+    );
+  }
+
+  async listSubscriptions(): Promise<OrgSubscription[]> {
+    const response = await this.request<{ subscriptions: OrgSubscription[] }>(
+      "GET",
+      "/subscriptions",
+    );
+    return response.subscriptions;
+  }
+
+  async getProjectSubscription(
+    projectId: string,
+  ): Promise<ProjectSubscriptionResponse> {
+    return this.request<ProjectSubscriptionResponse>(
+      "GET",
+      `/projects/${projectId}/subscription`,
+    );
+  }
+
+  async setProjectSubscription(
+    projectId: string,
+    subscriptionId: string | null,
+  ): Promise<ProjectSubscriptionResponse> {
+    return this.request<ProjectSubscriptionResponse>(
+      "PATCH",
+      `/projects/${projectId}/subscription`,
+      {
+        json: {
+          subscription_id: subscriptionId,
+        },
+      },
     );
   }
 

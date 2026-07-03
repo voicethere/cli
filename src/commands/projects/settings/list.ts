@@ -4,6 +4,7 @@ import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 
 export const PROJECT_SETTING_KEYS = [
+  "mode",
   "warm_pool_enabled",
   "idle_scale_down_seconds",
   "data_only",
