@@ -578,19 +578,19 @@ describe("VoicethereApi", () => {
       new Response(
         JSON.stringify({
           project_id: "proj-1",
-          subscription: null,
+          subscription: { id: "sub-2" },
         }),
         { status: 200 },
       ),
     );
 
     const api = new VoicethereApi(apiKey, apiBase);
-    const result = await api.setProjectSubscription("proj-1", null);
+    const result = await api.setProjectSubscription("proj-1", "sub-2");
 
-    expect(result.subscription).toBeNull();
+    expect(result.subscription?.id).toBe("sub-2");
     const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(url.toString()).toBe(`${apiBase}/projects/proj-1/subscription`);
     expect(init.method).toBe("PATCH");
-    expect(init.body).toBe(JSON.stringify({ subscription_id: null }));
+    expect(init.body).toBe(JSON.stringify({ subscription_id: "sub-2" }));
   });
 });
