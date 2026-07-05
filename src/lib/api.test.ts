@@ -593,4 +593,25 @@ describe("VoicethereApi", () => {
     expect(init.method).toBe("PATCH");
     expect(init.body).toBe(JSON.stringify({ subscription_id: "sub-2" }));
   });
+
+  it("clears project subscription assignment", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          project_id: "proj-1",
+          subscription: null,
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const result = await api.setProjectSubscription("proj-1", null);
+
+    expect(result.subscription).toBeNull();
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.toString()).toBe(`${apiBase}/projects/proj-1/subscription`);
+    expect(init.method).toBe("PATCH");
+    expect(init.body).toBe(JSON.stringify({ subscription_id: null }));
+  });
 });

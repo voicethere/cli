@@ -66,7 +66,7 @@ async function resolveBuildId(
 
 /**
  * Promote sets the active build in the control plane (platform `POST …/promote`).
- * Does not roll out to cloud runners — use `voicethere deploy` when available.
+ * Does not roll out to cloud runners — use `voicethere deploy --wait` for rollout.
  */
 export async function runBuildPromote(
   options: BuildPromoteOptions,
@@ -87,6 +87,6 @@ export async function runBuildPromote(
   );
   console.log(`Active artifact: ${result.active_storage_path}`);
   console.log(
-    "Control plane updated — cloud runner rollout is not available yet (future: voicethere deploy --wait).",
+    "Control plane updated. Run voicethere deploy --wait to roll out to cloud runners.",
   );
 }

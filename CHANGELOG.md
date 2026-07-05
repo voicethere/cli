@@ -6,6 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-07-05
+
+### Changed
+
+- **`voicethere projects subscription set none`** — restore clearing project subscription assignment (projects may exist unassigned; cloud deploy requires an assigned subscription on the platform).
+- **`voicethere build promote`** — success message now points to `voicethere deploy --wait` for cloud rollout.
+
+### Fixed
+
+- Reverts the CLI restriction that blocked clearing subscriptions (shipped briefly after 0.3.9).
+
 ## [0.3.9] - 2026-07-03
 
 ### Added

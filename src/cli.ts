@@ -333,8 +333,8 @@ async function main(): Promise<void> {
 
   subscription
     .command("set")
-    .description("Assign a subscription to a project")
-    .argument("<subscriptionId>", "Subscription UUID")
+    .description("Assign or clear subscription for a project")
+    .argument("<subscriptionId>", "Subscription UUID, or 'none' to clear")
     .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .action(async (subscriptionId: string, options: { project?: string }) => {
       await runProjectsSubscriptionSet({

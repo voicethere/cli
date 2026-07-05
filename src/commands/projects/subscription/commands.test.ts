@@ -81,10 +81,14 @@ describe("projects subscription commands", () => {
     expect(setProjectSubscription).toHaveBeenCalledWith("proj-1", "sub-2");
   });
 
-  it("rejects clearing subscription assignment", async () => {
-    await expect(
-      runProjectsSubscriptionSet({ subscriptionId: "none" }),
-    ).rejects.toThrow("subscription id is required");
-    expect(setProjectSubscription).not.toHaveBeenCalled();
+  it("clears subscription assignment", async () => {
+    setProjectSubscription.mockResolvedValue({
+      project_id: "proj-1",
+      subscription: null,
+    });
+
+    await runProjectsSubscriptionSet({ subscriptionId: "none" });
+
+    expect(setProjectSubscription).toHaveBeenCalledWith("proj-1", null);
   });
 });
