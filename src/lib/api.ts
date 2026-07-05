@@ -547,7 +547,7 @@ export class VoicethereApi {
 
   async setProjectSubscription(
     projectId: string,
-    subscriptionId: string | null,
+    subscriptionId: string,
   ): Promise<ProjectSubscriptionResponse> {
     return this.request<ProjectSubscriptionResponse>(
       "PATCH",
