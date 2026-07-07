@@ -393,16 +393,19 @@ async function main(): Promise<void> {
     .option("--project <id>", "Project UUID")
     .option("--limit <n>", "Max rows when listing project errors", "20")
     .option("--session <id>", "Filter to one orchestrator session id")
+    .option("--json", "Output JSON")
     .action(
       async (options: {
         project?: string;
         limit?: string;
         session?: string;
+        json?: boolean;
       }) => {
         await runProjectsErrorsList({
           projectId: options.project,
           limit: options.limit ? Number.parseInt(options.limit, 10) : undefined,
           sessionId: options.session,
+          json: options.json,
         });
       },
     );
