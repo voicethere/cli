@@ -7,6 +7,7 @@ export interface ProjectsErrorsListOptions {
   projectId?: string;
   limit?: number;
   sessionId?: string;
+  json?: boolean;
 }
 
 export async function runProjectsErrorsList(
@@ -27,6 +28,10 @@ export async function runProjectsErrorsList(
   if (options.sessionId) {
     const result = await api.listSessionErrors(projectId, options.sessionId);
     logVerbose(`found ${result.errors.length} error(s)`);
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
     for (const row of result.errors) {
       console.log(
         `${row.created_at}\t${row.code}\t${row.source}\t${row.message}`,
@@ -37,6 +42,10 @@ export async function runProjectsErrorsList(
 
   const result = await api.listProjectSessionErrors(projectId, limit);
   logVerbose(`found ${result.errors.length} error(s)`);
+  if (options.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
   for (const row of result.errors) {
     const session = row.orchestrator_session_id.slice(0, 12);
     console.log(

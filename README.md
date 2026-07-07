@@ -200,6 +200,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects delete [projectId] [--force]`        | Delete project + builds (type name to confirm, or `--force`) |
 | `projects settings list|set`                     | Runner pool settings (warm pool, scale-down)             |
 | `projects session-settings list|set`             | WebRTC idle timeout + crash error message (see below)    |
+| `projects errors list [--session] [--json]`      | Structured session errors from dashboard API             |
 | `projects voice catalog|show|set`                | STT/TTS vendors and models                               |
 | `build list`                                   | Builds for the active project                            |
 | `build validate [file]`                        | Sandbox verify (default bundle from config)              |
