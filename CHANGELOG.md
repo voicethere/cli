@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-07-07
+
+### Added
+
+- **`voicethere projects errors list --json`** — machine-readable session error rows for automation and E2E smoke tests.
+- **Tests** — Vitest coverage for JSON and table output modes on `projects errors list`.
+
 ## [0.3.10] - 2026-07-05
 
 ### Changed
