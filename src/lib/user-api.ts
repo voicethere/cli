@@ -1,5 +1,9 @@
 import { logApiBase, logVerbose } from "./command-log.js";
 import { ApiError, type ApiErrorBody } from "./api.js";
+import type { UserCommandAuth } from "./user-session.js";
+
+/** Must match platform `USER_ORG_ID_HEADER`. */
+export const USER_ORG_ID_HEADER = "x-voicethere-org-id";
 
 export interface OrgListEntry {
   id: string;
@@ -31,10 +35,10 @@ export interface AccountDeletionPreviewResponse {
   } | null;
 }
 
-export class DashboardApi {
+export class UserApi {
   constructor(
     private readonly apiBase: string,
-    private readonly cookie: string,
+    private readonly auth: UserCommandAuth,
   ) {
     logApiBase(apiBase);
   }
@@ -78,6 +82,26 @@ export class DashboardApi {
     return { job_id: response.job_id };
   }
 
+  private authLabel(): string {
+    return this.auth.kind === "user_api_key" ? "user API key" : "dashboard session";
+  }
+
+  private buildHeaders(json: boolean): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (this.auth.kind === "user_api_key") {
+      headers.Authorization = `Bearer ${this.auth.token}`;
+      if (this.auth.activeOrgId) {
+        headers[USER_ORG_ID_HEADER] = this.auth.activeOrgId;
+      }
+    } else {
+      headers.Cookie = this.auth.cookie;
+    }
+    if (json) {
+      headers["Content-Type"] = "application/json";
+    }
+    return headers;
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -87,18 +111,15 @@ export class DashboardApi {
       path.replace(/^\//, ""),
       `${this.apiBase.replace(/\/$/, "")}/`,
     );
-    const headers: Record<string, string> = {
-      Cookie: this.cookie,
-    };
+    const headers = this.buildHeaders(options?.json !== undefined);
 
     let body: BodyInit | undefined;
     if (options?.json !== undefined) {
-      headers["Content-Type"] = "application/json";
       body = JSON.stringify(options.json);
     }
 
     const pathWithQuery = `${url.pathname}${url.search}`;
-    logVerbose(`${method} ${pathWithQuery} (dashboard session)`);
+    logVerbose(`${method} ${pathWithQuery} (${this.authLabel()})`);
     if (options?.json !== undefined) {
       logVerbose(`request body: ${JSON.stringify(options.json)}`);
     }
@@ -128,9 +149,9 @@ export class DashboardApi {
   }
 }
 
-export function createDashboardApi(
+export function createUserApi(
   apiBase: string,
-  cookie: string,
-): DashboardApi {
-  return new DashboardApi(apiBase, cookie);
+  auth: UserCommandAuth,
+): UserApi {
+  return new UserApi(apiBase, auth);
 }

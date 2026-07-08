@@ -1,11 +1,11 @@
-import { createDashboardApi } from "../../lib/dashboard-api.js";
+import { createUserApi } from "../../lib/user-api.js";
 import { logStep } from "../../lib/command-log.js";
-import { requireDashboardSession } from "../../lib/dashboard-session.js";
+import { requireUserCommandSession } from "../../lib/user-session.js";
 
 export async function runOrgsList(): Promise<void> {
-  logStep("Listing organizations (dashboard session)");
-  const session = await requireDashboardSession();
-  const api = createDashboardApi(session.api_base, session.cookie);
+  logStep("Listing organizations");
+  const session = await requireUserCommandSession();
+  const api = createUserApi(session.api_base, session.auth);
   const response = await api.listOrgs();
 
   if (response.orgs.length === 0) {

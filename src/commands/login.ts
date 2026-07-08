@@ -9,6 +9,7 @@ import {
 export interface LoginOptions {
   apiKey: string;
   apiBase?: string;
+  userApiKey?: string;
   dashboardCookie?: string;
 }
 
@@ -25,19 +26,32 @@ export async function runLogin(options: LoginOptions): Promise<void> {
 
   const credentialsPath = getCredentialsPath();
   const existing = await readCredentials();
+
+  const userApiKey =
+    options.userApiKey?.trim() ||
+    process.env.VOICETHERE_USER_API_KEY?.trim() ||
+    existing?.user_api_key;
+
   const dashboardCookie =
-    options.dashboardCookie?.trim() || existing?.dashboard_session_cookie;
+    options.dashboardCookie?.trim() ||
+    process.env.VOICETHERE_DASHBOARD_COOKIE?.trim() ||
+    existing?.dashboard_session_cookie;
 
   logStep("Saving API credentials");
   logCommandInfo(`credentials: ${credentialsPath}`);
   logCommandInfo(`api base: ${apiBase}`);
+  if (userApiKey) {
+    logCommandInfo("user API key: stored");
+  }
   if (dashboardCookie) {
-    logCommandInfo("dashboard session cookie: stored");
+    logCommandInfo("dashboard session cookie: stored (legacy)");
   }
 
   await writeCredentials({
     api_key: apiKey,
     api_base: apiBase,
+    user_api_key: userApiKey,
+    active_org_id: existing?.active_org_id,
     dashboard_session_cookie: dashboardCookie,
   });
 

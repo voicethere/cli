@@ -1,19 +1,19 @@
-import { createDashboardApi } from "../../lib/dashboard-api.js";
+import { createUserApi } from "../../lib/user-api.js";
 import { logStep } from "../../lib/command-log.js";
-import { requireDashboardSession } from "../../lib/dashboard-session.js";
+import { requireUserCommandSession } from "../../lib/user-session.js";
 
 export async function runAccountDeletionPreview(): Promise<void> {
   logStep("Fetching account deletion preview");
-  const session = await requireDashboardSession();
-  const api = createDashboardApi(session.api_base, session.cookie);
+  const session = await requireUserCommandSession();
+  const api = createUserApi(session.api_base, session.auth);
   const preview = await api.getAccountDeletionPreview();
   console.log(JSON.stringify(preview, null, 2));
 }
 
 export async function runAccountDeletionRequestCode(): Promise<void> {
   logStep("Requesting account deletion verification code");
-  const session = await requireDashboardSession();
-  const api = createDashboardApi(session.api_base, session.cookie);
+  const session = await requireUserCommandSession();
+  const api = createUserApi(session.api_base, session.auth);
   await api.requestAccountDeletionCode();
   console.log("Verification code sent to your account email.");
 }
@@ -25,8 +25,8 @@ export async function runAccountDeletionConfirm(code: string): Promise<void> {
   }
 
   logStep("Confirming account deletion");
-  const session = await requireDashboardSession();
-  const api = createDashboardApi(session.api_base, session.cookie);
+  const session = await requireUserCommandSession();
+  const api = createUserApi(session.api_base, session.auth);
   const result = await api.confirmAccountDeletion(normalized);
   console.log(
     JSON.stringify(

@@ -86,21 +86,27 @@ async function main(): Promise<void> {
   program
     .command("login")
     .description("Store API key and API base URL")
-    .requiredOption("--api-key <key>", "VoiceThere API key (Bearer token)")
+    .requiredOption("--api-key <key>", "VoiceThere org API key (Bearer token)")
     .option("--api-base <url>", "API base URL", DEFAULT_API_BASE)
     .option(
+      "--user-api-key <key>",
+      "Personal user API key (vthu_) for org/account commands",
+    )
+    .option(
       "--dashboard-cookie <cookie>",
-      "Browser Cookie header for dashboard session commands (orgs, account deletion)",
+      "Legacy browser Cookie header (prefer --user-api-key)",
     )
     .action(
       async (options: {
         apiKey: string;
         apiBase?: string;
+        userApiKey?: string;
         dashboardCookie?: string;
       }) => {
         await runLogin({
           apiKey: options.apiKey,
           apiBase: options.apiBase,
+          userApiKey: options.userApiKey,
           dashboardCookie: options.dashboardCookie,
         });
       },
@@ -109,7 +115,7 @@ async function main(): Promise<void> {
   const orgs = program
     .command("orgs")
     .description(
-      "List and switch organizations (requires dashboard session cookie)",
+      "List and switch organizations (requires user API key or legacy dashboard cookie)",
     );
 
   orgs
@@ -121,7 +127,7 @@ async function main(): Promise<void> {
 
   orgs
     .command("use")
-    .description("Set the active organization cookie")
+    .description("Set the active organization")
     .argument("<orgId>", "Organization UUID")
     .action(async (orgId: string) => {
       await runOrgsUse(orgId);
@@ -129,7 +135,7 @@ async function main(): Promise<void> {
 
   const org = program
     .command("org")
-    .description("Organization actions (dashboard session)");
+    .description("Organization actions (user API key)");
 
   org
     .command("transfer-ownership")
@@ -141,7 +147,7 @@ async function main(): Promise<void> {
 
   const account = program
     .command("account")
-    .description("Account settings (dashboard session)");
+    .description("Account settings (user API key)");
 
   const accountDeletion = account
     .command("deletion")
