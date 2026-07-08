@@ -49,6 +49,8 @@ API keys live in `~/.config/voicethere/credentials.json` (mode `0600`) — **not
 
 ```bash
 voicethere login --api-key vth_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# personal key for org/account commands (create in dashboard Settings):
+voicethere login --api-key vth_… --user-api-key vthu_…
 # local platform dev server:
 voicethere login --api-key "$VOICETHERE_API_KEY" --api-base http://localhost:3000/api/v1
 ```
@@ -192,7 +194,13 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 
 | Command                                        | Description                                              |
 | ---------------------------------------------- | -------------------------------------------------------- |
-| `login --api-key <key> [--api-base <url>]`     | Save credentials                                         |
+| `login --api-key <key> [--api-base <url>] [--user-api-key <vthu>] [--dashboard-cookie <cookie>]` | Save org API key + optional personal user key |
+| `orgs list` | List organizations (`*` = active); requires user API key or legacy cookie |
+| `orgs use <orgId>` | Set active organization (persists `active_org_id` for user keys) |
+| `org transfer-ownership <userId>` | Transfer org ownership (owner only) |
+| `account deletion preview` | JSON preview of owned orgs + deletion job |
+| `account deletion request-code` | Email 6-digit deletion verification code |
+| `account deletion confirm <code>` | Queue account deletion job |
 | `projects list`                                | List org projects                                        |
 | `projects create <name> [--slug <slug>]`       | Create project; uses it (writes config)                  |
 | `projects use [projectId]`                     | Use project (picker or existing config when omitted)     |
