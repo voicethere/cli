@@ -171,8 +171,9 @@ async function main(): Promise<void> {
     .command("confirm")
     .description("Confirm deletion with the emailed code")
     .argument("<code>", "6-digit verification code")
-    .action(async (code: string) => {
-      await runAccountDeletionConfirm(code);
+    .option("--wait", "Poll until account deletion completes or fails")
+    .action(async (code: string, options: { wait?: boolean }) => {
+      await runAccountDeletionConfirm(code, { wait: options.wait });
     });
 
   const projects = program

@@ -5,6 +5,10 @@ import type { UserCommandAuth } from "./user-session.js";
 /** Must match platform `USER_ORG_ID_HEADER`. */
 export const USER_ORG_ID_HEADER = "x-voicethere-org-id";
 
+/** Must match platform `ACCOUNT_DELETION_POLL_TOKEN_HEADER`. */
+export const ACCOUNT_DELETION_POLL_TOKEN_HEADER =
+  "x-account-deletion-poll-token";
+
 export interface OrgListEntry {
   id: string;
   name: string;
@@ -33,6 +37,15 @@ export interface AccountDeletionPreviewResponse {
     created_at: string;
     completed_at: string | null;
   } | null;
+}
+
+export interface AccountDeletionJob {
+  id: string;
+  status: "queued" | "running" | "completed" | "failed";
+  step: string;
+  error: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 export class UserApi {
@@ -73,13 +86,27 @@ export class UserApi {
     );
   }
 
-  async confirmAccountDeletion(code: string): Promise<{ job_id: string }> {
-    const response = await this.request<{ ok: boolean; job_id: string }>(
-      "POST",
-      "/account/deletion",
-      { json: { code } },
+  async confirmAccountDeletion(code: string): Promise<{
+    job_id: string;
+    poll_token: string;
+  }> {
+    const response = await this.request<{
+      ok: boolean;
+      job_id: string;
+      poll_token: string;
+    }>("POST", "/account/deletion", { json: { code } });
+    return { job_id: response.job_id, poll_token: response.poll_token };
+  }
+
+  async getAccountDeletionJob(
+    jobId: string,
+    pollToken: string,
+  ): Promise<AccountDeletionJob> {
+    return this.request<AccountDeletionJob>(
+      "GET",
+      `/account/deletion/jobs/${jobId}`,
+      { pollToken },
     );
-    return { job_id: response.job_id };
   }
 
   private authLabel(): string {
@@ -105,13 +132,16 @@ export class UserApi {
   private async request<T>(
     method: string,
     path: string,
-    options?: { json?: unknown },
+    options?: { json?: unknown; pollToken?: string },
   ): Promise<T> {
     const url = new URL(
       path.replace(/^\//, ""),
       `${this.apiBase.replace(/\/$/, "")}/`,
     );
     const headers = this.buildHeaders(options?.json !== undefined);
+    if (options?.pollToken) {
+      headers[ACCOUNT_DELETION_POLL_TOKEN_HEADER] = options.pollToken;
+    }
 
     let body: BodyInit | undefined;
     if (options?.json !== undefined) {
