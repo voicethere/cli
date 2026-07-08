@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-07-08
+
+### Fixed
+
+- **`voicethere login --user-api-key`** — clear stored `active_org_id` when a new user API key is provided so ephemeral org setup (e.g. E2E) does not inherit a prior org selection.
+
 ## [0.3.12] - 2026-07-08
 
 ### Added
