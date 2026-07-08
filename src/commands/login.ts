@@ -47,11 +47,13 @@ export async function runLogin(options: LoginOptions): Promise<void> {
     logCommandInfo("dashboard session cookie: stored (legacy)");
   }
 
+  const explicitUserApiKey = options.userApiKey?.trim();
   await writeCredentials({
     api_key: apiKey,
     api_base: apiBase,
     user_api_key: userApiKey,
-    active_org_id: existing?.active_org_id,
+    // Fresh user key (e.g. ephemeral E2E org) must not keep a prior org selection.
+    active_org_id: explicitUserApiKey ? undefined : existing?.active_org_id,
     dashboard_session_cookie: dashboardCookie,
   });
 

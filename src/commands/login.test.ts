@@ -39,7 +39,7 @@ describe("runLogin", () => {
     expect(parsed.api_base).toBe("https://app.voicethere.dev/api/v1");
   });
 
-  it("preserves active_org_id when re-logging in", async () => {
+  it("preserves active_org_id when re-logging in without explicit user api key", async () => {
     await runLogin({
       apiKey: "vth_org_key",
       userApiKey: "vthu_personal_key",
@@ -58,7 +58,6 @@ describe("runLogin", () => {
 
     await runLogin({
       apiKey: "vth_new_org_key",
-      userApiKey: "vthu_personal_key",
     });
 
     const parsed = JSON.parse(await readFile(credentialsPath, "utf8")) as {
@@ -67,5 +66,37 @@ describe("runLogin", () => {
     };
     expect(parsed.api_key).toBe("vth_new_org_key");
     expect(parsed.active_org_id).toBe("org-abc");
+  });
+
+  it("clears active_org_id when an explicit user api key is provided", async () => {
+    await runLogin({
+      apiKey: "vth_org_key",
+      userApiKey: "vthu_personal_key",
+    });
+
+    const raw1 = await readFile(credentialsPath, "utf8");
+    const withOrg = {
+      ...JSON.parse(raw1),
+      active_org_id: "org-abc",
+    };
+    await writeFile(
+      credentialsPath,
+      `${JSON.stringify(withOrg, null, 2)}\n`,
+      "utf8",
+    );
+
+    await runLogin({
+      apiKey: "vth_new_org_key",
+      userApiKey: "vthu_new_personal_key",
+    });
+
+    const parsed = JSON.parse(await readFile(credentialsPath, "utf8")) as {
+      api_key: string;
+      user_api_key?: string;
+      active_org_id?: string;
+    };
+    expect(parsed.api_key).toBe("vth_new_org_key");
+    expect(parsed.user_api_key).toBe("vthu_new_personal_key");
+    expect(parsed.active_org_id).toBeUndefined();
   });
 });
