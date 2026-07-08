@@ -200,7 +200,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `org transfer-ownership <userId>` | Transfer org ownership (owner only) |
 | `account deletion preview` | JSON preview of owned orgs + deletion job |
 | `account deletion request-code` | Email 6-digit deletion verification code |
-| `account deletion confirm <code>` | Queue account deletion job |
+| `account deletion confirm <code> [--wait]` | Queue account deletion; `--wait` blocks until teardown completes |
 | `projects list`                                | List org projects                                        |
 | `projects create <name> [--slug <slug>]`       | Create project; uses it (writes config)                  |
 | `projects use [projectId]`                     | Use project (picker or existing config when omitted)     |
