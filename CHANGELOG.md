@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- **`voicethere orgs list` / `orgs use`** — list organizations and set the active org (dashboard session cookie).
+- **`voicethere org transfer-ownership`** — transfer org ownership to another member (dashboard session).
+- **`voicethere account deletion preview|request-code|confirm`** — account deletion flow via dashboard session APIs.
+- **`voicethere login --dashboard-cookie`** — store browser Cookie header for dashboard-session commands (`VOICETHERE_DASHBOARD_COOKIE` env override).
+
 ## [0.3.11] - 2026-07-07
 
 ### Added

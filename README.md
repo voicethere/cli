@@ -192,7 +192,13 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 
 | Command                                        | Description                                              |
 | ---------------------------------------------- | -------------------------------------------------------- |
-| `login --api-key <key> [--api-base <url>]`     | Save credentials                                         |
+| `login --api-key <key> [--api-base <url>] [--dashboard-cookie <cookie>]` | Save API key + optional dashboard session cookie |
+| `orgs list` | List organizations (`*` = active); requires dashboard cookie |
+| `orgs use <orgId>` | Set active organization |
+| `org transfer-ownership <userId>` | Transfer org ownership (owner only) |
+| `account deletion preview` | JSON preview of owned orgs + deletion job |
+| `account deletion request-code` | Email 6-digit deletion verification code |
+| `account deletion confirm <code>` | Queue account deletion job |
 | `projects list`                                | List org projects                                        |
 | `projects create <name> [--slug <slug>]`       | Create project; uses it (writes config)                  |
 | `projects use [projectId]`                     | Use project (picker or existing config when omitted)     |

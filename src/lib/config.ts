@@ -7,6 +7,8 @@ export const DEFAULT_API_BASE = "https://app.voicethere.dev/api/v1";
 export interface Credentials {
   api_key: string;
   api_base: string;
+  /** Browser Cookie header for dashboard-session APIs (orgs, account deletion). */
+  dashboard_session_cookie?: string;
 }
 
 export function getCredentialsPath(): string {
@@ -33,6 +35,11 @@ export async function readCredentials(): Promise<Credentials | null> {
     return {
       api_key: parsed.api_key,
       api_base: parsed.api_base,
+      dashboard_session_cookie:
+        typeof parsed.dashboard_session_cookie === "string" &&
+        parsed.dashboard_session_cookie.length > 0
+          ? parsed.dashboard_session_cookie
+          : undefined,
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {

@@ -6,6 +6,14 @@ import { runApiKeysCreate } from "./commands/api-keys/create.js";
 import { runApiKeysList } from "./commands/api-keys/list.js";
 import { runApiKeysRevoke } from "./commands/api-keys/revoke.js";
 import { runLogin } from "./commands/login.js";
+import { runOrgsList } from "./commands/orgs/list.js";
+import { runOrgsUse } from "./commands/orgs/use.js";
+import { runOrgTransferOwnership } from "./commands/org/transfer-ownership.js";
+import {
+  runAccountDeletionConfirm,
+  runAccountDeletionPreview,
+  runAccountDeletionRequestCode,
+} from "./commands/account/deletion.js";
 import { runProjectsCreate } from "./commands/projects/create.js";
 import { runProjectsDelete } from "./commands/projects/delete.js";
 import { runProjectsEnvironmentDelete } from "./commands/projects/environment/delete.js";
@@ -80,11 +88,85 @@ async function main(): Promise<void> {
     .description("Store API key and API base URL")
     .requiredOption("--api-key <key>", "VoiceThere API key (Bearer token)")
     .option("--api-base <url>", "API base URL", DEFAULT_API_BASE)
-    .action(async (options: { apiKey: string; apiBase?: string }) => {
-      await runLogin({
-        apiKey: options.apiKey,
-        apiBase: options.apiBase,
-      });
+    .option(
+      "--dashboard-cookie <cookie>",
+      "Browser Cookie header for dashboard session commands (orgs, account deletion)",
+    )
+    .action(
+      async (options: {
+        apiKey: string;
+        apiBase?: string;
+        dashboardCookie?: string;
+      }) => {
+        await runLogin({
+          apiKey: options.apiKey,
+          apiBase: options.apiBase,
+          dashboardCookie: options.dashboardCookie,
+        });
+      },
+    );
+
+  const orgs = program
+    .command("orgs")
+    .description(
+      "List and switch organizations (requires dashboard session cookie)",
+    );
+
+  orgs
+    .command("list")
+    .description("List organizations for the signed-in dashboard user")
+    .action(async () => {
+      await runOrgsList();
+    });
+
+  orgs
+    .command("use")
+    .description("Set the active organization cookie")
+    .argument("<orgId>", "Organization UUID")
+    .action(async (orgId: string) => {
+      await runOrgsUse(orgId);
+    });
+
+  const org = program
+    .command("org")
+    .description("Organization actions (dashboard session)");
+
+  org
+    .command("transfer-ownership")
+    .description("Transfer organization ownership to another member")
+    .argument("<newOwnerUserId>", "User UUID of the new owner")
+    .action(async (newOwnerUserId: string) => {
+      await runOrgTransferOwnership(newOwnerUserId);
+    });
+
+  const account = program
+    .command("account")
+    .description("Account settings (dashboard session)");
+
+  const accountDeletion = account
+    .command("deletion")
+    .description("Preview or start account deletion (email verification required)");
+
+  accountDeletion
+    .command("preview")
+    .description("Show owned orgs and any in-flight deletion job")
+    .action(async () => {
+      await runAccountDeletionPreview();
+    });
+
+  accountDeletion
+    .command("request-code")
+    .description("Email a 6-digit verification code")
+    .action(async () => {
+      await runAccountDeletionRequestCode();
+    });
+
+  accountDeletion
+    .command("confirm")
+    .description("Confirm deletion with the emailed code")
+    .argument("<code>", "6-digit verification code")
+    .action(async (code: string) => {
+      await runAccountDeletionConfirm(code);
     });
 
   const projects = program
