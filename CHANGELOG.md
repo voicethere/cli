@@ -6,12 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-07-08
+
 ### Added
 
 - **`voicethere login --user-api-key`** — store personal API key (`vthu_`) for org/account commands (`VOICETHERE_USER_API_KEY` env override). Persists `active_org_id` when using `orgs use`.
 - **`voicethere orgs list` / `orgs use`** — list organizations and set the active org (user API key or legacy dashboard cookie).
 - **`voicethere org transfer-ownership`** — transfer org ownership to another member (user API key).
 - **`voicethere account deletion preview|request-code|confirm`** — account deletion flow via user API key.
+- **`voicethere account deletion confirm --wait`** — poll until account teardown completes or fails.
 - **`voicethere login --dashboard-cookie`** — legacy browser Cookie header (`VOICETHERE_DASHBOARD_COOKIE`); prefer `--user-api-key`.
 
 ## [0.3.11] - 2026-07-07
