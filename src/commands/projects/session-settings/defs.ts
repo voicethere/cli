@@ -60,13 +60,13 @@ export const SESSION_SETTING_DEFS: Record<
     type: "boolean",
     default: true,
     description:
-      "Reset idle timer on speech events and agent TTS (voice / both). Ignored when project is data-only.",
+      "When on, user speech and agent TTS reset the idle countdown (voice / both projects). When off, voice does not reset the timer — the session can still hit the idle timeout during a call. Ignored when the project is data-only.",
   },
   idle_timeout_dc_inbound: {
     type: "boolean",
     default: true,
     description:
-      "Reset idle timer when the client sends data-channel messages (all modes).",
+      "When on, client→server data-channel messages reset the idle countdown. When off, data-channel traffic does not extend the session.",
   },
 };
 
