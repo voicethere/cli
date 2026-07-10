@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-07-10
+
+### Added
+
+- **Terms of Service gate** — when the platform returns `NWRTC_TOS_NOT_ACCEPTED`, CLI commands print a clear error with the dashboard `/accept-tos` URL instead of a generic API failure. Applies to org and user API clients.
+
+### Changed
+
+- **`projects session-settings` help** — clarify `idle_timeout_voice_activity` and `idle_timeout_dc_inbound` descriptions to match the platform dashboard (when each idle-reset behavior is on or off).
+
 ## [0.3.13] - 2026-07-08
 
 ### Fixed
