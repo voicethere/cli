@@ -1,5 +1,9 @@
 import { logApiBase, logVerbose } from "./command-log.js";
 import { ApiError, type ApiErrorBody } from "./api.js";
+import {
+  formatTosNotAcceptedMessage,
+  isTosNotAcceptedError,
+} from "./tos-gate.js";
 import type { UserCommandAuth } from "./user-session.js";
 
 /** Must match platform `USER_ORG_ID_HEADER`. */
@@ -110,7 +114,9 @@ export class UserApi {
   }
 
   private authLabel(): string {
-    return this.auth.kind === "user_api_key" ? "user API key" : "dashboard session";
+    return this.auth.kind === "user_api_key"
+      ? "user API key"
+      : "dashboard session";
   }
 
   private buildHeaders(json: boolean): Record<string, string> {
@@ -168,9 +174,13 @@ export class UserApi {
         payload && typeof payload === "object" && "error" in payload
           ? (payload as ApiErrorBody)
           : undefined;
-      const message =
-        errorBody?.error?.message ??
-        `Request failed: ${method} ${url.pathname} (${response.status})`;
+      const message = isTosNotAcceptedError(errorBody)
+        ? formatTosNotAcceptedMessage(
+            errorBody,
+            errorBody?.error?.message ?? "",
+          )
+        : (errorBody?.error?.message ??
+          `Request failed: ${method} ${url.pathname} (${response.status})`);
       logVerbose(`error: ${errorBody?.error?.code ?? "unknown"} — ${message}`);
       throw new ApiError(response.status, message, errorBody);
     }
@@ -179,9 +189,6 @@ export class UserApi {
   }
 }
 
-export function createUserApi(
-  apiBase: string,
-  auth: UserCommandAuth,
-): UserApi {
+export function createUserApi(apiBase: string, auth: UserCommandAuth): UserApi {
   return new UserApi(apiBase, auth);
 }

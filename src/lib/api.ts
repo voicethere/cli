@@ -2,6 +2,10 @@ import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 
 import { logApiBase, logVerbose } from "./command-log.js";
+import {
+  formatTosNotAcceptedMessage,
+  isTosNotAcceptedError,
+} from "./tos-gate.js";
 
 export interface ApiErrorBody {
   error?: {
@@ -749,9 +753,13 @@ export class VoicethereApi {
         payload && typeof payload === "object" && "error" in payload
           ? (payload as ApiErrorBody)
           : undefined;
-      const message =
-        errorBody?.error?.message ??
-        `Request failed: ${method} ${url.pathname} (${response.status})`;
+      const message = isTosNotAcceptedError(errorBody)
+        ? formatTosNotAcceptedMessage(
+            errorBody,
+            errorBody?.error?.message ?? "",
+          )
+        : (errorBody?.error?.message ??
+          `Request failed: ${method} ${url.pathname} (${response.status})`);
       logVerbose(`error: ${errorBody?.error?.code ?? "unknown"} — ${message}`);
       throw new ApiError(response.status, message, errorBody);
     }
