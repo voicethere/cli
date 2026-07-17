@@ -44,6 +44,7 @@ describe("projects settings commands", () => {
         settings: {
           mode: "voice",
           warm_pool_enabled: false,
+          redis_enabled: false,
           idle_scale_down_seconds: 600,
           data_only: false,
           shared_child_per_session: false,
@@ -59,7 +60,9 @@ describe("projects settings commands", () => {
           expect.stringMatching(new RegExp(`^${key}=`)),
         );
       }
-      expect(console.log).toHaveBeenCalledWith("shared_child_per_session=false");
+      expect(console.log).toHaveBeenCalledWith(
+        "shared_child_per_session=false",
+      );
       expect(console.log).toHaveBeenCalledWith(
         "agent_crash_policy=disconnect_all",
       );
@@ -143,6 +146,26 @@ describe("projects settings commands", () => {
         runProjectsSettingsSet({ name: "unknown", value: "1" }),
       ).rejects.toThrow(/Unknown setting/);
       expect(setProjectSetting).not.toHaveBeenCalled();
+    });
+
+    it("sets redis_enabled boolean", async () => {
+      setProjectSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {
+          redis_enabled: false,
+        },
+      });
+
+      await runProjectsSettingsSet({
+        name: "redis_enabled",
+        value: "false",
+      });
+
+      expect(setProjectSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "redis_enabled",
+        false,
+      );
     });
 
     it("rejects invalid boolean values", async () => {
