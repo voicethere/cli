@@ -3,12 +3,17 @@ import { runProjectsDelete } from "./delete.js";
 
 const deleteProject = vi.fn();
 const getProject = vi.fn();
+const getProjectDeletionJob = vi.fn();
 const requireCredentials = vi.fn();
 const requireProjectId = vi.fn();
 const readProjectConfig = vi.fn();
 
 vi.mock("../../lib/api.js", () => ({
-  createApi: vi.fn(() => ({ deleteProject, getProject })),
+  createApi: vi.fn(() => ({
+    deleteProject,
+    getProject,
+    getProjectDeletionJob,
+  })),
 }));
 
 vi.mock("../../lib/config.js", () => ({
@@ -33,6 +38,7 @@ describe("runProjectsDelete", () => {
   beforeEach(() => {
     deleteProject.mockReset();
     getProject.mockReset();
+    getProjectDeletionJob.mockReset();
     requireCredentials.mockReset();
     requireProjectId.mockReset();
     readProjectConfig.mockReset();
@@ -51,6 +57,7 @@ describe("runProjectsDelete", () => {
       created_at: "2026-01-01T00:00:00Z",
     });
     readProjectConfig.mockResolvedValue(null);
+    deleteProject.mockResolvedValue({ mode: "completed" });
   });
 
   it("refuses deletion in non-interactive mode without --force", async () => {
@@ -78,5 +85,68 @@ describe("runProjectsDelete", () => {
       force: true,
       confirmName: undefined,
     });
+  });
+
+  it("polls until deletion completes when --wait is set", async () => {
+    deleteProject.mockResolvedValue({ mode: "queued", jobId: "del-job-1" });
+    getProjectDeletionJob
+      .mockResolvedValueOnce({
+        id: "del-job-1",
+        project_id: "proj-1",
+        status: "running",
+        step: "wait_undeploy",
+        error: null,
+        created_at: "2026-01-01T00:00:00Z",
+        completed_at: null,
+      })
+      .mockResolvedValueOnce({
+        id: "del-job-1",
+        project_id: "proj-1",
+        status: "completed",
+        step: "delete_project",
+        error: null,
+        created_at: "2026-01-01T00:00:00Z",
+        completed_at: "2026-01-01T00:01:00Z",
+      });
+
+    await runProjectsDelete({
+      force: true,
+      wait: true,
+      pollIntervalMs: 1,
+      timeoutMs: 5_000,
+    });
+
+    expect(getProjectDeletionJob).toHaveBeenCalledWith("proj-1", "del-job-1");
+    expect(getProjectDeletionJob).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws when deletion fails after wait", async () => {
+    deleteProject.mockResolvedValue({ mode: "queued", jobId: "del-job-1" });
+    getProjectDeletionJob.mockResolvedValue({
+      id: "del-job-1",
+      project_id: "proj-1",
+      status: "failed",
+      step: "delete_project",
+      error: "purge failed",
+      created_at: "2026-01-01T00:00:00Z",
+      completed_at: "2026-01-01T00:01:00Z",
+    });
+
+    await expect(
+      runProjectsDelete({
+        force: true,
+        wait: true,
+        pollIntervalMs: 1,
+        timeoutMs: 5_000,
+      }),
+    ).rejects.toThrow(/purge failed/);
+  });
+
+  it("does not poll when queued without --wait", async () => {
+    deleteProject.mockResolvedValue({ mode: "queued", jobId: "del-job-1" });
+
+    await runProjectsDelete({ force: true });
+
+    expect(getProjectDeletionJob).not.toHaveBeenCalled();
   });
 });

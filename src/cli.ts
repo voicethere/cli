@@ -151,7 +151,9 @@ async function main(): Promise<void> {
 
   const accountDeletion = account
     .command("deletion")
-    .description("Preview or start account deletion (email verification required)");
+    .description(
+      "Preview or start account deletion (email verification required)",
+    );
 
   accountDeletion
     .command("preview")
@@ -262,11 +264,16 @@ async function main(): Promise<void> {
       "Project UUID (default: active project from .voicethere/config.json)",
     )
     .option("--force", "Skip interactive name confirmation")
+    .option("--wait", "Poll until async project deletion completes or fails")
     .action(
-      async (projectId: string | undefined, options: { force?: boolean }) => {
+      async (
+        projectId: string | undefined,
+        options: { force?: boolean; wait?: boolean },
+      ) => {
         await runProjectsDelete({
           projectId,
           force: options.force,
+          wait: options.wait,
         });
       },
     );
