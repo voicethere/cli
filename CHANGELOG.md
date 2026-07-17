@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.15] - 2026-07-17
+
+### Added
+
+- **`voicethere projects delete --wait`** — when staging/production queues async project deletion (`202` + `job_id`), poll `GET /projects/:id/deletion/:jobId` until completed or failed (same pattern as `deploy --wait` / `undeploy --wait`).
+
 ## [0.3.14] - 2026-07-10
 
 ### Added

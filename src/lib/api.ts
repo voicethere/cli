@@ -75,6 +75,25 @@ export interface DeploymentJob {
   completed_at: string | null;
 }
 
+export type ProjectDeletionJobStatus =
+  "queued" | "running" | "completed" | "failed";
+
+export type ProjectDeletionStep =
+  "undeploy" | "wait_undeploy" | "delete_project";
+
+export interface ProjectDeletionJob {
+  id: string;
+  project_id: string;
+  status: ProjectDeletionJobStatus;
+  step: ProjectDeletionStep;
+  error: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export type DeleteProjectResult =
+  { mode: "completed" } | { mode: "queued"; jobId: string };
+
 export interface ProjectSecretEntry {
   name: string;
   masked_value: string;
@@ -430,9 +449,9 @@ export class VoicethereApi {
   async deleteProject(
     projectId: string,
     options?: { force?: boolean; confirmName?: string },
-  ): Promise<void> {
+  ): Promise<DeleteProjectResult> {
     const query = options?.force ? "?force=true" : "";
-    await this.request<Record<string, never>>(
+    const result = await this.request<{ job_id?: string; status?: string }>(
       "DELETE",
       `/projects/${projectId}${query}`,
       {
@@ -440,6 +459,20 @@ export class VoicethereApi {
           ? { confirm_name: options.confirmName }
           : undefined,
       },
+    );
+    if (result.job_id) {
+      return { mode: "queued", jobId: result.job_id };
+    }
+    return { mode: "completed" };
+  }
+
+  async getProjectDeletionJob(
+    projectId: string,
+    jobId: string,
+  ): Promise<ProjectDeletionJob> {
+    return this.request<ProjectDeletionJob>(
+      "GET",
+      `/projects/${projectId}/deletion/${jobId}`,
     );
   }
 

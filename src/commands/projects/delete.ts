@@ -1,12 +1,9 @@
 import { unlink } from "node:fs/promises";
 
-import { createApi } from "../../lib/api.js";
+import { createApi, type ProjectDeletionJob } from "../../lib/api.js";
 import { requireCredentials } from "../../lib/config.js";
 import { logCommandInfo, logStep, logVerbose } from "../../lib/command-log.js";
-import {
-  isInteractive,
-  promptConfirmText,
-} from "../../lib/prompt.js";
+import { isInteractive, promptConfirmText } from "../../lib/prompt.js";
 import {
   readProjectConfig,
   requireProjectId,
@@ -15,6 +12,37 @@ import {
 export interface ProjectsDeleteOptions {
   projectId?: string;
   force?: boolean;
+  wait?: boolean;
+  pollIntervalMs?: number;
+  timeoutMs?: number;
+}
+
+const TERMINAL_STATUSES = new Set(["completed", "failed"]);
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function pollProjectDeletion(
+  api: ReturnType<typeof createApi>,
+  projectId: string,
+  jobId: string,
+  options: { pollIntervalMs: number; timeoutMs: number },
+): Promise<ProjectDeletionJob> {
+  const started = Date.now();
+  while (Date.now() - started < options.timeoutMs) {
+    const job = await api.getProjectDeletionJob(projectId, jobId);
+    logVerbose(
+      `project deletion ${jobId}: status=${job.status} step=${job.step}`,
+    );
+    if (TERMINAL_STATUSES.has(job.status)) {
+      return job;
+    }
+    await sleep(options.pollIntervalMs);
+  }
+  throw new Error(
+    `Timed out after ${options.timeoutMs}ms waiting for project deletion ${jobId}`,
+  );
 }
 
 export async function runProjectsDelete(
@@ -47,10 +75,36 @@ export async function runProjectsDelete(
   }
 
   logStep(`Removing project "${project.name}" and all builds from the API`);
-  await api.deleteProject(projectId, {
+  const result = await api.deleteProject(projectId, {
     force: options.force,
     confirmName: options.force ? undefined : project.name,
   });
+
+  if (result.mode === "queued") {
+    console.log(`Project deletion queued: ${result.jobId}`);
+    console.log(`  project: ${projectId}`);
+    console.log(`  status: queued`);
+
+    if (!options.wait) {
+      console.log(
+        `Poll with: voicethere projects delete --wait --force ${projectId}`,
+      );
+    } else {
+      logStep("Waiting for project deletion to complete");
+      const final = await pollProjectDeletion(api, projectId, result.jobId, {
+        pollIntervalMs: options.pollIntervalMs ?? 3_000,
+        timeoutMs: options.timeoutMs ?? 600_000,
+      });
+
+      if (final.status === "failed") {
+        throw new Error(final.error ?? "Project deletion failed");
+      }
+
+      console.log(`Project deletion completed: ${final.id}`);
+      console.log(`  status: ${final.status}`);
+      console.log(`  step: ${final.step}`);
+    }
+  }
 
   const linked = await readProjectConfig();
   if (linked?.config.project_id === projectId) {
@@ -58,5 +112,11 @@ export async function runProjectsDelete(
     logCommandInfo(`removed project config: ${linked.path}`);
   }
 
-  logStep(`Deleted project ${project.name} (${projectId})`);
+  if (result.mode === "completed" || options.wait) {
+    logStep(`Deleted project ${project.name} (${projectId})`);
+  } else {
+    logStep(
+      `Project deletion queued for ${project.name} (${projectId}); use --wait to block until finished`,
+    );
+  }
 }

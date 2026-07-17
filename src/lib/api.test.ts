@@ -396,15 +396,54 @@ describe("VoicethereApi", () => {
       .mockResolvedValue(new Response("{}", { status: 200 }));
 
     const api = new VoicethereApi(apiKey, apiBase);
-    await api.deleteProject("proj-1", {
+    const result = await api.deleteProject("proj-1", {
       force: true,
       confirmName: "Demo",
     });
 
+    expect(result).toEqual({ mode: "completed" });
     const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(url.search).toBe("?force=true");
     expect(init.method).toBe("DELETE");
     expect(init.body).toBe(JSON.stringify({ confirm_name: "Demo" }));
+  });
+
+  it("returns queued delete result from 202 body", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ job_id: "del-1", status: "queued" }), {
+        status: 202,
+      }),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const result = await api.deleteProject("proj-1", { force: true });
+
+    expect(result).toEqual({ mode: "queued", jobId: "del-1" });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("gets project deletion job status", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "del-1",
+          project_id: "proj-1",
+          status: "running",
+          step: "wait_undeploy",
+          error: null,
+          created_at: "2026-01-01T00:00:00Z",
+          completed_at: null,
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const job = await api.getProjectDeletionJob("proj-1", "del-1");
+
+    expect(job.status).toBe("running");
+    const [url] = fetchMock.mock.calls[0] as [URL];
+    expect(url.pathname).toBe("/api/v1/projects/proj-1/deletion/del-1");
   });
 
   it("lists project sessions with start/end query", async () => {
