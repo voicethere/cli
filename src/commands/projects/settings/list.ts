@@ -6,6 +6,7 @@ import { requireProjectId } from "../../../lib/project-config.js";
 export const PROJECT_SETTING_KEYS = [
   "mode",
   "warm_pool_enabled",
+  "redis_enabled",
   "idle_scale_down_seconds",
   "data_only",
   "shared_child_per_session",
