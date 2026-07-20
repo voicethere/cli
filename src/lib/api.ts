@@ -352,6 +352,56 @@ export interface ProjectSessionErrorsResponse {
   errors: ProjectSessionErrorEntry[];
 }
 
+export type AgentLogLevel = "debug" | "info" | "warn" | "error";
+
+export interface AgentLogEntry {
+  id: string;
+  org_id: string;
+  project_id: string;
+  session_id: string | null;
+  orchestrator_session_id: string | null;
+  level: AgentLogLevel;
+  message: string;
+  fields: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ListAgentLogsQuery {
+  limit?: number;
+  q?: string;
+  level?: AgentLogLevel;
+  fieldPath?: string;
+  fieldValue?: string;
+}
+
+export interface ProjectLogsResponse {
+  project_id: string;
+  orchestrator_session_id?: string;
+  logs: AgentLogEntry[];
+}
+
+function buildAgentLogsSearchParams(
+  query: ListAgentLogsQuery,
+): URLSearchParams {
+  const params = new URLSearchParams();
+  if (query.limit != null) {
+    params.set("limit", String(query.limit));
+  }
+  if (query.q?.trim()) {
+    params.set("q", query.q.trim());
+  }
+  if (query.level) {
+    params.set("level", query.level);
+  }
+  if (query.fieldPath?.trim()) {
+    params.set("fieldPath", query.fieldPath.trim());
+  }
+  if (query.fieldValue?.trim()) {
+    params.set("fieldValue", query.fieldValue.trim());
+  }
+  return params;
+}
+
 export class VoicethereApi {
   constructor(
     private readonly apiKey: string,
@@ -739,6 +789,29 @@ export class VoicethereApi {
     return this.request<ProjectSessionErrorsResponse>(
       "GET",
       `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/errors`,
+    );
+  }
+
+  async listProjectLogs(
+    projectId: string,
+    query: ListAgentLogsQuery = {},
+  ): Promise<ProjectLogsResponse> {
+    const params = buildAgentLogsSearchParams(query);
+    return this.request<ProjectLogsResponse>(
+      "GET",
+      `/projects/${projectId}/logs?${params.toString()}`,
+    );
+  }
+
+  async listSessionLogs(
+    projectId: string,
+    orchestratorSessionId: string,
+    query: ListAgentLogsQuery = {},
+  ): Promise<ProjectLogsResponse> {
+    const params = buildAgentLogsSearchParams(query);
+    return this.request<ProjectLogsResponse>(
+      "GET",
+      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/logs?${params.toString()}`,
     );
   }
 
