@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.16] - 2026-07-20
+
+### Added
+
+- **`voicethere projects logs list`** — list searchable customer agent logs for a project or `--session` (mirrors `projects errors list`).
+
 ## [0.3.15] - 2026-07-17
 
 ### Added
