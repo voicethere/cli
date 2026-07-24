@@ -1,5 +1,6 @@
 import { createUserApi, type AccountDeletionJob } from "../../lib/user-api.js";
 import { logStep, logVerbose } from "../../lib/command-log.js";
+import { pollWithBackoff } from "../../lib/poll-backoff.js";
 import { requireUserCommandSession } from "../../lib/user-session.js";
 
 export interface AccountDeletionConfirmOptions {
@@ -10,28 +11,28 @@ export interface AccountDeletionConfirmOptions {
 
 const TERMINAL_STATUSES = new Set(["completed", "failed"]);
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function pollAccountDeletionJob(
   api: ReturnType<typeof createUserApi>,
   jobId: string,
   pollToken: string,
   options: { pollIntervalMs: number; timeoutMs: number },
 ): Promise<AccountDeletionJob> {
-  const started = Date.now();
-  while (Date.now() - started < options.timeoutMs) {
-    const job = await api.getAccountDeletionJob(jobId, pollToken);
-    logVerbose(`account deletion ${jobId}: status=${job.status} step=${job.step}`);
-    if (TERMINAL_STATUSES.has(job.status)) {
-      return job;
-    }
-    await sleep(options.pollIntervalMs);
-  }
-  throw new Error(
-    `Timed out after ${options.timeoutMs}ms waiting for account deletion ${jobId}`,
-  );
+  return pollWithBackoff({
+    poll: () => api.getAccountDeletionJob(jobId, pollToken),
+    isTerminal: (job) => TERMINAL_STATUSES.has(job.status),
+    getProgress: (job) => ({
+      status: job.status,
+      progressId: job.step,
+    }),
+    getRetryAfterMs: (job) => job.retry_after_ms,
+    onPoll: (job) =>
+      logVerbose(
+        `account deletion ${jobId}: status=${job.status} step=${job.step}`,
+      ),
+    baseIntervalMs: options.pollIntervalMs,
+    timeoutMs: options.timeoutMs,
+    timeoutMessage: `Timed out after ${options.timeoutMs}ms waiting for account deletion ${jobId}`,
+  });
 }
 
 export async function runAccountDeletionPreview(): Promise<void> {

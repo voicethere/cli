@@ -16,8 +16,6 @@ export async function runOrgsList(): Promise<void> {
   for (const org of response.orgs) {
     const active = org.id === response.active_org_id ? "*" : " ";
     const owner = org.is_owner ? "owner" : "member";
-    console.log(
-      `${active}\t${org.id}\t${org.slug}\t${org.name}\t${owner}`,
-    );
+    console.log(`${active}\t${org.id}\t${org.slug}\t${org.name}\t${owner}`);
   }
 }

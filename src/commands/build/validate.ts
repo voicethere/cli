@@ -1,6 +1,10 @@
 import { spawn } from "node:child_process";
 
-import { logResolvedBundle, logStep, logVerbose } from "../../lib/command-log.js";
+import {
+  logResolvedBundle,
+  logStep,
+  logVerbose,
+} from "../../lib/command-log.js";
 import {
   assertBundleExists,
   resolveBundlePathDetailed,

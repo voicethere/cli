@@ -25,11 +25,18 @@ function formatProjectChoice(project: Project): string {
 async function resolveProjectToUse(
   api: ReturnType<typeof createApi>,
   options: ProjectsUseOptions,
-): Promise<{ project: Project; fromExistingConfig: boolean; configPath?: string }> {
+): Promise<{
+  project: Project;
+  fromExistingConfig: boolean;
+  configPath?: string;
+}> {
   const trimmed = options.projectId?.trim();
   if (trimmed) {
     logVerbose(`fetching project ${trimmed}`);
-    return { project: await api.getProject(trimmed), fromExistingConfig: false };
+    return {
+      project: await api.getProject(trimmed),
+      fromExistingConfig: false,
+    };
   }
 
   const linked = await readProjectConfig(options.startDir);
@@ -53,7 +60,7 @@ async function resolveProjectToUse(
   logVerbose(`found ${projects.length} project(s) for picker`);
   if (projects.length === 0) {
     throw new Error(
-      "No projects found. Create one with: voicethere projects create \"My Agent\"",
+      'No projects found. Create one with: voicethere projects create "My Agent"',
     );
   }
 
@@ -79,8 +86,10 @@ export async function runProjectsUse(
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
   const linked = await readProjectConfig(options.startDir);
-  const { project, fromExistingConfig, configPath } =
-    await resolveProjectToUse(api, options);
+  const { project, fromExistingConfig, configPath } = await resolveProjectToUse(
+    api,
+    options,
+  );
 
   const bundle =
     options.bundle?.trim() || linked?.config.bundle?.trim() || undefined;
@@ -107,9 +116,7 @@ export async function runProjectsUse(
   logCommandInfo(`project config: ${path}`);
 
   if (fromExistingConfig) {
-    console.log(
-      `Using project ${project.name} (${project.id}) from ${path}`,
-    );
+    console.log(`Using project ${project.name} (${project.id}) from ${path}`);
     return;
   }
 

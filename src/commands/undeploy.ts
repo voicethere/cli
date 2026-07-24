@@ -1,6 +1,7 @@
 import { createApi, type DeploymentJob } from "../lib/api.js";
 import { logStep, logVerbose } from "../lib/command-log.js";
 import { requireCredentials } from "../lib/config.js";
+import { pollWithBackoff } from "../lib/poll-backoff.js";
 import { resolveProjectId } from "../lib/project-config.js";
 
 export interface UndeployOptions {
@@ -12,33 +13,32 @@ export interface UndeployOptions {
 
 const TERMINAL_STATUSES = new Set(["completed", "failed"]);
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function pollDeployment(
   api: ReturnType<typeof createApi>,
   jobId: string,
   options: { pollIntervalMs: number; timeoutMs: number },
 ): Promise<DeploymentJob> {
-  const started = Date.now();
-  while (Date.now() - started < options.timeoutMs) {
-    const job = await api.getDeployment(jobId);
-    logVerbose(`undeploy ${jobId}: status=${job.status}`);
-    if (TERMINAL_STATUSES.has(job.status)) {
-      return job;
-    }
-    await sleep(options.pollIntervalMs);
-  }
-  throw new Error(
-    `Timed out after ${options.timeoutMs}ms waiting for undeploy ${jobId}`,
-  );
+  return pollWithBackoff({
+    poll: () => api.getDeployment(jobId),
+    isTerminal: (job) => TERMINAL_STATUSES.has(job.status),
+    getProgress: (job) => ({
+      status: job.status,
+      progressId: job.build_id,
+    }),
+    getRetryAfterMs: (job) => job.retry_after_ms,
+    onPoll: (job) => logVerbose(`undeploy ${jobId}: status=${job.status}`),
+    baseIntervalMs: options.pollIntervalMs,
+    timeoutMs: options.timeoutMs,
+    timeoutMessage: `Timed out after ${options.timeoutMs}ms waiting for undeploy ${jobId}`,
+  });
 }
 
 /**
- * Remove the project's runner deployment from the cluster.
+ * Remove the project's cloud deployment.
  */
-export async function runUndeploy(options: UndeployOptions = {}): Promise<void> {
+export async function runUndeploy(
+  options: UndeployOptions = {},
+): Promise<void> {
   logStep("Starting project undeploy");
   const project =
     options.projectId !== undefined

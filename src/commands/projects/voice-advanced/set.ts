@@ -30,7 +30,11 @@ export async function runProjectsVoiceAdvancedSet(
 
   const credentials = await requireCredentials();
   const api = createApi(credentials.api_key, credentials.api_base);
-  const result = await api.setProjectVoiceAdvancedSetting(projectId, key, value);
+  const result = await api.setProjectVoiceAdvancedSetting(
+    projectId,
+    key,
+    value,
+  );
   console.log(JSON.stringify(result.settings, null, 2));
 }
 

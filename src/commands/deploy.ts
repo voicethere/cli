@@ -1,6 +1,7 @@
 import { createApi, type DeploymentJob } from "../lib/api.js";
 import { logStep, logVerbose } from "../lib/command-log.js";
 import { requireCredentials } from "../lib/config.js";
+import { pollWithBackoff } from "../lib/poll-backoff.js";
 import { resolveProjectId } from "../lib/project-config.js";
 
 export interface DeployOptions {
@@ -14,31 +15,28 @@ export interface DeployOptions {
 
 const TERMINAL_STATUSES = new Set(["completed", "failed"]);
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function pollDeployment(
   api: ReturnType<typeof createApi>,
   jobId: string,
   options: { pollIntervalMs: number; timeoutMs: number },
 ): Promise<DeploymentJob> {
-  const started = Date.now();
-  while (Date.now() - started < options.timeoutMs) {
-    const job = await api.getDeployment(jobId);
-    logVerbose(`deployment ${jobId}: status=${job.status}`);
-    if (TERMINAL_STATUSES.has(job.status)) {
-      return job;
-    }
-    await sleep(options.pollIntervalMs);
-  }
-  throw new Error(
-    `Timed out after ${options.timeoutMs}ms waiting for deployment ${jobId}`,
-  );
+  return pollWithBackoff({
+    poll: () => api.getDeployment(jobId),
+    isTerminal: (job) => TERMINAL_STATUSES.has(job.status),
+    getProgress: (job) => ({
+      status: job.status,
+      progressId: job.build_id,
+    }),
+    getRetryAfterMs: (job) => job.retry_after_ms,
+    onPoll: (job) => logVerbose(`deployment ${jobId}: status=${job.status}`),
+    baseIntervalMs: options.pollIntervalMs,
+    timeoutMs: options.timeoutMs,
+    timeoutMessage: `Timed out after ${options.timeoutMs}ms waiting for deployment ${jobId}`,
+  });
 }
 
 /**
- * Promote (if needed) and enqueue a BullMQ deploy-rollout job; optionally poll until done.
+ * Promote (if needed) and enqueue a deploy job; optionally poll until done.
  */
 export async function runDeploy(options: DeployOptions = {}): Promise<void> {
   logStep("Starting cloud deployment");

@@ -20,7 +20,8 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "events.mode",
 ] as const;
 
-export type VoiceAdvancedSettingKey = (typeof VOICE_ADVANCED_SETTING_KEYS)[number];
+export type VoiceAdvancedSettingKey =
+  (typeof VOICE_ADVANCED_SETTING_KEYS)[number];
 
 export const VOICE_ADVANCED_SETTING_DEFS: Record<
   VoiceAdvancedSettingKey,

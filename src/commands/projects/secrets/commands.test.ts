@@ -117,9 +117,9 @@ describe("projects secrets commands", () => {
     });
 
     it("requires a non-empty name", async () => {
-      await expect(
-        runProjectsSecretsDelete({ name: "  " }),
-      ).rejects.toThrow(/secret name is required/);
+      await expect(runProjectsSecretsDelete({ name: "  " })).rejects.toThrow(
+        /secret name is required/,
+      );
       expect(deleteProjectSecret).not.toHaveBeenCalled();
     });
   });
