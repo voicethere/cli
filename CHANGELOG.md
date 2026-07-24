@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.3.17] - 2026-07-24
+
+### Changed
+
+- **Deploy and deletion `--wait` polling** — adaptive jittered backoff (1×→2×→3×→5× of the base interval, reset on status/step progress) for `deploy`, `undeploy`, `projects delete`, and `account deletion` waits. Reduces API traffic during long-running jobs.
+
 ## [0.3.16] - 2026-07-20
 
 ### Added
