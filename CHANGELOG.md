@@ -6,6 +6,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- **Browser device login (default `voicethere login`)** — opens the dashboard approval page, polls for confirmation, and stores a personal API key (`vthu_`) with `active_org_id`. Emits machine-readable `voicethere-login:*` lines for automation (status, verification URL, user code, active org — never the device code or API key).
+- **`--force` / `--no-open`** — force a new authorization; print URL/code without opening a browser.
+- **Existing-credential skip** — when saved (or env) credentials still work, login exits without starting another authorization. With a linked `.voicethere/config.json` project, accessibility of that project is required before skip.
+- **Linked-project check after approve** — verifies the returned personal key can access the configured project; on mismatch, leaves project config unchanged and reports clearly.
+
+### Changed
+
+- **Credentials model** — file may hold org/project `api_key` and/or personal `user_api_key`; writes remain atomic with mode `0600`. Environment variables (`VOICETHERE_API_KEY`, `VOICETHERE_USER_API_KEY`, `VOICETHERE_API_BASE`, `VOICETHERE_ORG_ID`) take precedence over the file. Browser login clears a stored dashboard cookie **and any file `api_key`**, leaving an interactive personal-key state; `login --api-key` / env org keys remain the CI path.
+- **Linked-project verification** — after browser approve, verifies the linked project with the minted `vthu_` + `active_org_id` before emitting machine `completed`; failure exits nonzero without rewriting `.voicethere/config.json`.
+- **Env override guard** — browser login aborts before minting when `VOICETHERE_API_KEY` or `VOICETHERE_USER_API_KEY` is set (saved keys cannot override env).
+- **API client selection** — personal keys send `x-voicethere-org-id`; org/project keys (`vth_` / `vthc_`) remain preferred when present for automation.
+
+### Security
+
+- Device authorization uses hashed device/user codes server-side; the CLI never writes secrets into `.voicethere/config.json`. `--force` replaces local credentials only and does not revoke other devices.
+
 ## [0.3.17] - 2026-07-24
 
 ### Changed

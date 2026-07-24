@@ -1,5 +1,5 @@
-import { createApi } from "../../../lib/api.js";
-import { logStep } from "../../../lib/command-log.js";
+import { logStep, logVerbose } from "../../../lib/command-log.js";
+import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 
@@ -20,7 +20,7 @@ export async function runProjectsSecretsDelete(
   logStep(`Deleting secret ${name} from project ${projectId}`);
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   await api.deleteProjectSecret(projectId, name);
   console.log(`Deleted secret ${name}`);
 }

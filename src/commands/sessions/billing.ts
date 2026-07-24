@@ -1,5 +1,5 @@
 import { logStep, logVerbose } from "../../lib/command-log.js";
-import { createApi } from "../../lib/api.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../lib/config.js";
 import { requireProjectId } from "../../lib/project-config.js";
 
@@ -21,7 +21,7 @@ export async function runSessionsBilling(
   logStep(`Fetching billing for session ${sessionId}`);
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const session = await api.getProjectSession(projectId, sessionId);
   logVerbose(
     `status=${session.status} billable_seconds=${session.billable_seconds ?? "null"}`,

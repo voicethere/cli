@@ -1,5 +1,5 @@
-import { createApi } from "../../../lib/api.js";
-import { logStep } from "../../../lib/command-log.js";
+import { logStep, logVerbose } from "../../../lib/command-log.js";
+import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 
@@ -13,7 +13,7 @@ export async function runProjectsSubscriptionShow(
   const projectId = options.projectId?.trim() || (await requireProjectId());
   logStep(`Reading assigned subscription for project ${projectId}`);
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const result = await api.getProjectSubscription(projectId);
   console.log(JSON.stringify(result, null, 2));
 }

@@ -1,5 +1,5 @@
-import { createApi } from "../../lib/api.js";
 import { logStep, logVerbose } from "../../lib/command-log.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../lib/config.js";
 
 export type ApiKeysListOptions = Record<string, never>;
@@ -10,7 +10,7 @@ export async function runApiKeysList(
   logStep("Listing API keys");
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const result = await api.listApiKeys();
   logVerbose(`found ${result.api_keys.length} key(s)`);
 

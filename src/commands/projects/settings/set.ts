@@ -1,5 +1,5 @@
-import { createApi } from "../../../lib/api.js";
-import { logStep } from "../../../lib/command-log.js";
+import { logStep, logVerbose } from "../../../lib/command-log.js";
+import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 import { PROJECT_SETTING_KEYS, type ProjectSettingKey } from "./list.js";
@@ -84,7 +84,7 @@ export async function runProjectsSettingsSet(
   logStep(`Setting ${key}=${String(parsed)} on project ${projectId}`);
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const result = await api.setProjectSetting(projectId, key, parsed);
 
   console.log(JSON.stringify(result.settings, null, 2));

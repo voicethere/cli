@@ -1,6 +1,7 @@
 import { createApi, type DeploymentJob } from "../lib/api.js";
 import { logStep, logVerbose } from "../lib/command-log.js";
 import { requireCredentials } from "../lib/config.js";
+import { createApiFromCredentials } from "../lib/control-plane-auth.js";
 import { pollWithBackoff } from "../lib/poll-backoff.js";
 import { resolveProjectId } from "../lib/project-config.js";
 
@@ -46,7 +47,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<void> {
       : await resolveProjectId();
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
 
   logStep("Calling POST /deployments");
   const created = await api.createDeployment({

@@ -5,6 +5,7 @@ import {
   logVerbose,
 } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { isInteractive, promptChoice } from "../../lib/prompt.js";
 import { resolveProjectId } from "../../lib/project-config.js";
 
@@ -40,7 +41,7 @@ async function resolveBuildId(
   }
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   logVerbose(`loading builds for project ${projectId}`);
   const [project, builds] = await Promise.all([
     api.getProject(projectId),
@@ -79,7 +80,7 @@ export async function runBuildPromote(
   logBuildPromoteContext(buildId, project);
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
 
   logStep("Calling control plane promote API");
   const result = await api.promote(project.projectId, buildId);

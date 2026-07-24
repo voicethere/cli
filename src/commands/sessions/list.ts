@@ -1,5 +1,5 @@
 import { logStep, logVerbose } from "../../lib/command-log.js";
-import { createApi } from "../../lib/api.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../lib/config.js";
 import { requireProjectId } from "../../lib/project-config.js";
 
@@ -18,7 +18,7 @@ export async function runSessionsList(
 
   logStep(`Listing sessions for project ${projectId}`);
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const page = await api.listProjectSessions(projectId, { start, end });
   logVerbose(
     `page ${page.start}-${page.end} of ${page.count} (${page.sessions.length} row(s))`,

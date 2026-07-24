@@ -1,10 +1,10 @@
-import { createApi } from "../../lib/api.js";
 import {
   logResolvedProject,
   logStep,
   logVerbose,
 } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { resolveProjectId } from "../../lib/project-config.js";
 
 export interface BuildListOptions {
@@ -31,7 +31,7 @@ export async function runBuildList(
   logResolvedProject(project);
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
 
   logVerbose("fetching project and build history");
   const [platformProject, builds] = await Promise.all([

@@ -1,4 +1,4 @@
-import { createApi } from "../../lib/api.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../lib/config.js";
 import { logCommandInfo, logStep, logVerbose } from "../../lib/command-log.js";
 import { writeProjectConfig } from "../../lib/project-config.js";
@@ -37,7 +37,7 @@ export async function runProjectsCreate(
   }
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
 
   logStep(`Creating project "${name}" (slug=${slug})`);
   const project = await api.createProject(name, slug);

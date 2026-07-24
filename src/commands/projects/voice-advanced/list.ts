@@ -1,5 +1,5 @@
-import { createApi } from "../../../lib/api.js";
 import { logStep, logVerbose } from "../../../lib/command-log.js";
+import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 import {
@@ -19,7 +19,7 @@ export async function runProjectsVoiceAdvancedList(
   logStep(`Listing advanced voice settings for project ${projectId}`);
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const result = await api.listProjectVoiceAdvancedSettings(projectId);
   logVerbose(`found ${VOICE_ADVANCED_SETTING_KEYS.length} setting key(s)`);
 
