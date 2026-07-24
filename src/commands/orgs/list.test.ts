@@ -45,8 +45,6 @@ describe("runOrgsList", () => {
 
     await runOrgsList();
 
-    expect(console.log).toHaveBeenCalledWith(
-      "*\torg-1\tacme\tAcme\towner",
-    );
+    expect(console.log).toHaveBeenCalledWith("*\torg-1\tacme\tAcme\towner");
   });
 });

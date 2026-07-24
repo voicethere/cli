@@ -157,9 +157,9 @@ describe("projects environment commands", () => {
     });
 
     it("requires a non-empty key", async () => {
-      await expect(
-        runProjectsEnvironmentDelete({ key: "  " }),
-      ).rejects.toThrow(/environment key is required/);
+      await expect(runProjectsEnvironmentDelete({ key: "  " })).rejects.toThrow(
+        /environment key is required/,
+      );
       expect(deleteProjectEnvironmentVariable).not.toHaveBeenCalled();
     });
   });

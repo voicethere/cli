@@ -1,5 +1,9 @@
 import { createApi, type Build } from "../../lib/api.js";
-import { logBuildPromoteContext, logStep, logVerbose } from "../../lib/command-log.js";
+import {
+  logBuildPromoteContext,
+  logStep,
+  logVerbose,
+} from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
 import { isInteractive, promptChoice } from "../../lib/prompt.js";
 import { resolveProjectId } from "../../lib/project-config.js";
@@ -44,9 +48,7 @@ async function resolveBuildId(
   ]);
 
   if (builds.length === 0) {
-    throw new Error(
-      "No builds uploaded yet. Run: voicethere build upload",
-    );
+    throw new Error("No builds uploaded yet. Run: voicethere build upload");
   }
 
   if (!isInteractive()) {

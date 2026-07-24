@@ -46,9 +46,7 @@ describe("runAccountDeletionConfirm", () => {
 
     expect(confirmAccountDeletion).toHaveBeenCalledWith("123456");
     expect(getAccountDeletionJob).not.toHaveBeenCalled();
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining("job-1"),
-    );
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining("job-1"));
   });
 
   it("polls until deletion completes when --wait is set", async () => {

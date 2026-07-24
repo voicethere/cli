@@ -3,6 +3,7 @@ import { unlink } from "node:fs/promises";
 import { createApi, type ProjectDeletionJob } from "../../lib/api.js";
 import { requireCredentials } from "../../lib/config.js";
 import { logCommandInfo, logStep, logVerbose } from "../../lib/command-log.js";
+import { pollWithBackoff } from "../../lib/poll-backoff.js";
 import { isInteractive, promptConfirmText } from "../../lib/prompt.js";
 import {
   readProjectConfig,
@@ -19,30 +20,28 @@ export interface ProjectsDeleteOptions {
 
 const TERMINAL_STATUSES = new Set(["completed", "failed"]);
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function pollProjectDeletion(
   api: ReturnType<typeof createApi>,
   projectId: string,
   jobId: string,
   options: { pollIntervalMs: number; timeoutMs: number },
 ): Promise<ProjectDeletionJob> {
-  const started = Date.now();
-  while (Date.now() - started < options.timeoutMs) {
-    const job = await api.getProjectDeletionJob(projectId, jobId);
-    logVerbose(
-      `project deletion ${jobId}: status=${job.status} step=${job.step}`,
-    );
-    if (TERMINAL_STATUSES.has(job.status)) {
-      return job;
-    }
-    await sleep(options.pollIntervalMs);
-  }
-  throw new Error(
-    `Timed out after ${options.timeoutMs}ms waiting for project deletion ${jobId}`,
-  );
+  return pollWithBackoff({
+    poll: () => api.getProjectDeletionJob(projectId, jobId),
+    isTerminal: (job) => TERMINAL_STATUSES.has(job.status),
+    getProgress: (job) => ({
+      status: job.status,
+      progressId: job.step,
+    }),
+    getRetryAfterMs: (job) => job.retry_after_ms,
+    onPoll: (job) =>
+      logVerbose(
+        `project deletion ${jobId}: status=${job.status} step=${job.step}`,
+      ),
+    baseIntervalMs: options.pollIntervalMs,
+    timeoutMs: options.timeoutMs,
+    timeoutMessage: `Timed out after ${options.timeoutMs}ms waiting for project deletion ${jobId}`,
+  });
 }
 
 export async function runProjectsDelete(

@@ -66,7 +66,10 @@ describe("runProjectsUse", () => {
     expect(getProject).toHaveBeenCalledWith("proj-1");
     expect(listProjects).not.toHaveBeenCalled();
     expect(writeProjectConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ project_id: "proj-1", bundle: "dist/agent.js" }),
+      expect.objectContaining({
+        project_id: "proj-1",
+        bundle: "dist/agent.js",
+      }),
       expect.objectContaining({ path: "/repo/.voicethere/config.json" }),
     );
   });

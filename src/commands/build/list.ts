@@ -1,5 +1,9 @@
 import { createApi } from "../../lib/api.js";
-import { logResolvedProject, logStep, logVerbose } from "../../lib/command-log.js";
+import {
+  logResolvedProject,
+  logStep,
+  logVerbose,
+} from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
 import { resolveProjectId } from "../../lib/project-config.js";
 
@@ -19,7 +23,9 @@ function formatUploadedAt(iso: string): string {
     .replace(/\.\d{3}Z$/, " UTC");
 }
 
-export async function runBuildList(options: BuildListOptions = {}): Promise<void> {
+export async function runBuildList(
+  options: BuildListOptions = {},
+): Promise<void> {
   logStep("Listing builds for active project");
   const project = await resolveProjectId({ startDir: options.startDir });
   logResolvedProject(project);
@@ -43,8 +49,7 @@ export async function runBuildList(options: BuildListOptions = {}): Promise<void
   console.log("build_id\tuploaded_at\tstatus\tactive\tmessage");
 
   for (const build of builds) {
-    const active =
-      platformProject.active_build_id === build.id ? "yes" : "";
+    const active = platformProject.active_build_id === build.id ? "yes" : "";
     const message = build.message?.replace(/\s+/g, " ").trim() ?? "";
     console.log(
       `${build.id}\t${formatUploadedAt(build.created_at)}\t${build.validation_status}\t${active}\t${message}`,
