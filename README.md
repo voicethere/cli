@@ -242,7 +242,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 ## Commands
 
 | Command                                                                                          | Description                                                                                 |
-| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| ------------------------------------------------------------------------------------------------ |---------------------------------------------------------------------------------------------|
 | `login [--force] [--no-open] [--api-base <url>]`                                                 | Browser device login (default); skip if credentials still work                              |
 | `login --api-key <key> [--user-api-key <vthu>] [--api-base <url>] [--dashboard-cookie <cookie>]` | Manual key login (CI / automation); optional personal key                                   |
 | `orgs list`                                                                                      | List organizations (`*` = active); requires user API key or legacy cookie                   |
@@ -256,10 +256,10 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects use [projectId]`                                                                       | Use project (picker or existing config when omitted)                                        |
 | `projects show`                                                                                  | Print `.voicethere/config.json`                                                             |
 | `projects delete [projectId] [--force] [--wait]`                                                 | Delete project + builds (type name to confirm, or `--force`; `--wait` polls async deletion) |
-| `projects settings list                                                                          | set`                                                                                        | Runner pool settings (warm pool, scale-down)          |
-| `projects session-settings list                                                                  | set`                                                                                        | WebRTC idle timeout + crash error message (see below) |
+| `projects settings list`                                                                         | set Runner pool settings (warm pool, scale-down)                                            |
+| `projects session-settings list`                                                                 | set WebRTC idle timeout + crash error message (see below)                                   |
 | `projects errors list [--session] [--json]`                                                      | Structured session errors from dashboard API                                                |
-| `projects voice catalog                                                                          | show                                                                                        | set`                                                  | STT/TTS vendors and models |
+| `projects voice catalog`                                                                         | show  STT/TTS vendors and models                                                            |
 | `build list`                                                                                     | Builds for the active project                                                               |
 | `build validate [file]`                                                                          | Sandbox verify (default bundle from config)                                                 |
 | `build upload [file] [-m <msg>]`                                                                 | Upload to active project                                                                    |
