@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-25
+
 ### Added
 
 - **Browser device login (default `voicethere login`)** — opens the dashboard approval page, polls for confirmation, and stores a personal API key (`vthu_`) with `active_org_id`. Emits machine-readable `voicethere-login:*` lines for automation (status, verification URL, user code, active org — never the device code or API key).
