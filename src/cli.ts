@@ -86,29 +86,41 @@ async function main(): Promise<void> {
 
   program
     .command("login")
-    .description("Store API key and API base URL")
-    .requiredOption("--api-key <key>", "VoiceThere org API key (Bearer token)")
+    .description(
+      "Sign in via browser device login (default) or store API keys manually",
+    )
+    .option(
+      "--api-key <key>",
+      "Org/project API key (vth_/vthc_) for manual login / automation",
+    )
     .option("--api-base <url>", "API base URL", DEFAULT_API_BASE)
     .option(
       "--user-api-key <key>",
-      "Personal user API key (vthu_) for org/account commands",
+      "Personal user API key (vthu_) for manual login",
     )
     .option(
       "--dashboard-cookie <cookie>",
-      "Legacy browser Cookie header (prefer --user-api-key)",
+      "Legacy browser Cookie header (prefer browser login or --user-api-key)",
     )
+    .option("--force", "Skip credential validation and start browser login")
+    .option("--no-open", "Do not open the verification URL in a browser")
     .action(
       async (options: {
-        apiKey: string;
+        apiKey?: string;
         apiBase?: string;
         userApiKey?: string;
         dashboardCookie?: string;
+        force?: boolean;
+        open?: boolean;
       }) => {
         await runLogin({
           apiKey: options.apiKey,
           apiBase: options.apiBase,
           userApiKey: options.userApiKey,
           dashboardCookie: options.dashboardCookie,
+          force: Boolean(options.force),
+          noOpen: options.open === false,
+          cliVersion: CLI_VERSION,
         });
       },
     );

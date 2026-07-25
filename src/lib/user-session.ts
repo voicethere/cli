@@ -43,11 +43,11 @@ export async function requireUserCommandSession(): Promise<UserCommandSession> {
   throw new Error(
     [
       "User authentication required for org and account commands.",
-      "Create a personal API key in Settings, then run:",
-      "  voicethere login --api-key <org-key> --user-api-key <vthu_…>",
-      "Or set VOICETHERE_USER_API_KEY.",
+      "Run: voicethere login",
+      "Or set VOICETHERE_USER_API_KEY (and VOICETHERE_ORG_ID when required).",
       "",
-      "Legacy: copy your browser Cookie header and use --dashboard-cookie.",
+      "Manual: voicethere login --user-api-key <vthu_…>",
+      "Legacy: --dashboard-cookie <Cookie header>",
     ].join("\n"),
   );
 }

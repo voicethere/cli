@@ -1,6 +1,7 @@
 import { createApi, type Project } from "../../lib/api.js";
 import { logCommandInfo, logStep, logVerbose } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { isInteractive, promptChoice } from "../../lib/prompt.js";
 import {
   readProjectConfig,
@@ -84,7 +85,7 @@ export async function runProjectsUse(
 ): Promise<void> {
   logStep("Selecting project for this repo");
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const linked = await readProjectConfig(options.startDir);
   const { project, fromExistingConfig, configPath } = await resolveProjectToUse(
     api,

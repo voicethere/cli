@@ -2,6 +2,7 @@ import { unlink } from "node:fs/promises";
 
 import { createApi, type ProjectDeletionJob } from "../../lib/api.js";
 import { requireCredentials } from "../../lib/config.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { logCommandInfo, logStep, logVerbose } from "../../lib/command-log.js";
 import { pollWithBackoff } from "../../lib/poll-backoff.js";
 import { isInteractive, promptConfirmText } from "../../lib/prompt.js";
@@ -49,7 +50,7 @@ export async function runProjectsDelete(
 ): Promise<void> {
   logStep("Deleting project");
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
 
   const projectId = options.projectId?.trim() || (await requireProjectId());
   logVerbose(`project id: ${projectId}`);

@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 
+import { USER_ORG_ID_HEADER, isUserApiKeyToken } from "./auth-headers.js";
 import { logApiBase, logVerbose } from "./command-log.js";
 import {
   formatTosNotAcceptedMessage,
@@ -404,11 +405,20 @@ function buildAgentLogsSearchParams(
   return params;
 }
 
+export type VoicethereApiOptions = {
+  /** Sent as `x-voicethere-org-id` for personal `vthu_` keys. */
+  orgId?: string;
+};
+
 export class VoicethereApi {
+  private readonly orgId?: string;
+
   constructor(
     private readonly apiKey: string,
     private readonly apiBase: string,
+    options?: VoicethereApiOptions,
   ) {
+    this.orgId = options?.orgId?.trim() || undefined;
     logApiBase(apiBase);
   }
 
@@ -832,6 +842,9 @@ export class VoicethereApi {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.apiKey}`,
     };
+    if (this.orgId && isUserApiKeyToken(this.apiKey)) {
+      headers[USER_ORG_ID_HEADER] = this.orgId;
+    }
 
     let body: BodyInit | undefined;
     if (options?.json !== undefined) {
@@ -879,6 +892,10 @@ export class VoicethereApi {
   }
 }
 
-export function createApi(apiKey: string, apiBase: string): VoicethereApi {
-  return new VoicethereApi(apiKey, apiBase);
+export function createApi(
+  apiKey: string,
+  apiBase: string,
+  options?: VoicethereApiOptions,
+): VoicethereApi {
+  return new VoicethereApi(apiKey, apiBase, options);
 }

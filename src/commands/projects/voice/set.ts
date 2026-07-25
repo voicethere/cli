@@ -1,6 +1,6 @@
 import type { VoiceProviderId } from "../../../lib/api.js";
-import { createApi } from "../../../lib/api.js";
-import { logStep } from "../../../lib/command-log.js";
+import { logStep, logVerbose } from "../../../lib/command-log.js";
+import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 
@@ -51,7 +51,7 @@ export async function runProjectsVoiceSet(
   logStep(`Updating voice settings for project ${projectId}`);
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const current = await api.getProjectVoiceSettings(projectId);
 
   const stt_provider = (options.sttProvider?.trim() ||

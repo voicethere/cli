@@ -1,6 +1,5 @@
 import { stat } from "node:fs/promises";
 
-import { createApi } from "../../lib/api.js";
 import {
   logResolvedBundle,
   logResolvedProject,
@@ -8,6 +7,7 @@ import {
   logVerbose,
 } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import {
   assertBundleExists,
   resolveBundlePathDetailed,
@@ -42,7 +42,7 @@ export async function runBuildUpload(
 
   logStep("Uploading bundle to control plane API");
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const build = await api.uploadBuild(
     project.projectId,
     bundle.absolutePath,

@@ -1,13 +1,13 @@
-import { logApiBase, logVerbose } from "./command-log.js";
 import { ApiError, type ApiErrorBody } from "./api.js";
+import { USER_ORG_ID_HEADER } from "./auth-headers.js";
+import { logApiBase, logVerbose } from "./command-log.js";
 import {
   formatTosNotAcceptedMessage,
   isTosNotAcceptedError,
 } from "./tos-gate.js";
 import type { UserCommandAuth } from "./user-session.js";
 
-/** Must match platform `USER_ORG_ID_HEADER`. */
-export const USER_ORG_ID_HEADER = "x-voicethere-org-id";
+export { USER_ORG_ID_HEADER };
 
 /** Must match platform `ACCOUNT_DELETION_POLL_TOKEN_HEADER`. */
 export const ACCOUNT_DELETION_POLL_TOKEN_HEADER =

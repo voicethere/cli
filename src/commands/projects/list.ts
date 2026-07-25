@@ -1,11 +1,11 @@
-import { createApi } from "../../lib/api.js";
 import { logStep, logVerbose } from "../../lib/command-log.js";
+import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../lib/config.js";
 
 export async function runProjectsList(): Promise<void> {
   logStep("Listing projects");
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
   const projects = await api.listProjects();
   logVerbose(`found ${projects.length} project(s)`);
 

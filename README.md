@@ -45,17 +45,66 @@ You do **not** need to run `projects use` on every command when the config file 
 
 ### 1. One-time login (per machine)
 
-API keys live in `~/.config/voicethere/credentials.json` (mode `0600`) — **not** in your agent repo.
+Credentials live in `~/.config/voicethere/credentials.json` (mode `0600`) — **not** in your agent repo. Never put API keys in `.voicethere/config.json`.
+
+**Default — browser login** (recommended for interactive machines):
+
+```bash
+voicethere login
+# Opens the dashboard approval page, then stores a personal API key (vthu_…)
+# and active organization. If a project is linked in .voicethere/config.json,
+# login also checks that your account can access that project.
+```
+
+| Flag               | Behavior                                                                |
+| ------------------ | ----------------------------------------------------------------------- |
+| _(none)_           | Validate existing credentials; skip if they still work (see below)      |
+| `--force`          | Start a new browser authorization even when local credentials are valid |
+| `--no-open`        | Print the verification URL and user code; do not open a browser         |
+| `--api-base <url>` | Override API base for this login (also honored from env / saved file)   |
+
+If credentials already work, `voicethere login` **skips** creating another authorization:
+
+- With a linked project (`.voicethere/config.json`): requires a successful project fetch.
+- Without a linked project: requires a successful project list.
+- Auth failures (`401` / `403` / `404` / TOS not accepted) start browser login again.
+- Network / server errors **abort** without rewriting credentials — fix connectivity, or use `--force`.
+
+**Manual API key login** (CI, automation, or when you already have a key):
 
 ```bash
 voicethere login --api-key vth_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# personal key for org/account commands (create in dashboard Settings):
+# personal key for org/account commands (dashboard Settings → API keys):
 voicethere login --api-key vth_… --user-api-key vthu_…
-# local platform dev server:
-voicethere login --api-key "$VOICETHERE_API_KEY" --api-base http://localhost:3000/api/v1
+# staging / custom API host:
+voicethere login --api-key "$VOICETHERE_API_KEY" --api-base https://app.voicethere.dev/api/v1
 ```
 
 Default API base: `https://app.voicethere.dev/api/v1`
+
+**Credentials & environment precedence** (env wins over the credentials file):
+
+| Variable                      | Overrides                                         |
+| ----------------------------- | ------------------------------------------------- |
+| `VOICETHERE_API_KEY`          | Org / project API key (`vth_` / `vthc_`)          |
+| `VOICETHERE_USER_API_KEY`     | Personal API key (`vthu_`)                        |
+| `VOICETHERE_API_BASE`         | API base URL                                      |
+| `VOICETHERE_ORG_ID`           | Active organization for personal keys             |
+| `VOICETHERE_CREDENTIALS_PATH` | Credentials file location (tests / isolated runs) |
+| `VOICETHERE_PROJECT_CONFIG`   | Path to `.voicethere/config.json`                 |
+
+After browser login, if those env vars are set, the CLI prints a warning that they override the newly saved file. Personal-key requests send `x-voicethere-org-id` when an active org is selected (`orgs use`).
+
+**Security notes**
+
+- Credentials file is written atomically with mode `0600`.
+- Browser login mints a **personal** key (`vthu_`), **clears any stored org/project `api_key` from the credentials file** (so interactive commands use the new personal key), and does not put secrets in project config. Explicit `VOICETHERE_API_KEY` / `VOICETHERE_USER_API_KEY` remain authoritative when set — browser login **aborts** if those env vars are present so a saved key cannot silently lose to a broken env override.
+- After approval, the CLI verifies a linked project with the **minted** personal key + returned active org before reporting success.
+- `--force` replaces the local personal key for this machine; it does **not** revoke keys on other devices.
+- Linked-project mismatch: the CLI keeps `.voicethere/config.json` unchanged and fails login (nonzero) if the new personal key cannot access that project.
+- Prefer personal keys over the legacy `--dashboard-cookie` path.
+
+More detail: [CLI login guide](https://app.voicethere.dev/docs/cli-login) on the VoiceThere docs site.
 
 ### 2. New agent repo — create project and commit config
 
@@ -194,7 +243,8 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 
 | Command                                                                                          | Description                                                                                 |
 | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `login --api-key <key> [--api-base <url>] [--user-api-key <vthu>] [--dashboard-cookie <cookie>]` | Save org API key + optional personal user key                                               |
+| `login [--force] [--no-open] [--api-base <url>]`                                                 | Browser device login (default); skip if credentials still work                              |
+| `login --api-key <key> [--user-api-key <vthu>] [--api-base <url>] [--dashboard-cookie <cookie>]` | Manual key login (CI / automation); optional personal key                                   |
 | `orgs list`                                                                                      | List organizations (`*` = active); requires user API key or legacy cookie                   |
 | `orgs use <orgId>`                                                                               | Set active organization (persists `active_org_id` for user keys)                            |
 | `org transfer-ownership <userId>`                                                                | Transfer org ownership (owner only)                                                         |

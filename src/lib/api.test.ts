@@ -92,6 +92,35 @@ describe("config", () => {
     const fileStat = await stat(credentialsPath);
     expect(fileStat.mode & 0o777).toBe(0o600);
   });
+
+  it("accepts user_api_key-only credentials and defaults api_base", async () => {
+    await mkdir(tempDir, { recursive: true });
+    await writeFile(
+      credentialsPath,
+      JSON.stringify({ user_api_key: "vthu_solo" }),
+      "utf8",
+    );
+    const credentials = await readCredentials();
+    expect(credentials).toEqual({
+      user_api_key: "vthu_solo",
+      api_base: DEFAULT_API_BASE,
+    });
+  });
+
+  it("accepts both api_key and user_api_key", async () => {
+    await writeCredentials({
+      api_key: "vth_org",
+      user_api_key: "vthu_user",
+      api_base: DEFAULT_API_BASE,
+      active_org_id: "org-1",
+    });
+    await expect(readCredentials()).resolves.toEqual({
+      api_key: "vth_org",
+      user_api_key: "vthu_user",
+      api_base: DEFAULT_API_BASE,
+      active_org_id: "org-1",
+    });
+  });
 });
 
 describe("slugifyName", () => {
@@ -144,6 +173,27 @@ describe("VoicethereApi", () => {
     expect(init.headers).toMatchObject({
       Authorization: `Bearer ${apiKey}`,
     });
+    expect(
+      (init.headers as Record<string, string>)["x-voicethere-org-id"],
+    ).toBeUndefined();
+  });
+
+  it("sends x-voicethere-org-id for personal user keys", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ projects: [] }), { status: 200 }),
+    );
+
+    const api = new VoicethereApi("vthu_personal", apiBase, {
+      orgId: "org-header",
+    });
+    await api.listProjects();
+
+    const [, init] = fetchMock.mock.calls[0] as [
+      URL,
+      { headers: Record<string, string> },
+    ];
+    expect(init.headers.Authorization).toBe("Bearer vthu_personal");
+    expect(init.headers["x-voicethere-org-id"]).toBe("org-header");
   });
 
   it("creates a project with JSON body", async () => {

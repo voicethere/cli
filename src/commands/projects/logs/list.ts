@@ -5,6 +5,7 @@ import {
 } from "../../../lib/api.js";
 import { logStep, logVerbose } from "../../../lib/command-log.js";
 import { requireCredentials } from "../../../lib/config.js";
+import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 
 export interface ProjectsLogsListOptions {
@@ -40,7 +41,7 @@ export async function runProjectsLogsList(
   );
 
   const credentials = await requireCredentials();
-  const api = createApi(credentials.api_key, credentials.api_base);
+  const api = createApiFromCredentials(credentials);
 
   if (options.sessionId) {
     const result = await api.listSessionLogs(
