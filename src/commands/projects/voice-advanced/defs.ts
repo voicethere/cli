@@ -68,7 +68,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
   },
   "vad.speechPadMs": {
     type: "number",
-    default: 500,
+    default: 1000,
     min: 0,
     max: 3000,
     description: "STT pre-roll pad in milliseconds.",
