@@ -6,6 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-29
+
+### Added
+
+- **`projects voice catalog`** — lists live Sherpa STT/TTS models from `GET /api/v1/voice/sherpa-models` (no hardcoded model ids). Use `--json` for the full `/voice/models` provider payload.
+- **`projects voice set --interactive`** — prompts for STT/TTS providers and Sherpa model ids from the control-plane catalog; validates `--*-model-id` against the fetched list.
+
+### Changed
+
+- Voice model selection is driven by the platform catalog so new NFS-preloaded voices (Lessac high, GLaDOS high, etc.) appear without a CLI release.
+
 ## [0.4.1] - 2026-07-29
 
 ### Fixed

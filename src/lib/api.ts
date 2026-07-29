@@ -212,13 +212,22 @@ export interface ProjectVoiceAdvancedSettingsResponse {
   overrides?: Record<string, unknown>;
 }
 
+export interface VoiceCatalogModel {
+  id: string;
+  label: string;
+  language: string;
+  bundle?: string;
+  kind?: string;
+  speaker_id?: number;
+}
+
 export interface VoiceCatalogResponse {
   default_stt_model_id: string;
   default_tts_model_id: string;
   default_stt_provider: VoiceProviderId;
   default_tts_provider: VoiceProviderId;
-  stt_models: Array<{ id: string; label: string; language: string }>;
-  tts_models: Array<{ id: string; label: string; language: string }>;
+  stt_models: VoiceCatalogModel[];
+  tts_models: VoiceCatalogModel[];
   stt_providers: Array<{
     id: VoiceProviderId;
     label: string;
@@ -254,6 +263,31 @@ export interface VoiceCatalogResponse {
       description: string;
       placeholder?: string;
     }>;
+  }>;
+}
+
+/** Lean Sherpa catalog from GET /voice/sherpa-models (CLI selection). */
+export interface SherpaModelsResponse {
+  default_stt_model_id: string;
+  default_tts_model_id: string;
+  release_stt_base: string;
+  release_tts_base: string;
+  release_stt_tag_url?: string;
+  release_tts_tag_url?: string;
+  stt_models: Array<{
+    id: string;
+    label: string;
+    language: string;
+    bundle: string;
+    kind: string;
+  }>;
+  tts_models: Array<{
+    id: string;
+    label: string;
+    language: string;
+    bundle: string;
+    kind: string;
+    speaker_id: number;
   }>;
 }
 
@@ -685,6 +719,11 @@ export class VoicethereApi {
 
   async listVoiceModels(): Promise<VoiceCatalogResponse> {
     return this.request<VoiceCatalogResponse>("GET", "/voice/models");
+  }
+
+  /** Lean Sherpa STT/TTS catalog for interactive model selection. */
+  async listSherpaModels(): Promise<SherpaModelsResponse> {
+    return this.request<SherpaModelsResponse>("GET", "/voice/sherpa-models");
   }
 
   async getProjectVoiceSettings(

@@ -559,9 +559,12 @@ async function main(): Promise<void> {
 
   voice
     .command("catalog")
-    .description("List available STT/TTS providers and Sherpa models")
-    .action(async () => {
-      await runProjectsVoiceCatalog();
+    .description(
+      "List Sherpa STT/TTS models from the control plane (no hardcoded ids)",
+    )
+    .option("--json", "Print full /voice/models JSON (providers + models)")
+    .action(async (options: { json?: boolean }) => {
+      await runProjectsVoiceCatalog({ json: Boolean(options.json) });
     });
 
   voice
@@ -574,25 +577,36 @@ async function main(): Promise<void> {
 
   voice
     .command("set")
-    .description("Update voice settings (requires redeploy to apply)")
+    .description(
+      "Update voice settings (requires redeploy). Use --interactive to pick models from GET /voice/sherpa-models",
+    )
     .option("--project <id>", "Project UUID")
     .option("--stt-provider <id>", "STT provider id")
     .option("--tts-provider <id>", "TTS provider id")
     .option(
       "--stt-model-id <id>",
-      "Sherpa STT catalog id (when STT is local-sherpa)",
+      "Sherpa STT catalog id (when STT is local-sherpa); list via voice catalog",
     )
     .option(
       "--tts-model-id <id>",
-      "Sherpa TTS catalog id (when TTS is local-sherpa)",
+      "Sherpa TTS catalog id (when TTS is local-sherpa); list via voice catalog",
     )
     .option("--stt-model <name>", "Cloud STT model name")
     .option("--stt-language <code>", "Cloud STT language code")
     .option("--tts-model <name>", "Cloud TTS model name")
     .option("--tts-voice <id>", "Cloud TTS voice id")
-    .action(async (options: ProjectsVoiceSetOptions) => {
-      await runProjectsVoiceSet(options);
-    });
+    .option(
+      "--interactive",
+      "Fetch Sherpa catalog and prompt to select STT/TTS models",
+    )
+    .action(
+      async (options: ProjectsVoiceSetOptions & { interactive?: boolean }) => {
+        await runProjectsVoiceSet({
+          ...options,
+          interactive: Boolean(options.interactive),
+        });
+      },
+    );
 
   const voiceAdvanced = projects
     .command("voice-advanced")
