@@ -1,6 +1,6 @@
 {
   "name": "@voicethere/cli",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "VoiceThere cloud CLI — login, projects, and agent bundle upload",
   "type": "module",
   "bin": {
