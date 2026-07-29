@@ -6,7 +6,13 @@ export const POLL_INTERVAL_CAP_MS = 5_000;
 
 /** Clamp bounds for optional server `retry_after_ms` hints. */
 export const POLL_RETRY_AFTER_MIN_MS = 250;
-export const POLL_RETRY_AFTER_MAX_MS = 5_000;
+/**
+ * Upper bound for server Retry-After / interval hints.
+ * Must be ≥ platform CLI device-auth max poll interval (30s). A 5s cap let
+ * device-login clients under-wait slow_down, reset last_polled_at forever, and
+ * never observe an approved authorization.
+ */
+export const POLL_RETRY_AFTER_MAX_MS = 30_000;
 
 export type PollProgressSnapshot = {
   status: string;

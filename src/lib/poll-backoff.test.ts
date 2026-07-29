@@ -79,6 +79,8 @@ describe("computePollDelayMs", () => {
   it("honors retry_after_ms within min/max bounds", () => {
     expect(clampPollRetryAfterMs(50)).toBe(POLL_RETRY_AFTER_MIN_MS);
     expect(clampPollRetryAfterMs(60_000)).toBe(POLL_RETRY_AFTER_MAX_MS);
+    expect(clampPollRetryAfterMs(30_000)).toBe(30_000);
+    expect(POLL_RETRY_AFTER_MAX_MS).toBe(30_000);
     expect(
       computePollDelayMs({
         baseIntervalMs: 1000,
@@ -87,6 +89,14 @@ describe("computePollDelayMs", () => {
         jitter: false,
       }),
     ).toBe(1800);
+    expect(
+      computePollDelayMs({
+        baseIntervalMs: 1000,
+        attemptIndex: 5,
+        retryAfterMs: 25_000,
+        jitter: false,
+      }),
+    ).toBe(25_000);
     expect(
       computePollDelayMs({
         baseIntervalMs: 1000,
