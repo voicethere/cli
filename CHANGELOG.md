@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Fixed
+
+- **Device-login poll Retry-After clamp** — raise `POLL_RETRY_AFTER_MAX_MS` from 5s to 30s so browser login honors platform `slow_down` intervals (up to 30s). A 5s cap under-waited the server, kept resetting `last_polled_at`, and could time out after approve without ever minting a key.
+
 ## [0.4.0] - 2026-07-25
 
 ### Added
