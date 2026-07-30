@@ -204,6 +204,8 @@ export type VoiceAdvancedSettingKey =
   | "vad.bargeIn.requireSttPartial"
   | "vad.bargeIn.minSttPartialChars"
   | "vad.bargeIn.agentPlaybackGuardMs"
+  | "tts.speed"
+  | "tts.postUtteranceSilenceMs"
   | "events.mode";
 
 export interface ProjectVoiceAdvancedSettingsResponse {
