@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Changed
+
+- Default **`tts.speed`** is now **0.85** (was 0.6).
+
 ### Added
 
 - **`projects conversation`** — `list`, `get <sessionId>`, and `search <query>` for stored voice transcripts (`GET /projects/:id/conversation?q=`).
