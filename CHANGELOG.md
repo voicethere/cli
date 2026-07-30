@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- **`projects session-settings`** — `conversation_history_enabled` (bool, default `true`). Turn off to stop storing new STT/TTS conversation transcripts for a project.
+
 ## [0.6.0] - 2026-07-30
 
 ### Added
