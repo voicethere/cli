@@ -354,6 +354,69 @@ export interface ProjectSubscriptionResponse {
   subscription: OrgSubscription | null;
 }
 
+export type UsagePeriod = "24h" | "7d" | "30d" | "utc_month";
+
+export interface UsageKindTotal {
+  kind: string;
+  raw_quantity: number;
+  millicredits: number;
+  credits: number;
+}
+
+export interface ProjectUsageResponse {
+  org_id: string;
+  project_id: string;
+  period: UsagePeriod | null;
+  range_start: string | null;
+  range_end: string | null;
+  bucket: "hour" | "day";
+  total_credits: number;
+  totals: UsageKindTotal[];
+  series: unknown[];
+  balance: {
+    period_start: string;
+    included_millicredits: number;
+    pack_millicredits: number;
+    consumed_millicredits: number;
+    remaining_millicredits: number;
+    remaining_credits: number;
+  } | null;
+}
+
+export interface OrgUsageResponse {
+  org_id: string;
+  project_ids: string[];
+  period: UsagePeriod | null;
+  range_start: string | null;
+  range_end: string | null;
+  bucket: "hour" | "day";
+  total_credits: number;
+  totals: UsageKindTotal[];
+  series: unknown[];
+  balance: ProjectUsageResponse["balance"];
+}
+
+export type UsageQuery = {
+  period?: UsagePeriod;
+  from?: string;
+  to?: string;
+  bucket?: "hour" | "day";
+  projectIds?: string[];
+};
+
+function buildUsageQuery(params: UsageQuery = {}): string {
+  const search = new URLSearchParams();
+  if (params.period) search.set("period", params.period);
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
+  if (params.bucket) search.set("bucket", params.bucket);
+  if (params.projectIds?.length) {
+    search.set("project_ids", params.projectIds.join(","));
+  }
+  const query = search.toString();
+  return query ? `?${query}` : "";
+}
+
 export type ProjectSessionStatus = "active" | "ended" | "failed";
 
 export interface ProjectSessionEntry {
@@ -756,6 +819,23 @@ export class VoicethereApi {
           subscription_id: subscriptionId,
         },
       },
+    );
+  }
+
+  async getProjectUsage(
+    projectId: string,
+    query: UsageQuery = {},
+  ): Promise<ProjectUsageResponse> {
+    return this.request<ProjectUsageResponse>(
+      "GET",
+      `/projects/${projectId}/usage${buildUsageQuery(query)}`,
+    );
+  }
+
+  async getOrgUsage(query: UsageQuery = {}): Promise<OrgUsageResponse> {
+    return this.request<OrgUsageResponse>(
+      "GET",
+      `/org/usage${buildUsageQuery(query)}`,
     );
   }
 

@@ -28,6 +28,7 @@ import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
 import { runProjectsSubscriptionList } from "./commands/projects/subscription/list.js";
 import { runProjectsSubscriptionSet } from "./commands/projects/subscription/set.js";
 import { runProjectsSubscriptionShow } from "./commands/projects/subscription/show.js";
+import { runProjectsUsageShow } from "./commands/projects/usage/show.js";
 import { runProjectsSessionSettingsList } from "./commands/projects/session-settings/list.js";
 import { runProjectsSessionSettingsSet } from "./commands/projects/session-settings/set.js";
 import { runProjectsErrorsList } from "./commands/projects/errors/list.js";
@@ -456,6 +457,68 @@ async function main(): Promise<void> {
         subscriptionId,
       });
     });
+
+  const usage = projects
+    .command("usage")
+    .description("Read project or organization usage credits");
+
+  usage
+    .command("show")
+    .description("Show usage credits (project default, or org rollup with --org)")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--org", "Organization rollup instead of a single project")
+    .option("--period <period>", "24h, 7d, 30d, or utc_month")
+    .option("--from <iso>", "Custom range start (ISO-8601)")
+    .option("--to <iso>", "Custom range end (ISO-8601)")
+    .option("--bucket <bucket>", "hour or day time-series bucket")
+    .action(
+      async (options: {
+        project?: string;
+        org?: boolean;
+        period?: "24h" | "7d" | "30d" | "utc_month";
+        from?: string;
+        to?: string;
+        bucket?: "hour" | "day";
+      }) => {
+        await runProjectsUsageShow({
+          projectId: options.project,
+          org: options.org,
+          period: options.period,
+          from: options.from,
+          to: options.to,
+          bucket: options.bucket,
+        });
+      },
+    );
+
+  program
+    .command("usage")
+    .description("Show usage credits for the current project or organization")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--org", "Organization rollup instead of a single project")
+    .option("--period <period>", "24h, 7d, 30d, or utc_month")
+    .option("--from <iso>", "Custom range start (ISO-8601)")
+    .option("--to <iso>", "Custom range end (ISO-8601)")
+    .option("--bucket <bucket>", "hour or day time-series bucket")
+    .action(
+      async (options: {
+        project?: string;
+        org?: boolean;
+        period?: "24h" | "7d" | "30d" | "utc_month";
+        from?: string;
+        to?: string;
+        bucket?: "hour" | "day";
+      }) => {
+        await runProjectsUsageShow({
+          projectId: options.project,
+          org: options.org,
+          period: options.period,
+          from: options.from,
+          to: options.to,
+          bucket: options.bucket,
+        });
+      },
+    );
 
   const sessionSettings = projects
     .command("session-settings")
