@@ -33,6 +33,11 @@ import { runProjectsSessionSettingsSet } from "./commands/projects/session-setti
 import { runProjectsErrorsList } from "./commands/projects/errors/list.js";
 import { runProjectsLogsList } from "./commands/projects/logs/list.js";
 import {
+  runProjectsConversationGet,
+  runProjectsConversationList,
+  runProjectsConversationSearch,
+} from "./commands/projects/conversation/commands.js";
+import {
   formatSessionSettingsGroupHelp,
   sessionSettingNamesHelp,
 } from "./commands/projects/session-settings/defs.js";
@@ -548,6 +553,73 @@ async function main(): Promise<void> {
           q: options.q,
           level: options.level as
             "debug" | "info" | "warn" | "error" | undefined,
+          json: options.json,
+        });
+      },
+    );
+
+  const conversation = projects
+    .command("conversation")
+    .description("Search and inspect stored voice conversation transcripts");
+
+  conversation
+    .command("list")
+    .description("List recent project conversations (default limit 50)")
+    .option("--project <id>", "Project UUID")
+    .option("--limit <n>", "Max sessions to return", "50")
+    .option("--q <text>", "Search transcript text or session id")
+    .option("--json", "Output JSON")
+    .action(
+      async (options: {
+        project?: string;
+        limit?: string;
+        q?: string;
+        json?: boolean;
+      }) => {
+        await runProjectsConversationList({
+          projectId: options.project,
+          limit: options.limit ? Number.parseInt(options.limit, 10) : undefined,
+          q: options.q,
+          json: options.json,
+        });
+      },
+    );
+
+  conversation
+    .command("get")
+    .description("Load the full turn timeline for one session")
+    .argument("<sessionId>", "Orchestrator session id")
+    .option("--project <id>", "Project UUID")
+    .option("--json", "Output JSON")
+    .action(
+      async (
+        sessionId: string,
+        options: { project?: string; json?: boolean },
+      ) => {
+        await runProjectsConversationGet({
+          projectId: options.project,
+          sessionId,
+          json: options.json,
+        });
+      },
+    );
+
+  conversation
+    .command("search")
+    .description("Search conversation history (alias for list --q)")
+    .argument("<query>", "Search transcript text or session id")
+    .option("--project <id>", "Project UUID")
+    .option("--limit <n>", "Max sessions to return", "50")
+    .option("--json", "Output JSON")
+    .action(
+      async (
+        query: string,
+        options: { project?: string; limit?: string; json?: boolean },
+      ) => {
+        await runProjectsConversationSearch({
+          projectId: options.project,
+          query,
+          limit: options.limit ? Number.parseInt(options.limit, 10) : undefined,
           json: options.json,
         });
       },

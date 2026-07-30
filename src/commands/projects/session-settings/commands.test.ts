@@ -45,6 +45,7 @@ describe("projects session-settings commands", () => {
         settings: {
           idle_timeout_enabled: true,
           idle_timeout_seconds: 30,
+          conversation_history_enabled: true,
         },
       });
 
@@ -53,6 +54,9 @@ describe("projects session-settings commands", () => {
       expect(listProjectSessionSettings).toHaveBeenCalledWith("proj-1");
       expect(console.log).toHaveBeenCalledWith("idle_timeout_enabled=true");
       expect(console.log).toHaveBeenCalledWith("idle_timeout_seconds=30");
+      expect(console.log).toHaveBeenCalledWith(
+        "conversation_history_enabled=true",
+      );
     });
 
     it("uses explicit project id over linked config", async () => {
@@ -107,6 +111,24 @@ describe("projects session-settings commands", () => {
       );
       expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining("billable"),
+      );
+    });
+
+    it("sets conversation_history_enabled", async () => {
+      setProjectSessionSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { conversation_history_enabled: false },
+      });
+
+      await runProjectsSessionSettingsSet({
+        name: "conversation_history_enabled",
+        value: "false",
+      });
+
+      expect(setProjectSessionSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "conversation_history_enabled",
+        false,
       );
     });
 
