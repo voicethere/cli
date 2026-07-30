@@ -82,6 +82,30 @@ describe("projects voice-advanced commands", () => {
     );
   });
 
+  it("sets fractional tts.speed", async () => {
+    setProjectVoiceAdvancedSetting.mockResolvedValue({
+      project_id: "proj-1",
+      settings: { tts: { speed: 0.7 } },
+    });
+
+    await runProjectsVoiceAdvancedSet({
+      name: "tts.speed",
+      value: "0.7",
+    });
+
+    expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
+      "proj-1",
+      "tts.speed",
+      0.7,
+    );
+  });
+
+  it("rejects tts.speed outside 0.2–2.0", async () => {
+    await expect(
+      runProjectsVoiceAdvancedSet({ name: "tts.speed", value: "0.1" }),
+    ).rejects.toThrow(/between 0\.2 and 2/);
+  });
+
   it("resets advanced settings", async () => {
     resetProjectVoiceAdvancedSettings.mockResolvedValue({
       project_id: "proj-1",

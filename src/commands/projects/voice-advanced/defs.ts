@@ -17,6 +17,8 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "vad.bargeIn.requireSttPartial",
   "vad.bargeIn.minSttPartialChars",
   "vad.bargeIn.agentPlaybackGuardMs",
+  "tts.speed",
+  "tts.postUtteranceSilenceMs",
   "events.mode",
 ] as const;
 
@@ -144,6 +146,22 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     max: 5000,
     description: "Ignore VAD barge-in briefly after TTS starts.",
   },
+  "tts.speed": {
+    type: "number",
+    default: 0.85,
+    min: 0.2,
+    max: 2,
+    description:
+      "Sherpa Piper speaking-rate multiplier for local-sherpa TTS (1.0 = model default).",
+  },
+  "tts.postUtteranceSilenceMs": {
+    type: "number",
+    default: 2550,
+    min: 0,
+    max: 15000,
+    description:
+      "Silent PCM after each TTS utterance so remote listeners can finalize STT.",
+  },
   "events.mode": {
     type: "string",
     default: "both",
@@ -183,6 +201,7 @@ export function formatVoiceAdvancedSettingsGroupHelp(): string {
   lines.push(
     "  $ voicethere projects voice-advanced set vad.bargeIn.requireSttPartial false",
   );
+  lines.push("  $ voicethere projects voice-advanced set tts.speed 0.85");
   lines.push("  $ voicethere projects voice-advanced reset");
 
   return lines.join("\n");
@@ -222,7 +241,8 @@ export function parseVoiceAdvancedSettingValue(
   if (n < min || n > max) {
     throw new Error(`${key} must be between ${min} and ${max}`);
   }
-  return def.type === "number" && key === "vad.threshold" ? n : Math.floor(n);
+  const keepFractional = key === "vad.threshold" || key === "tts.speed";
+  return def.type === "number" && keepFractional ? n : Math.floor(n);
 }
 
 function getNestedValue(
