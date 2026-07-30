@@ -159,6 +159,7 @@ export interface ProjectSessionSettingsResponse {
     data_only_idle_timeout_seconds?: number;
     idle_timeout_voice_activity?: boolean;
     idle_timeout_dc_inbound?: boolean;
+    conversation_history_enabled?: boolean;
   };
 }
 
