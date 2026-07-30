@@ -420,6 +420,66 @@ export interface ProjectLogsResponse {
   logs: AgentLogEntry[];
 }
 
+export type ConversationRole = "user" | "agent";
+
+export interface ConversationSessionSummary {
+  id: string;
+  orchestratorSessionId: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  turnCount: number;
+  createdAt: string;
+}
+
+export interface ConversationTurn {
+  turnIndex: number;
+  role: ConversationRole;
+  eventType: string;
+  text: string;
+  occurredAt: string;
+}
+
+export interface ConversationSearchMatch {
+  orchestratorSessionId: string;
+  turnIndex: number;
+  role: ConversationRole;
+  eventType: string;
+  text: string;
+  occurredAt: string;
+}
+
+export interface ListProjectConversationsQuery {
+  limit?: number;
+  q?: string;
+}
+
+export interface ListProjectConversationsResponse {
+  project_id: string;
+  conversations: ConversationSessionSummary[];
+  matches?: ConversationSearchMatch[];
+  q?: string;
+}
+
+export interface SessionConversationResponse {
+  project_id?: string;
+  orchestrator_session_id?: string;
+  conversation: Omit<ConversationSessionSummary, "createdAt">;
+  turns: ConversationTurn[];
+}
+
+function buildConversationSearchParams(
+  query: ListProjectConversationsQuery,
+): URLSearchParams {
+  const params = new URLSearchParams();
+  if (query.limit != null) {
+    params.set("limit", String(query.limit));
+  }
+  if (query.q?.trim()) {
+    params.set("q", query.q.trim());
+  }
+  return params;
+}
+
 function buildAgentLogsSearchParams(
   query: ListAgentLogsQuery,
 ): URLSearchParams {
@@ -866,6 +926,28 @@ export class VoicethereApi {
     return this.request<ProjectLogsResponse>(
       "GET",
       `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/logs?${params.toString()}`,
+    );
+  }
+
+  async listProjectConversations(
+    projectId: string,
+    query: ListProjectConversationsQuery = {},
+  ): Promise<ListProjectConversationsResponse> {
+    const params = buildConversationSearchParams(query);
+    const suffix = params.toString();
+    return this.request<ListProjectConversationsResponse>(
+      "GET",
+      `/projects/${projectId}/conversation${suffix ? `?${suffix}` : ""}`,
+    );
+  }
+
+  async getSessionConversation(
+    projectId: string,
+    orchestratorSessionId: string,
+  ): Promise<SessionConversationResponse> {
+    return this.request<SessionConversationResponse>(
+      "GET",
+      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/conversation`,
     );
   }
 

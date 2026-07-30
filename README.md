@@ -258,6 +258,9 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects delete [projectId] [--force] [--wait]`                                                 | Delete project + builds (type name to confirm, or `--force`; `--wait` polls async deletion) |
 | `projects settings list`                                                                         | set Runner pool settings (warm pool, scale-down)                                            |
 | `projects session-settings list`                                                                 | set WebRTC idle timeout + crash error message (see below)                                   |
+| `projects conversation list [--q] [--json]`                                                      | Stored voice transcripts; `--q` searches turn text or session id                            |
+| `projects conversation get <sessionId>`                                                          | Full turn timeline for one session                                                          |
+| `projects conversation search <query>`                                                           | Alias for `conversation list --q`                                                           |
 | `projects errors list [--session] [--json]`                                                      | Structured session errors from dashboard API                                                |
 | `projects voice catalog`                                                                         | show STT/TTS vendors and models                                                             |
 | `build list`                                                                                     | Builds for the active project                                                               |
@@ -318,6 +321,19 @@ voicethere projects session-settings set error_message "Sorry, something went wr
 | `error_message`                  | string                                | _(none)_ | Crash TTS in voice mode                       |
 
 Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
+
+## Conversation history
+
+Search and inspect stored STT/TTS transcripts from completed voice sessions:
+
+```bash
+voicethere projects conversation list
+voicethere projects conversation list --q "inventory check" --limit 20
+voicethere projects conversation search "hello world"
+voicethere projects conversation get orch-session-abc123 --json
+```
+
+Use `projects session-settings set conversation_history_enabled false` to stop storing new transcripts.
 
 ## Sessions and billing
 

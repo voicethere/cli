@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ### Added
 
+- **`projects conversation`** — `list`, `get <sessionId>`, and `search <query>` for stored voice transcripts (`GET /projects/:id/conversation?q=`).
 - **`projects session-settings`** — `conversation_history_enabled` (bool, default `true`). Turn off to stop storing new STT/TTS conversation transcripts for a project.
 
 ## [0.6.0] - 2026-07-30
