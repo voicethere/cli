@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-30
+
 ### Added
 
 - **`projects voice-advanced set tts.speed`** — Sherpa Piper speaking-rate (0.2–2.0, default 0.85), editable on every subscription tier. Also documents **`tts.postUtteranceSilenceMs`** in CLI help/list.
