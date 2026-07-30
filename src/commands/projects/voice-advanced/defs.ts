@@ -148,7 +148,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
   },
   "tts.speed": {
     type: "number",
-    default: 0.6,
+    default: 0.85,
     min: 0.2,
     max: 2,
     description:
@@ -201,7 +201,7 @@ export function formatVoiceAdvancedSettingsGroupHelp(): string {
   lines.push(
     "  $ voicethere projects voice-advanced set vad.bargeIn.requireSttPartial false",
   );
-  lines.push("  $ voicethere projects voice-advanced set tts.speed 0.6");
+  lines.push("  $ voicethere projects voice-advanced set tts.speed 0.85");
   lines.push("  $ voicethere projects voice-advanced reset");
 
   return lines.join("\n");
