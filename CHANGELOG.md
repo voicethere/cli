@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Changed
+
+- Default **`tts.speed`** is now **0.9** (was 0.85).
+
 ## [0.7.0] - 2026-07-31
 
 ### Added
