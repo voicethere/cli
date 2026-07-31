@@ -6,14 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
-### Changed
-
-- Default **`tts.speed`** is now **0.85** (was 0.6).
+## [0.7.0] - 2026-07-31
 
 ### Added
 
+- **`voicethere usage`** / **`projects usage show`** — project and org usage credit dashboards (`GET /projects/:id/usage`, `GET /org/usage`) with period/bucket filters.
 - **`projects conversation`** — `list`, `get <sessionId>`, and `search <query>` for stored voice transcripts (`GET /projects/:id/conversation?q=`).
 - **`projects session-settings`** — `conversation_history_enabled` (bool, default `true`). Turn off to stop storing new STT/TTS conversation transcripts for a project.
+
+### Changed
+
+- Default **`tts.speed`** is now **0.85** (was 0.6).
+- Dependency: `@voicethere/agent` **^0.2.17**.
 
 ## [0.6.0] - 2026-07-30
 
