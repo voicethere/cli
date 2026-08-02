@@ -2,6 +2,8 @@
 
 VoiceThere cloud CLI for API login, project management, and agent bundle upload.
 
+**Website:** [voicethere.io](https://voicethere.io)
+
 Requires **Node.js 22+**.
 
 **Release flow:** `build upload` stores a bundle in history; `build promote <buildId>` sets the active build in the control plane only; `deploy --wait` promotes (if needed) and rolls out to cloud runners.

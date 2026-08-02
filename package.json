@@ -1,7 +1,7 @@
 {
   "name": "@voicethere/cli",
   "version": "0.7.1",
-  "description": "VoiceThere cloud CLI — login, projects, and agent bundle upload",
+  "description": "VoiceThere cloud CLI \u2014 login, projects, and agent bundle upload",
   "type": "module",
   "bin": {
     "voicethere": "./dist/cli.js"
@@ -24,7 +24,7 @@
   "bugs": {
     "url": "https://github.com/voicethere/cli/issues"
   },
-  "homepage": "https://github.com/voicethere/cli#readme",
+  "homepage": "https://voicethere.io",
   "publishConfig": {
     "access": "public"
   },
