@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  runProjectsConversationExport,
   runProjectsConversationGet,
   runProjectsConversationList,
   runProjectsConversationSearch,
@@ -8,6 +9,8 @@ import {
 
 const listProjectConversations = vi.fn();
 const getSessionConversation = vi.fn();
+const createConversationExport = vi.fn();
+const getConversationExport = vi.fn();
 const requireCredentials = vi.fn();
 const requireProjectId = vi.fn();
 
@@ -15,6 +18,8 @@ vi.mock("../../../lib/api.js", () => ({
   createApi: vi.fn(() => ({
     listProjectConversations,
     getSessionConversation,
+    createConversationExport,
+    getConversationExport,
   })),
 }));
 
@@ -39,9 +44,12 @@ describe("projects conversation commands", () => {
   beforeEach(() => {
     listProjectConversations.mockReset();
     getSessionConversation.mockReset();
+    createConversationExport.mockReset();
+    getConversationExport.mockReset();
     requireCredentials.mockReset();
     requireProjectId.mockReset();
     vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn());
 
     requireCredentials.mockResolvedValue({
       api_key: "vth_test",
@@ -64,6 +72,28 @@ describe("projects conversation commands", () => {
     expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining("orch-session"),
     );
+  });
+
+  it("passes time-window query params to listProjectConversations", async () => {
+    listProjectConversations.mockResolvedValue({
+      project_id: "proj-1",
+      conversations: [],
+    });
+
+    await runProjectsConversationList({
+      period: "7d",
+      from: "2026-07-01T00:00:00.000Z",
+      to: "2026-07-31T00:00:00.000Z",
+      cursor: "cursor-token",
+    });
+
+    expect(listProjectConversations).toHaveBeenCalledWith("proj-1", {
+      limit: 50,
+      period: "7d",
+      from: "2026-07-01T00:00:00.000Z",
+      to: "2026-07-31T00:00:00.000Z",
+      cursor: "cursor-token",
+    });
   });
 
   it("passes search query to listProjectConversations", async () => {
@@ -102,11 +132,16 @@ describe("projects conversation commands", () => {
       matches: [],
     });
 
-    await runProjectsConversationSearch({ query: "hello", limit: 5 });
+    await runProjectsConversationSearch({
+      query: "hello",
+      limit: 5,
+      period: "24h",
+    });
 
     expect(listProjectConversations).toHaveBeenCalledWith("proj-1", {
       limit: 5,
       q: "hello",
+      period: "24h",
     });
   });
 
@@ -157,5 +192,114 @@ describe("projects conversation commands", () => {
         2,
       ),
     );
+  });
+
+  it("creates a session export job without polling", async () => {
+    createConversationExport.mockResolvedValue({ job_id: "export-job-1" });
+
+    await runProjectsConversationExport({ session: "orch-session-abc123" });
+
+    expect(createConversationExport).toHaveBeenCalledWith("proj-1", {
+      mode: "session",
+      sessionId: "orch-session-abc123",
+    });
+    expect(getConversationExport).not.toHaveBeenCalled();
+    expect(console.log).toHaveBeenCalledWith(
+      "Conversation export queued: export-job-1",
+    );
+  });
+
+  it("creates a filter export job with q and time window", async () => {
+    createConversationExport.mockResolvedValue({ job_id: "export-job-2" });
+
+    await runProjectsConversationExport({
+      q: "inventory",
+      period: "30d",
+    });
+
+    expect(createConversationExport).toHaveBeenCalledWith("proj-1", {
+      mode: "filter",
+      q: "inventory",
+      period: "30d",
+    });
+  });
+
+  it("creates an all-conversations filter export", async () => {
+    createConversationExport.mockResolvedValue({ job_id: "export-job-3" });
+
+    await runProjectsConversationExport({ all: true, from: "2026-07-01T00:00:00.000Z" });
+
+    expect(createConversationExport).toHaveBeenCalledWith("proj-1", {
+      mode: "filter",
+      from: "2026-07-01T00:00:00.000Z",
+    });
+  });
+
+  it("polls until export completes when --wait is set", async () => {
+    createConversationExport.mockResolvedValue({ job_id: "export-job-4" });
+    getConversationExport
+      .mockResolvedValueOnce({
+        job_id: "export-job-4",
+        status: "active",
+        progress: { conversations_total: 2, conversations_done: 1 },
+        created_at: "2026-07-30T00:00:00.000Z",
+      })
+      .mockResolvedValueOnce({
+        job_id: "export-job-4",
+        status: "completed",
+        progress: { conversations_total: 2, conversations_done: 2 },
+        download_url: "https://example.com/export.json",
+        expires_at: "2026-07-31T00:00:00.000Z",
+        created_at: "2026-07-30T00:00:00.000Z",
+        completed_at: "2026-07-30T00:01:00.000Z",
+      });
+
+    await runProjectsConversationExport({
+      all: true,
+      wait: true,
+      pollIntervalMs: 1,
+      timeoutMs: 5_000,
+    });
+
+    expect(getConversationExport).toHaveBeenCalledWith("proj-1", "export-job-4");
+    expect(getConversationExport).toHaveBeenCalledTimes(2);
+    expect(console.log).toHaveBeenCalledWith(
+      "Conversation export completed: export-job-4",
+    );
+  });
+
+  it("throws when export fails after wait", async () => {
+    createConversationExport.mockResolvedValue({ job_id: "export-job-5" });
+    getConversationExport.mockResolvedValue({
+      job_id: "export-job-5",
+      status: "failed",
+      progress: { conversations_total: 1, conversations_done: 0 },
+      error: "too many conversations",
+      created_at: "2026-07-30T00:00:00.000Z",
+    });
+
+    await expect(
+      runProjectsConversationExport({
+        all: true,
+        wait: true,
+        pollIntervalMs: 1,
+        timeoutMs: 5_000,
+      }),
+    ).rejects.toThrow(/too many conversations/);
+  });
+
+  it("requires an export mode", async () => {
+    await expect(runProjectsConversationExport({})).rejects.toThrow(
+      /Specify --session/,
+    );
+  });
+
+  it("requires --wait when --output is set", async () => {
+    await expect(
+      runProjectsConversationExport({
+        all: true,
+        output: "/tmp/export.json",
+      }),
+    ).rejects.toThrow(/--output requires --wait/);
   });
 });

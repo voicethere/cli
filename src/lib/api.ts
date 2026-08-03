@@ -511,9 +511,49 @@ export interface ConversationSearchMatch {
   occurredAt: string;
 }
 
-export interface ListProjectConversationsQuery {
+export interface ConversationTimeWindowQuery {
+  period?: UsagePeriod;
+  from?: string;
+  to?: string;
+}
+
+export interface ListProjectConversationsQuery extends ConversationTimeWindowQuery {
   limit?: number;
   q?: string;
+  cursor?: string;
+}
+
+export type CreateConversationExportBody =
+  | { mode: "ids"; sessionIds: string[] }
+  | { mode: "session"; sessionId: string }
+  | {
+      mode: "filter";
+      q?: string;
+      period?: UsagePeriod;
+      from?: string;
+      to?: string;
+    };
+
+export type ConversationExportJobStatus =
+  | "queued"
+  | "active"
+  | "completed"
+  | "failed";
+
+export interface ConversationExportJobProgress {
+  conversations_total: number;
+  conversations_done: number;
+}
+
+export interface ConversationExportJobResponse {
+  job_id: string;
+  status: ConversationExportJobStatus;
+  progress: ConversationExportJobProgress;
+  error?: string | null;
+  download_url?: string | null;
+  expires_at?: string | null;
+  created_at: string;
+  completed_at?: string | null;
 }
 
 export interface ListProjectConversationsResponse {
@@ -539,6 +579,18 @@ function buildConversationSearchParams(
   }
   if (query.q?.trim()) {
     params.set("q", query.q.trim());
+  }
+  if (query.period) {
+    params.set("period", query.period);
+  }
+  if (query.from) {
+    params.set("from", query.from);
+  }
+  if (query.to) {
+    params.set("to", query.to);
+  }
+  if (query.cursor?.trim()) {
+    params.set("cursor", query.cursor.trim());
   }
   return params;
 }
@@ -1028,6 +1080,27 @@ export class VoicethereApi {
     return this.request<SessionConversationResponse>(
       "GET",
       `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/conversation`,
+    );
+  }
+
+  async createConversationExport(
+    projectId: string,
+    body: CreateConversationExportBody,
+  ): Promise<{ job_id: string }> {
+    return this.request<{ job_id: string }>(
+      "POST",
+      `/projects/${projectId}/conversation/exports`,
+      { json: body },
+    );
+  }
+
+  async getConversationExport(
+    projectId: string,
+    jobId: string,
+  ): Promise<ConversationExportJobResponse> {
+    return this.request<ConversationExportJobResponse>(
+      "GET",
+      `/projects/${projectId}/conversation/exports/${encodeURIComponent(jobId)}`,
     );
   }
 
