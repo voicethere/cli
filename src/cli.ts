@@ -34,6 +34,7 @@ import { runProjectsSessionSettingsSet } from "./commands/projects/session-setti
 import { runProjectsErrorsList } from "./commands/projects/errors/list.js";
 import { runProjectsLogsList } from "./commands/projects/logs/list.js";
 import {
+  runProjectsConversationExport,
   runProjectsConversationGet,
   runProjectsConversationList,
   runProjectsConversationSearch,
@@ -631,18 +632,30 @@ async function main(): Promise<void> {
     .option("--project <id>", "Project UUID")
     .option("--limit <n>", "Max sessions to return", "50")
     .option("--q <text>", "Search transcript text or session id")
+    .option("--period <period>", "24h, 7d, 30d, or utc_month")
+    .option("--from <iso>", "Custom range start (ISO-8601)")
+    .option("--to <iso>", "Custom range end (ISO-8601)")
+    .option("--cursor <token>", "Pagination cursor from a previous list")
     .option("--json", "Output JSON")
     .action(
       async (options: {
         project?: string;
         limit?: string;
         q?: string;
+        period?: "24h" | "7d" | "30d" | "utc_month";
+        from?: string;
+        to?: string;
+        cursor?: string;
         json?: boolean;
       }) => {
         await runProjectsConversationList({
           projectId: options.project,
           limit: options.limit ? Number.parseInt(options.limit, 10) : undefined,
           q: options.q,
+          period: options.period,
+          from: options.from,
+          to: options.to,
+          cursor: options.cursor,
           json: options.json,
         });
       },
@@ -673,16 +686,70 @@ async function main(): Promise<void> {
     .argument("<query>", "Search transcript text or session id")
     .option("--project <id>", "Project UUID")
     .option("--limit <n>", "Max sessions to return", "50")
+    .option("--period <period>", "24h, 7d, 30d, or utc_month")
+    .option("--from <iso>", "Custom range start (ISO-8601)")
+    .option("--to <iso>", "Custom range end (ISO-8601)")
     .option("--json", "Output JSON")
     .action(
       async (
         query: string,
-        options: { project?: string; limit?: string; json?: boolean },
+        options: {
+          project?: string;
+          limit?: string;
+          period?: "24h" | "7d" | "30d" | "utc_month";
+          from?: string;
+          to?: string;
+          json?: boolean;
+        },
       ) => {
         await runProjectsConversationSearch({
           projectId: options.project,
           query,
           limit: options.limit ? Number.parseInt(options.limit, 10) : undefined,
+          period: options.period,
+          from: options.from,
+          to: options.to,
+          json: options.json,
+        });
+      },
+    );
+
+  conversation
+    .command("export")
+    .description("Export conversation transcripts to a downloadable JSON file")
+    .option("--project <id>", "Project UUID")
+    .option("--session <id>", "Export one session by orchestrator session id")
+    .option("--q <text>", "Export sessions matching transcript text or session id")
+    .option("--all", "Export all conversations (optionally within a time window)")
+    .option("--period <period>", "24h, 7d, 30d, or utc_month (filter/all modes)")
+    .option("--from <iso>", "Custom range start (ISO-8601)")
+    .option("--to <iso>", "Custom range end (ISO-8601)")
+    .option("--wait", "Poll until the export job completes or fails")
+    .option("-o, --output <path>", "Write downloaded export JSON to this path")
+    .option("--json", "Output final job status as JSON (with --wait)")
+    .action(
+      async (options: {
+        project?: string;
+        session?: string;
+        q?: string;
+        all?: boolean;
+        period?: "24h" | "7d" | "30d" | "utc_month";
+        from?: string;
+        to?: string;
+        wait?: boolean;
+        output?: string;
+        json?: boolean;
+      }) => {
+        await runProjectsConversationExport({
+          projectId: options.project,
+          session: options.session,
+          q: options.q,
+          all: options.all,
+          period: options.period,
+          from: options.from,
+          to: options.to,
+          wait: options.wait,
+          output: options.output,
           json: options.json,
         });
       },
