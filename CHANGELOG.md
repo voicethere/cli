@@ -6,10 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-03
+
 ### Added
 
 - **`projects conversation export`** — async JSON export (`POST/GET …/conversation/exports`) with `--session`, `--q`, `--all`, time-window flags (`--period`, `--from`, `--to`), `--wait`, and `-o/--output`.
 - **`projects conversation list` / `search`** — `--period`, `--from`, `--to`, and list `--cursor` for API parity with the control plane.
+
+## [0.7.1] - 2026-07-31
 
 ### Changed
 
