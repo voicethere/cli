@@ -28,29 +28,28 @@ export interface ProjectsConversationListOptions
   json?: boolean;
 }
 
-function applyTimeWindowQuery<T extends ConversationTimeWindowQuery>(
-  query: T,
+function applyTimeWindowFields(
+  target: ConversationTimeWindowQuery,
   options: ConversationTimeWindowOptions,
-): T {
+): void {
   if (options.period) {
-    query.period = options.period;
+    target.period = options.period;
   }
   if (options.from?.trim()) {
-    query.from = options.from.trim();
+    target.from = options.from.trim();
   }
   if (options.to?.trim()) {
-    query.to = options.to.trim();
+    target.to = options.to.trim();
   }
-  return query;
 }
 
 function buildQuery(
   options: ProjectsConversationListOptions,
 ): ListProjectConversationsQuery {
-  const query: ListProjectConversationsQuery = applyTimeWindowQuery(
-    { limit: options.limit ?? 50 },
-    options,
-  );
+  const query: ListProjectConversationsQuery = {
+    limit: options.limit ?? 50,
+  };
+  applyTimeWindowFields(query, options);
   if (options.q?.trim()) {
     query.q = options.q.trim();
   }
@@ -198,13 +197,12 @@ function buildExportBody(
     );
   }
 
-  return applyTimeWindowQuery(
-    {
-      mode: "filter" as const,
-      ...(q ? { q } : {}),
-    },
-    options,
-  );
+  const body: Extract<CreateConversationExportBody, { mode: "filter" }> = {
+    mode: "filter",
+    ...(q ? { q } : {}),
+  };
+  applyTimeWindowFields(body, options);
+  return body;
 }
 
 async function pollConversationExport(

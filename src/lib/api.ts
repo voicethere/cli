@@ -561,6 +561,8 @@ export interface ListProjectConversationsResponse {
   conversations: ConversationSessionSummary[];
   matches?: ConversationSearchMatch[];
   q?: string;
+  next_cursor?: string | null;
+  has_more?: boolean;
 }
 
 export interface SessionConversationResponse {
