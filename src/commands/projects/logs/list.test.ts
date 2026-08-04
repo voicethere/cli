@@ -103,6 +103,58 @@ describe("runProjectsLogsList", () => {
     });
   });
 
+  it("passes --severity as level filter to the API", async () => {
+    listProjectLogs.mockResolvedValue({
+      project_id: "proj-1",
+      logs: [],
+    });
+
+    await runProjectsLogsList({
+      severity: "error",
+    });
+
+    expect(listProjectLogs).toHaveBeenCalledWith("proj-1", {
+      limit: 20,
+      level: "error",
+    });
+  });
+
+  it("prefers --level over --severity when both are set", async () => {
+    listProjectLogs.mockResolvedValue({
+      project_id: "proj-1",
+      logs: [],
+    });
+
+    await runProjectsLogsList({
+      level: "warn",
+      severity: "error",
+    });
+
+    expect(listProjectLogs).toHaveBeenCalledWith("proj-1", {
+      limit: 20,
+      level: "warn",
+    });
+  });
+
+  it("passes session-scoped logs with level filter", async () => {
+    listSessionLogs.mockResolvedValue({
+      project_id: "proj-1",
+      orchestrator_session_id: "orch-session-abc123",
+      logs: [],
+    });
+
+    await runProjectsLogsList({
+      sessionId: "orch-session-abc123",
+      level: "debug",
+    });
+
+    expect(listSessionLogs).toHaveBeenCalledWith(
+      "proj-1",
+      "orch-session-abc123",
+      { limit: 20, level: "debug" },
+    );
+  });
+
   it("outputs JSON when --json is set", async () => {
     listSessionLogs.mockResolvedValue({
       project_id: "proj-1",

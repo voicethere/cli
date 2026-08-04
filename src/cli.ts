@@ -31,7 +31,6 @@ import { runProjectsSubscriptionShow } from "./commands/projects/subscription/sh
 import { runProjectsUsageShow } from "./commands/projects/usage/show.js";
 import { runProjectsSessionSettingsList } from "./commands/projects/session-settings/list.js";
 import { runProjectsSessionSettingsSet } from "./commands/projects/session-settings/set.js";
-import { runProjectsErrorsList } from "./commands/projects/errors/list.js";
 import { runProjectsLogsList } from "./commands/projects/logs/list.js";
 import {
   runProjectsConversationExport,
@@ -561,45 +560,24 @@ async function main(): Promise<void> {
       },
     );
 
-  const errors = projects
-    .command("errors")
-    .description("List structured session errors for the active project");
-
-  errors
-    .command("list")
-    .description("List recent session errors (default: last 20 for project)")
-    .option("--project <id>", "Project UUID")
-    .option("--limit <n>", "Max rows when listing project errors", "20")
-    .option("--session <id>", "Filter to one orchestrator session id")
-    .option("--json", "Output JSON")
-    .action(
-      async (options: {
-        project?: string;
-        limit?: string;
-        session?: string;
-        json?: boolean;
-      }) => {
-        await runProjectsErrorsList({
-          projectId: options.project,
-          limit: options.limit ? Number.parseInt(options.limit, 10) : undefined,
-          sessionId: options.session,
-          json: options.json,
-        });
-      },
-    );
-
   const logs = projects
     .command("logs")
     .description("List structured agent logs for the active project");
 
   logs
     .command("list")
-    .description("List recent agent logs (default: last 20 for project)")
+    .description(
+      "List recent agent logs (default: last 20 for project). Use --severity or --level to filter; --session scopes to one conversation.",
+    )
     .option("--project <id>", "Project UUID")
     .option("--limit <n>", "Max rows when listing project logs", "20")
-    .option("--session <id>", "Filter to one orchestrator session id")
+    .option("--session <id>", "Filter to one orchestrator session id (one conversation)")
     .option("--q <text>", "Search log messages")
     .option("--level <level>", "Filter by level (debug|info|warn|error)")
+    .option(
+      "--severity <level>",
+      "Filter by severity (debug|info|warn|error); alias for --level",
+    )
     .option("--json", "Output JSON")
     .action(
       async (options: {
@@ -608,6 +586,7 @@ async function main(): Promise<void> {
         session?: string;
         q?: string;
         level?: string;
+        severity?: string;
         json?: boolean;
       }) => {
         await runProjectsLogsList({
@@ -616,7 +595,17 @@ async function main(): Promise<void> {
           sessionId: options.session,
           q: options.q,
           level: options.level as
-            "debug" | "info" | "warn" | "error" | undefined,
+            | "debug"
+            | "info"
+            | "warn"
+            | "error"
+            | undefined,
+          severity: options.severity as
+            | "debug"
+            | "info"
+            | "warn"
+            | "error"
+            | undefined,
           json: options.json,
         });
       },

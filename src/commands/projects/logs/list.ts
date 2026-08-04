@@ -14,6 +14,8 @@ export interface ProjectsLogsListOptions {
   sessionId?: string;
   q?: string;
   level?: AgentLogLevel;
+  /** Alias for `level` (--severity on CLI). */
+  severity?: AgentLogLevel;
   json?: boolean;
 }
 
@@ -22,8 +24,9 @@ function buildQuery(options: ProjectsLogsListOptions): ListAgentLogsQuery {
   if (options.q?.trim()) {
     query.q = options.q.trim();
   }
-  if (options.level) {
-    query.level = options.level;
+  const level = options.level ?? options.severity;
+  if (level) {
+    query.level = level;
   }
   return query;
 }

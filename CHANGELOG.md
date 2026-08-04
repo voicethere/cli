@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Removed
+
+- **`voicethere projects errors list`** — session failures are browsed via **`projects logs list --severity error`** (or `--level error`). Errors persist in agent logs with `fields.kind = session_error`, `fields.projectId`, `fields.sessionId`, and message prefix `[CODE]`.
+
+### Changed
+
+- **`projects logs list`** — documents `--severity` as alias for `--level`; E2E smokes assert session errors through this filter.
+
 ## [0.8.0] - 2026-08-03
 
 ### Added
@@ -85,7 +93,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ### Added
 
-- **`voicethere projects logs list`** — list searchable customer agent logs for a project or `--session` (mirrors `projects errors list`).
+- **`voicethere projects logs list`** — list searchable customer agent logs for a project or `--session` (filter session failures with `--severity error`).
 
 ## [0.3.15] - 2026-07-17
 

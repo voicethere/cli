@@ -263,7 +263,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects conversation list [--q] [--json]`                                                      | Stored voice transcripts; `--q` searches turn text or session id                            |
 | `projects conversation get <sessionId>`                                                          | Full turn timeline for one session                                                          |
 | `projects conversation search <query>`                                                           | Alias for `conversation list --q`                                                           |
-| `projects errors list [--session] [--json]`                                                      | Structured session errors from dashboard API                                                |
+| `projects logs list [--session] [--level\|--severity] [--q] [--json]`                             | Searchable agent logs; use `--severity error` for session failures (dual-written)           |
 | `projects voice catalog`                                                                         | show STT/TTS vendors and models                                                             |
 | `build list`                                                                                     | Builds for the active project                                                               |
 | `build validate [file]`                                                                          | Sandbox verify (default bundle from config)                                                 |
