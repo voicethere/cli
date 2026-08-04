@@ -8,7 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ### Removed
 
-- **`voicethere projects errors list`** — session failures are browsed via **`projects logs list --severity error`** (or `--level error`). Errors dual-write into agent logs with `fields.kind = session_error` and message prefix `[CODE]`.
+- **`voicethere projects errors list`** — session failures are browsed via **`projects logs list --severity error`** (or `--level error`). Errors persist in agent logs with `fields.kind = session_error`, `fields.projectId`, `fields.sessionId`, and message prefix `[CODE]`.
 
 ### Changed
 
