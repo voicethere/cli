@@ -4,6 +4,11 @@ import { basename } from "node:path";
 import { USER_ORG_ID_HEADER, isUserApiKeyToken } from "./auth-headers.js";
 import { logApiBase, logVerbose } from "./command-log.js";
 import {
+  isRetryableHttpStatus,
+  RetryableHttpStatusError,
+  withHttpRetries,
+} from "./http-retry.js";
+import {
   formatTosNotAcceptedMessage,
   isTosNotAcceptedError,
 } from "./tos-gate.js";
@@ -13,6 +18,7 @@ export interface ApiErrorBody {
     code?: string;
     message?: string;
     request_id?: string;
+    error_id?: string;
   };
 }
 
@@ -20,6 +26,7 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
   readonly requestId?: string;
+  readonly errorId?: string;
 
   constructor(status: number, message: string, body?: ApiErrorBody) {
     super(message);
@@ -27,7 +34,54 @@ export class ApiError extends Error {
     this.status = status;
     this.code = body?.error?.code;
     this.requestId = body?.error?.request_id;
+    this.errorId = body?.error?.error_id;
   }
+}
+
+export function formatCliError(error: unknown): string {
+  if (error instanceof ApiError) {
+    const lines = [`Error: ${error.message}`];
+    if (error.errorId) {
+      lines.push(`error_id: ${error.errorId}`);
+    }
+    if (error.requestId) {
+      lines.push(`request_id: ${error.requestId}`);
+    }
+    return lines.join("\n");
+  }
+  if (error instanceof Error) {
+    return `Error: ${error.message}`;
+  }
+  return `Error: ${String(error)}`;
+}
+
+function formatHttpRetryLog(error: unknown): string {
+  if (error instanceof RetryableHttpStatusError) {
+    return `HTTP ${error.status}`;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+export function throwApiErrorFromResponse(
+  method: string,
+  pathname: string,
+  status: number,
+  text: string,
+): void {
+  const payload = text.length > 0 ? (JSON.parse(text) as ApiErrorBody) : null;
+  const errorBody =
+    payload && typeof payload === "object" && "error" in payload
+      ? payload
+      : undefined;
+  const message = isTosNotAcceptedError(errorBody)
+    ? formatTosNotAcceptedMessage(errorBody, errorBody?.error?.message ?? "")
+    : (errorBody?.error?.message ??
+      `Request failed: ${method} ${pathname} (${status})`);
+  logVerbose(`error: ${errorBody?.error?.code ?? "unknown"} — ${message}`);
+  throw new ApiError(status, message, errorBody);
 }
 
 export interface Project {
@@ -519,10 +573,7 @@ export type CreateConversationExportBody =
     };
 
 export type ConversationExportJobStatus =
-  | "queued"
-  | "active"
-  | "completed"
-  | "failed";
+  "queued" | "active" | "completed" | "failed";
 
 export interface ConversationExportJobProgress {
   conversations_total: number;
@@ -1105,32 +1156,51 @@ export class VoicethereApi {
       logVerbose("request body: multipart/form-data (bundle upload)");
     }
 
-    const started = performance.now();
-    const response = await fetch(url, { method, headers, body });
-    logVerbose(
-      `response: ${response.status} (${Math.round(performance.now() - started)}ms)`,
-    );
-    const text = await response.text();
-    const payload =
-      text.length > 0 ? (JSON.parse(text) as T | ApiErrorBody) : null;
+    return withHttpRetries(
+      async () => {
+        const started = performance.now();
+        const response = await fetch(url, { method, headers, body });
+        logVerbose(
+          `response: ${response.status} (${Math.round(performance.now() - started)}ms)`,
+        );
+        const text = await response.text();
 
-    if (!response.ok) {
-      const errorBody =
-        payload && typeof payload === "object" && "error" in payload
-          ? (payload as ApiErrorBody)
-          : undefined;
-      const message = isTosNotAcceptedError(errorBody)
-        ? formatTosNotAcceptedMessage(
-            errorBody,
-            errorBody?.error?.message ?? "",
-          )
-        : (errorBody?.error?.message ??
-          `Request failed: ${method} ${url.pathname} (${response.status})`);
-      logVerbose(`error: ${errorBody?.error?.code ?? "unknown"} — ${message}`);
-      throw new ApiError(response.status, message, errorBody);
-    }
+        if (!response.ok && isRetryableHttpStatus(response.status)) {
+          throw new RetryableHttpStatusError(response.status, text);
+        }
 
-    return (payload ?? ({} as T)) as T;
+        const payload =
+          text.length > 0 ? (JSON.parse(text) as T | ApiErrorBody) : null;
+
+        if (!response.ok) {
+          throwApiErrorFromResponse(
+            method,
+            url.pathname,
+            response.status,
+            text,
+          );
+        }
+
+        return (payload ?? ({} as T)) as T;
+      },
+      {
+        onRetry: ({ attempt, maxAttempts, delayMs, error }) => {
+          logVerbose(
+            `retrying after ${delayMs}ms (attempt ${attempt}/${maxAttempts}): ${formatHttpRetryLog(error)}`,
+          );
+        },
+      },
+    ).catch((error: unknown) => {
+      if (error instanceof RetryableHttpStatusError) {
+        throwApiErrorFromResponse(
+          method,
+          url.pathname,
+          error.status,
+          error.bodyText,
+        );
+      }
+      throw error;
+    });
   }
 }
 

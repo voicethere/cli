@@ -3,6 +3,8 @@ import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as httpRetry from "../lib/http-retry.js";
+
 import { ApiError } from "../lib/api.js";
 import {
   evaluateExistingCredentials,
@@ -198,6 +200,7 @@ describe("runLogin", () => {
       }),
       "utf8",
     );
+    vi.spyOn(httpRetry, "withHttpRetries").mockImplementation((fn) => fn());
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ error: { message: "down" } }), {
         status: 503,

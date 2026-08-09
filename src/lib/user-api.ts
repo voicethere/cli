@@ -1,10 +1,11 @@
-import { ApiError, type ApiErrorBody } from "./api.js";
+import { type ApiErrorBody, throwApiErrorFromResponse } from "./api.js";
+import {
+  isRetryableHttpStatus,
+  RetryableHttpStatusError,
+  withHttpRetries,
+} from "./http-retry.js";
 import { USER_ORG_ID_HEADER } from "./auth-headers.js";
 import { logApiBase, logVerbose } from "./command-log.js";
-import {
-  formatTosNotAcceptedMessage,
-  isTosNotAcceptedError,
-} from "./tos-gate.js";
 import type { UserCommandAuth } from "./user-session.js";
 
 export { USER_ORG_ID_HEADER };
@@ -161,32 +162,57 @@ export class UserApi {
       logVerbose(`request body: ${JSON.stringify(options.json)}`);
     }
 
-    const started = performance.now();
-    const response = await fetch(url, { method, headers, body });
-    logVerbose(
-      `response: ${response.status} (${Math.round(performance.now() - started)}ms)`,
-    );
-    const text = await response.text();
-    const payload =
-      text.length > 0 ? (JSON.parse(text) as T | ApiErrorBody) : null;
+    return withHttpRetries(
+      async () => {
+        const started = performance.now();
+        const response = await fetch(url, { method, headers, body });
+        logVerbose(
+          `response: ${response.status} (${Math.round(performance.now() - started)}ms)`,
+        );
+        const text = await response.text();
 
-    if (!response.ok) {
-      const errorBody =
-        payload && typeof payload === "object" && "error" in payload
-          ? (payload as ApiErrorBody)
-          : undefined;
-      const message = isTosNotAcceptedError(errorBody)
-        ? formatTosNotAcceptedMessage(
-            errorBody,
-            errorBody?.error?.message ?? "",
-          )
-        : (errorBody?.error?.message ??
-          `Request failed: ${method} ${url.pathname} (${response.status})`);
-      logVerbose(`error: ${errorBody?.error?.code ?? "unknown"} — ${message}`);
-      throw new ApiError(response.status, message, errorBody);
-    }
+        if (!response.ok && isRetryableHttpStatus(response.status)) {
+          throw new RetryableHttpStatusError(response.status, text);
+        }
 
-    return (payload ?? ({} as T)) as T;
+        const payload =
+          text.length > 0 ? (JSON.parse(text) as T | ApiErrorBody) : null;
+
+        if (!response.ok) {
+          throwApiErrorFromResponse(
+            method,
+            url.pathname,
+            response.status,
+            text,
+          );
+        }
+
+        return (payload ?? ({} as T)) as T;
+      },
+      {
+        onRetry: ({ attempt, maxAttempts, delayMs, error }) => {
+          const detail =
+            error instanceof RetryableHttpStatusError
+              ? `HTTP ${error.status}`
+              : error instanceof Error
+                ? error.message
+                : String(error);
+          logVerbose(
+            `retrying after ${delayMs}ms (attempt ${attempt}/${maxAttempts}): ${detail}`,
+          );
+        },
+      },
+    ).catch((error: unknown) => {
+      if (error instanceof RetryableHttpStatusError) {
+        throwApiErrorFromResponse(
+          method,
+          url.pathname,
+          error.status,
+          error.bodyText,
+        );
+      }
+      throw error;
+    });
   }
 }
 
