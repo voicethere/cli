@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-09
+
+### Added
+
+- **HTTP retries** — control-plane API calls (`VoicethereApi` / `UserApi`) retry transport failures (`fetch failed`, connection resets/timeouts) and gateway **502/503/504** with fixed backoff: 500ms, 1s, 2.5s, 5s, 15s, 30s, 60s (8 attempts max).
+- **`error_id` on CLI errors** — when the platform returns a unified AppError envelope, stderr prints `error_id` and `request_id` via `formatCliError` for support correlation.
+
 ## [0.9.0] - 2026-08-04
 
 ### Removed
