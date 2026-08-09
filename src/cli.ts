@@ -69,6 +69,7 @@ import { runUndeploy } from "./commands/undeploy.js";
 import { runSessionsBilling } from "./commands/sessions/billing.js";
 import { runSessionsList } from "./commands/sessions/list.js";
 import { configureLogging } from "./lib/command-log.js";
+import { formatCliError } from "./lib/api.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
 
 const require = createRequire(import.meta.url);
@@ -464,7 +465,9 @@ async function main(): Promise<void> {
 
   usage
     .command("show")
-    .description("Show usage credits (project default, or org rollup with --org)")
+    .description(
+      "Show usage credits (project default, or org rollup with --org)",
+    )
     .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .option("--org", "Organization rollup instead of a single project")
     .option("--period <period>", "24h, 7d, 30d, or utc_month")
@@ -571,7 +574,10 @@ async function main(): Promise<void> {
     )
     .option("--project <id>", "Project UUID")
     .option("--limit <n>", "Max rows when listing project logs", "20")
-    .option("--session <id>", "Filter to one orchestrator session id (one conversation)")
+    .option(
+      "--session <id>",
+      "Filter to one orchestrator session id (one conversation)",
+    )
     .option("--q <text>", "Search log messages")
     .option("--level <level>", "Filter by level (debug|info|warn|error)")
     .option(
@@ -595,17 +601,9 @@ async function main(): Promise<void> {
           sessionId: options.session,
           q: options.q,
           level: options.level as
-            | "debug"
-            | "info"
-            | "warn"
-            | "error"
-            | undefined,
+            "debug" | "info" | "warn" | "error" | undefined,
           severity: options.severity as
-            | "debug"
-            | "info"
-            | "warn"
-            | "error"
-            | undefined,
+            "debug" | "info" | "warn" | "error" | undefined,
           json: options.json,
         });
       },
@@ -708,9 +706,18 @@ async function main(): Promise<void> {
     .description("Export conversation transcripts to a downloadable JSON file")
     .option("--project <id>", "Project UUID")
     .option("--session <id>", "Export one session by orchestrator session id")
-    .option("--q <text>", "Export sessions matching transcript text or session id")
-    .option("--all", "Export all conversations (optionally within a time window)")
-    .option("--period <period>", "24h, 7d, 30d, or utc_month (filter/all modes)")
+    .option(
+      "--q <text>",
+      "Export sessions matching transcript text or session id",
+    )
+    .option(
+      "--all",
+      "Export all conversations (optionally within a time window)",
+    )
+    .option(
+      "--period <period>",
+      "24h, 7d, 30d, or utc_month (filter/all modes)",
+    )
     .option("--from <iso>", "Custom range start (ISO-8601)")
     .option("--to <iso>", "Custom range end (ISO-8601)")
     .option("--wait", "Poll until the export job completes or fails")
@@ -1038,7 +1045,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(`Error: ${message}`);
+  console.error(formatCliError(error));
   process.exitCode = 1;
 });

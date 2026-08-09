@@ -16,6 +16,7 @@ describe("UserApi", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("sends Bearer user key and org header", async () => {
@@ -50,5 +51,42 @@ describe("UserApi", () => {
     ];
     expect(init.headers.Cookie).toBe("session=legacy");
     expect(init.headers.Authorization).toBeUndefined();
+  });
+
+  it("retries gateway failures before surfacing ApiError", async () => {
+    vi.useFakeTimers();
+    const body = JSON.stringify({
+      error: {
+        message: "gateway timeout",
+        request_id: "req-u",
+        error_id: "err-u",
+      },
+    });
+    fetchMock.mockImplementation(() =>
+      Promise.resolve({
+        ok: false,
+        status: 504,
+        text: async () => body,
+      }),
+    );
+
+    const api = new UserApi("https://app.voicethere.dev/api/v1", {
+      kind: "user_api_key",
+      token: "vthu_secret",
+    });
+
+    const assertion = expect(api.listOrgs()).rejects.toMatchObject({
+      name: "ApiError",
+      status: 504,
+      message: "gateway timeout",
+      requestId: "req-u",
+      errorId: "err-u",
+    });
+
+    await vi.runAllTimersAsync();
+    await assertion;
+
+    expect(fetchMock).toHaveBeenCalledTimes(8);
+    vi.useRealTimers();
   });
 });

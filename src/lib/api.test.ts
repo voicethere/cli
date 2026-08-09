@@ -2,7 +2,7 @@ import { chmod, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, VoicethereApi } from "./api.js";
+import { ApiError, formatCliError, VoicethereApi } from "./api.js";
 import {
   DEFAULT_API_BASE,
   getCredentialsPath,
@@ -133,12 +133,39 @@ describe("slugifyName", () => {
   });
 });
 
+describe("formatCliError", () => {
+  it("formats ApiError with error_id and request_id", () => {
+    const error = new ApiError(400, "bad input", {
+      error: {
+        message: "bad input",
+        request_id: "req-abc",
+        error_id: "err-xyz",
+      },
+    });
+
+    expect(formatCliError(error)).toBe(
+      "Error: bad input\nerror_id: err-xyz\nrequest_id: req-abc",
+    );
+  });
+
+  it("omits missing ApiError metadata lines", () => {
+    const error = new ApiError(500, "oops");
+    expect(formatCliError(error)).toBe("Error: oops");
+  });
+
+  it("formats generic errors on one line", () => {
+    expect(formatCliError(new Error("boom"))).toBe("Error: boom");
+    expect(formatCliError("plain")).toBe("Error: plain");
+  });
+});
+
 describe("VoicethereApi", () => {
   const apiKey = "vth_dev_test";
   const apiBase = "https://app.voicethere.dev/api/v1";
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it("lists projects with bearer auth", async () => {
@@ -179,9 +206,11 @@ describe("VoicethereApi", () => {
   });
 
   it("sends x-voicethere-org-id for personal user keys", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ projects: [] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ projects: [] }), { status: 200 }),
+      );
 
     const api = new VoicethereApi("vthu_personal", apiBase, {
       orgId: "org-header",
@@ -230,6 +259,7 @@ describe("VoicethereApi", () => {
             code: "NWRTC_UNAUTHORIZED",
             message: "Invalid API key",
             request_id: "req-1",
+            error_id: "err-uuid-1",
           },
         }),
         { status: 401 },
@@ -243,7 +273,59 @@ describe("VoicethereApi", () => {
       code: "NWRTC_UNAUTHORIZED",
       message: "Invalid API key",
       requestId: "req-1",
+      errorId: "err-uuid-1",
     } satisfies Partial<ApiError>);
+  });
+
+  it("retries on gateway status then throws ApiError", async () => {
+    vi.useFakeTimers();
+    const body = JSON.stringify({
+      error: {
+        code: "GATEWAY",
+        message: "upstream unavailable",
+        request_id: "req-gw",
+        error_id: "err-gw",
+      },
+    });
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(() =>
+        Promise.resolve(new Response(body, { status: 503 })),
+      );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const assertion = expect(api.listProjects()).rejects.toMatchObject({
+      name: "ApiError",
+      status: 503,
+      message: "upstream unavailable",
+      requestId: "req-gw",
+      errorId: "err-gw",
+    });
+
+    await vi.runAllTimersAsync();
+    await assertion;
+
+    expect(fetchMock).toHaveBeenCalledTimes(8);
+    vi.useRealTimers();
+  });
+
+  it("retries on network error then succeeds", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ projects: [] }), { status: 200 }),
+      );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const promise = api.listProjects();
+    await vi.runAllTimersAsync();
+    const projects = await promise;
+
+    expect(projects).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
 
   it("uploads a build with optional message field", async () => {
