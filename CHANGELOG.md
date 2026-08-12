@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-12
+
 ### Changed
 
 - Default API base is now `https://app.voicethere.io/api/v1` (production). Staging/custom hosts via `VOICETHERE_API_BASE` or `login --api-base`.
