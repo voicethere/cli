@@ -82,7 +82,7 @@ voicethere login --api-key vth_… --user-api-key vthu_…
 voicethere login --api-key "$VOICETHERE_API_KEY" --api-base https://app.voicethere.dev/api/v1
 ```
 
-Default API base: `https://app.voicethere.dev/api/v1`
+Default API base: `https://app.voicethere.io/api/v1`
 
 **Credentials & environment precedence** (env wins over the credentials file):
 

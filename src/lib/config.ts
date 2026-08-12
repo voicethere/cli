@@ -10,7 +10,7 @@ import {
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-export const DEFAULT_API_BASE = "https://app.voicethere.dev/api/v1";
+export const DEFAULT_API_BASE = "https://app.voicethere.io/api/v1";
 
 export interface Credentials {
   /**
