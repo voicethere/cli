@@ -7,6 +7,7 @@ import {
   DEFAULT_API_BASE,
   getCredentialsPath,
   readCredentials,
+  resolveEffectiveCredentials,
   writeCredentials,
 } from "./config.js";
 import { slugifyName } from "../commands/projects/create.js";
@@ -26,6 +27,7 @@ describe("config", () => {
 
   afterEach(async () => {
     delete process.env.VOICETHERE_CREDENTIALS_PATH;
+    delete process.env.VOICETHERE_API_BASE;
     await rm(tempDir, { recursive: true, force: true });
   });
 
@@ -34,7 +36,23 @@ describe("config", () => {
   });
 
   it("defaults api_base to production URL", () => {
-    expect(DEFAULT_API_BASE).toBe("https://app.voicethere.dev/api/v1");
+    expect(DEFAULT_API_BASE).toBe("https://app.voicethere.io/api/v1");
+  });
+
+  it("VOICETHERE_API_BASE env overrides file and DEFAULT_API_BASE", async () => {
+    await writeCredentials({
+      api_key: "vth_env_override",
+      api_base: "https://file.example.com/api/v1",
+    });
+    process.env.VOICETHERE_API_BASE =
+      "https://app.voicethere.dev/api/v1";
+
+    const effective = await resolveEffectiveCredentials();
+    expect(effective).toMatchObject({
+      api_key: "vth_env_override",
+      api_base: "https://app.voicethere.dev/api/v1",
+      apiBaseFromEnv: true,
+    });
   });
 
   it("writes and reads credentials with mode 0600", async () => {
