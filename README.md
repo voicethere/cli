@@ -369,6 +369,15 @@ voicethere sessions billing <orchestratorSessionId> --project <projectId>
 voicethere sessions billing <orchestratorSessionId> --json
 ```
 
+Download session audio recording (poll until ready, then fetch signed `play_url` as binary):
+
+```bash
+voicethere sessions recording <orchestratorSessionId> --project <projectId> --wait --output ./recording.opus
+voicethere sessions recording <orchestratorSessionId> --wait --json
+```
+
+`--output` requires `--wait`. Default wait timeout is 120s (`--timeout-ms` or `VOICETHERE_SESSION_RECORDING_TIMEOUT_MS`).
+
 These commands call the platform control-plane API (`GET /api/v1/projects/:id/sessions`).
 
 ## Development

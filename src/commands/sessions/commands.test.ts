@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { runSessionsBilling } from "./billing.js";
 import { runSessionsList } from "./list.js";
+import { runSessionsRecording } from "./recording.js";
 
 const listProjectSessions = vi.fn();
 const getProjectSession = vi.fn();
+const getSessionRecording = vi.fn();
 const requireCredentials = vi.fn();
 const requireProjectId = vi.fn();
 
@@ -11,6 +16,7 @@ vi.mock("../../lib/api.js", () => ({
   createApi: vi.fn(() => ({
     listProjectSessions,
     getProjectSession,
+    getSessionRecording,
   })),
 }));
 
@@ -26,9 +32,11 @@ describe("sessions commands", () => {
   beforeEach(() => {
     listProjectSessions.mockReset();
     getProjectSession.mockReset();
+    getSessionRecording.mockReset();
     requireCredentials.mockReset();
     requireProjectId.mockReset();
     vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn());
 
     requireCredentials.mockResolvedValue({
       api_key: "vth_test",
@@ -89,6 +97,140 @@ describe("sessions commands", () => {
 
       expect(getProjectSession).toHaveBeenCalledWith("proj-1", "orch-1");
       expect(console.log).toHaveBeenCalledWith("billable_seconds=42");
+    });
+  });
+
+  describe("runSessionsRecording", () => {
+    const readyPayload = {
+      project_id: "proj-1",
+      orchestrator_session_id: "orch-1",
+      status: "ready" as const,
+      format: "opus" as const,
+      duration_ms: 12_345,
+      byte_size: 4096,
+      created_at: "2026-08-23T00:00:00.000Z",
+      play_url: "https://example.com/recording.opus",
+      play_url_expires_at: "2026-08-23T01:00:00.000Z",
+    };
+
+    it("prints recording metadata without wait", async () => {
+      getSessionRecording.mockResolvedValue(readyPayload);
+
+      await runSessionsRecording({ sessionId: "orch-1" });
+
+      expect(getSessionRecording).toHaveBeenCalledWith("proj-1", "orch-1");
+      expect(console.log).toHaveBeenCalledWith("status=ready");
+      expect(console.log).toHaveBeenCalledWith(
+        "play_url=https://example.com/recording.opus",
+      );
+    });
+
+    it("writes binary recording when ready with --wait and --output", async () => {
+      const dir = mkdtempSync(join(tmpdir(), "cli-recording-"));
+      const outputPath = join(dir, "recording.opus");
+      getSessionRecording.mockResolvedValue(readyPayload);
+      const audio = Buffer.from([0x4f, 0x67, 0x67, 0x53]);
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        arrayBuffer: async () => audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength),
+      } as Response);
+
+      try {
+        await runSessionsRecording({
+          sessionId: "orch-1",
+          wait: true,
+          output: outputPath,
+          pollIntervalMs: 1,
+          timeoutMs: 5_000,
+        });
+
+        expect(readFileSync(outputPath)).toEqual(audio);
+        expect(console.log).toHaveBeenCalledWith(
+          `Wrote ${audio.byteLength} byte(s) to ${outputPath}`,
+        );
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("polls until ready then downloads", async () => {
+      const dir = mkdtempSync(join(tmpdir(), "cli-recording-"));
+      const outputPath = join(dir, "recording.opus");
+      getSessionRecording
+        .mockResolvedValueOnce({
+          ...readyPayload,
+          status: "pending",
+          play_url: undefined,
+        })
+        .mockResolvedValueOnce(readyPayload);
+      const audio = Buffer.from("audio-bytes");
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        arrayBuffer: async () => audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength),
+      } as Response);
+
+      try {
+        await runSessionsRecording({
+          sessionId: "orch-1",
+          wait: true,
+          output: outputPath,
+          pollIntervalMs: 1,
+          timeoutMs: 5_000,
+        });
+
+        expect(getSessionRecording).toHaveBeenCalledTimes(2);
+        expect(readFileSync(outputPath)).toEqual(audio);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("throws when recording status is failed", async () => {
+      getSessionRecording.mockResolvedValue({
+        ...readyPayload,
+        status: "failed",
+        play_url: undefined,
+      });
+
+      await expect(
+        runSessionsRecording({
+          sessionId: "orch-1",
+          wait: true,
+          pollIntervalMs: 1,
+          timeoutMs: 5_000,
+        }),
+      ).rejects.toThrow(/Session recording failed/);
+    });
+
+    it("errors when --output is set without --wait", async () => {
+      await expect(
+        runSessionsRecording({
+          sessionId: "orch-1",
+          output: "/tmp/recording.opus",
+        }),
+      ).rejects.toThrow(/--output requires --wait/);
+    });
+
+    it("errors when ready payload is missing play_url with --output after wait", async () => {
+      getSessionRecording.mockResolvedValue({
+        ...readyPayload,
+        status: "ready",
+        play_url: undefined,
+      });
+
+      await expect(
+        runSessionsRecording({
+          sessionId: "orch-1",
+          wait: true,
+          output: "/tmp/recording.opus",
+          pollIntervalMs: 1,
+          timeoutMs: 5_000,
+        }),
+      ).rejects.toThrow(/no play_url/);
     });
   });
 });

@@ -74,6 +74,7 @@ import { runDeploy } from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
 import { runSessionsBilling } from "./commands/sessions/billing.js";
 import { runSessionsList } from "./commands/sessions/list.js";
+import { runSessionsRecording } from "./commands/sessions/recording.js";
 import { configureLogging } from "./lib/command-log.js";
 import { formatCliError } from "./lib/api.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
@@ -1043,6 +1044,47 @@ async function main(): Promise<void> {
         await runSessionsBilling({
           sessionId,
           projectId: options.project,
+          json: options.json,
+        });
+      },
+    );
+
+  sessions
+    .command("recording")
+    .description("Show or download session audio recording metadata")
+    .argument(
+      "<sessionId>",
+      "Orchestrator session id from list or startSession",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--wait", "Poll until recording is ready or failed")
+    .option(
+      "--timeout-ms <n>",
+      "Max wait time in ms (default 120000; env VOICETHERE_SESSION_RECORDING_TIMEOUT_MS)",
+      (value) => Number.parseInt(value, 10),
+    )
+    .option(
+      "-o, --output <path>",
+      "Write recording audio to this path (requires --wait)",
+    )
+    .option("--json", "Output recording metadata as JSON")
+    .action(
+      async (
+        sessionId: string,
+        options: {
+          project?: string;
+          wait?: boolean;
+          timeoutMs?: number;
+          output?: string;
+          json?: boolean;
+        },
+      ) => {
+        await runSessionsRecording({
+          sessionId,
+          projectId: options.project,
+          wait: options.wait,
+          timeoutMs: options.timeoutMs,
+          output: options.output,
           json: options.json,
         });
       },

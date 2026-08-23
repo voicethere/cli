@@ -617,6 +617,22 @@ export interface ConversationExportJobResponse {
   completed_at?: string | null;
 }
 
+export type SessionRecordingStatus = "pending" | "ready" | "failed";
+
+export type SessionRecordingFormat = "opus" | "wav";
+
+export interface SessionRecordingPlayPayload {
+  project_id: string;
+  orchestrator_session_id: string;
+  status: SessionRecordingStatus;
+  format: SessionRecordingFormat;
+  duration_ms: number;
+  byte_size: number;
+  created_at: string;
+  play_url?: string;
+  play_url_expires_at?: string;
+}
+
 export interface ListProjectConversationsResponse {
   project_id: string;
   conversations: ConversationSessionSummary[];
@@ -1097,6 +1113,16 @@ export class VoicethereApi {
     return this.request<ProjectSessionEntry>(
       "GET",
       `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}`,
+    );
+  }
+
+  async getSessionRecording(
+    projectId: string,
+    orchestratorSessionId: string,
+  ): Promise<SessionRecordingPlayPayload> {
+    return this.request<SessionRecordingPlayPayload>(
+      "GET",
+      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/recording`,
     );
   }
 
