@@ -214,11 +214,37 @@ export interface ProjectSessionSettingsResponse {
     idle_timeout_voice_activity?: boolean;
     idle_timeout_dc_inbound?: boolean;
     conversation_history_enabled?: boolean;
+    conversation_recording_enabled?: boolean;
+    conversation_recording_metered_overage_enabled?: boolean;
   };
 }
 
 export type ProjectSessionSettingKey =
   keyof ProjectSessionSettingsResponse["settings"];
+
+export interface ProjectBillingSettingsResponse {
+  project_id: string;
+  budget_cap_amount: number | null;
+  budget_cap_currency: string | null;
+  metered_overage_enabled: boolean;
+  conversation_overage_enabled: boolean;
+  agent_log_overage_enabled: boolean;
+  org_metered_overage_enabled: boolean;
+  org_payment_ready: boolean;
+  effective_metered_overage_enabled: boolean;
+  org_budget_cap_amount: number | null;
+  org_budget_cap_currency: string | null;
+  period: Record<string, unknown> | null;
+  validation_warning: string | null;
+}
+
+export interface UpdateProjectBillingSettingsInput {
+  budget_cap_amount?: number | null;
+  budget_cap_currency?: "eur" | "usd" | string | null;
+  metered_overage_enabled?: boolean;
+  conversation_overage_enabled?: boolean;
+  agent_log_overage_enabled?: boolean;
+}
 
 export type VoiceProviderId =
   | "local-sherpa"
@@ -591,6 +617,22 @@ export interface ConversationExportJobResponse {
   completed_at?: string | null;
 }
 
+export type SessionRecordingStatus = "pending" | "ready" | "failed";
+
+export type SessionRecordingFormat = "opus" | "wav";
+
+export interface SessionRecordingPlayPayload {
+  project_id: string;
+  orchestrator_session_id: string;
+  status: SessionRecordingStatus;
+  format: SessionRecordingFormat;
+  duration_ms: number;
+  byte_size: number;
+  created_at: string;
+  play_url?: string;
+  play_url_expires_at?: string;
+}
+
 export interface ListProjectConversationsResponse {
   project_id: string;
   conversations: ConversationSessionSummary[];
@@ -949,6 +991,26 @@ export class VoicethereApi {
     );
   }
 
+  async getProjectBillingSettings(
+    projectId: string,
+  ): Promise<ProjectBillingSettingsResponse> {
+    return this.request<ProjectBillingSettingsResponse>(
+      "GET",
+      `/projects/${projectId}/billing-settings`,
+    );
+  }
+
+  async updateProjectBillingSettings(
+    projectId: string,
+    patch: UpdateProjectBillingSettingsInput,
+  ): Promise<ProjectBillingSettingsResponse> {
+    return this.request<ProjectBillingSettingsResponse>(
+      "PATCH",
+      `/projects/${projectId}/billing-settings`,
+      { json: patch },
+    );
+  }
+
   async listVoiceModels(): Promise<VoiceCatalogResponse> {
     return this.request<VoiceCatalogResponse>("GET", "/voice/models");
   }
@@ -1051,6 +1113,16 @@ export class VoicethereApi {
     return this.request<ProjectSessionEntry>(
       "GET",
       `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}`,
+    );
+  }
+
+  async getSessionRecording(
+    projectId: string,
+    orchestratorSessionId: string,
+  ): Promise<SessionRecordingPlayPayload> {
+    return this.request<SessionRecordingPlayPayload>(
+      "GET",
+      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/recording`,
     );
   }
 

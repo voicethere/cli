@@ -6,6 +6,8 @@ export const SESSION_SETTING_KEYS = [
   "idle_timeout_voice_activity",
   "idle_timeout_dc_inbound",
   "conversation_history_enabled",
+  "conversation_recording_enabled",
+  "conversation_recording_metered_overage_enabled",
 ] as const;
 
 export type SessionSettingKey = (typeof SESSION_SETTING_KEYS)[number];
@@ -75,6 +77,19 @@ export const SESSION_SETTING_DEFS: Record<
     description:
       "When on (default), store final user speech and agent TTS text for the dashboard Conversation tab. false stops recording new transcripts (existing history kept until retention).",
   },
+  conversation_recording_enabled: {
+    type: "boolean",
+    default: false,
+    description:
+      "When on, store voice-session audio for dashboard playback. Default off (opt-in per project).",
+  },
+  conversation_recording_metered_overage_enabled: {
+    type: "boolean",
+    default: false,
+    description:
+      "When off (default), unused included recording minutes roll over into a capped minute bank; recording stops when included + bank are exhausted. When on, unused minutes do not roll over and minutes past included + bank bill at 1 credit/min. Requires billing and a payment method on file.",
+    billingWarning: true,
+  },
 };
 
 const SETTING_NAMES_HELP = SESSION_SETTING_KEYS.join(" | ");
@@ -124,6 +139,9 @@ export function formatSessionSettingsGroupHelp(): string {
   );
   lines.push(
     "  $ voicethere projects session-settings set conversation_history_enabled false",
+  );
+  lines.push(
+    "  $ voicethere projects session-settings set conversation_recording_enabled true",
   );
 
   return lines.join("\n");

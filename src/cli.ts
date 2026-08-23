@@ -31,6 +31,8 @@ import { runProjectsSubscriptionShow } from "./commands/projects/subscription/sh
 import { runProjectsUsageShow } from "./commands/projects/usage/show.js";
 import { runProjectsSessionSettingsList } from "./commands/projects/session-settings/list.js";
 import { runProjectsSessionSettingsSet } from "./commands/projects/session-settings/set.js";
+import { runProjectsBillingSettingsList } from "./commands/projects/billing-settings/list.js";
+import { runProjectsBillingSettingsSet } from "./commands/projects/billing-settings/set.js";
 import { runProjectsLogsList } from "./commands/projects/logs/list.js";
 import {
   runProjectsConversationExport,
@@ -42,6 +44,10 @@ import {
   formatSessionSettingsGroupHelp,
   sessionSettingNamesHelp,
 } from "./commands/projects/session-settings/defs.js";
+import {
+  billingSettingNamesHelp,
+  formatBillingSettingsGroupHelp,
+} from "./commands/projects/billing-settings/defs.js";
 import { runProjectsVoiceCatalog } from "./commands/projects/voice/catalog.js";
 import { runProjectsVoiceShow } from "./commands/projects/voice/show.js";
 import {
@@ -68,6 +74,7 @@ import { runDeploy } from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
 import { runSessionsBilling } from "./commands/sessions/billing.js";
 import { runSessionsList } from "./commands/sessions/list.js";
+import { runSessionsRecording } from "./commands/sessions/recording.js";
 import { configureLogging } from "./lib/command-log.js";
 import { formatCliError } from "./lib/api.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
@@ -563,6 +570,46 @@ async function main(): Promise<void> {
       },
     );
 
+  const billingSettings = projects
+    .command("billing-settings")
+    .description(
+      "Project billing toggles and spend caps (metered overage, storage overage, budget cap)",
+    )
+    .addHelpText("after", formatBillingSettingsGroupHelp());
+
+  billingSettings
+    .command("list")
+    .description(
+      "List billing settings for the active project (key=value lines)",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .addHelpText(
+      "after",
+      "\nOutput: settable keys plus effective/org context fields.\n",
+    )
+    .action(async (options: { project?: string }) => {
+      await runProjectsBillingSettingsList({ projectId: options.project });
+    });
+
+  billingSettings
+    .command("set")
+    .description("Set one billing setting; prints updated settings as JSON")
+    .argument("<name>", `Setting name: ${billingSettingNamesHelp()}`)
+    .argument(
+      "<value>",
+      "Boolean, amount, currency, or null|none to clear (see billing-settings --help)",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(
+      async (name: string, value: string, options: { project?: string }) => {
+        await runProjectsBillingSettingsSet({
+          name,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
+
   const logs = projects
     .command("logs")
     .description("List structured agent logs for the active project");
@@ -997,6 +1044,47 @@ async function main(): Promise<void> {
         await runSessionsBilling({
           sessionId,
           projectId: options.project,
+          json: options.json,
+        });
+      },
+    );
+
+  sessions
+    .command("recording")
+    .description("Show or download session audio recording metadata")
+    .argument(
+      "<sessionId>",
+      "Orchestrator session id from list or startSession",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--wait", "Poll until recording is ready or failed")
+    .option(
+      "--timeout-ms <n>",
+      "Max wait time in ms (default 120000; env VOICETHERE_SESSION_RECORDING_TIMEOUT_MS)",
+      (value) => Number.parseInt(value, 10),
+    )
+    .option(
+      "-o, --output <path>",
+      "Write recording audio to this path (requires --wait)",
+    )
+    .option("--json", "Output recording metadata as JSON")
+    .action(
+      async (
+        sessionId: string,
+        options: {
+          project?: string;
+          wait?: boolean;
+          timeoutMs?: number;
+          output?: string;
+          json?: boolean;
+        },
+      ) => {
+        await runSessionsRecording({
+          sessionId,
+          projectId: options.project,
+          wait: options.wait,
+          timeoutMs: options.timeoutMs,
+          output: options.output,
           json: options.json,
         });
       },

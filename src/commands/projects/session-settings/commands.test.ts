@@ -132,6 +132,42 @@ describe("projects session-settings commands", () => {
       );
     });
 
+    it("sets conversation_recording_enabled", async () => {
+      setProjectSessionSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { conversation_recording_enabled: true },
+      });
+
+      await runProjectsSessionSettingsSet({
+        name: "conversation_recording_enabled",
+        value: "true",
+      });
+
+      expect(setProjectSessionSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "conversation_recording_enabled",
+        true,
+      );
+    });
+
+    it("sets conversation_recording_metered_overage_enabled", async () => {
+      setProjectSessionSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { conversation_recording_metered_overage_enabled: true },
+      });
+
+      await runProjectsSessionSettingsSet({
+        name: "conversation_recording_metered_overage_enabled",
+        value: "true",
+      });
+
+      expect(setProjectSessionSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "conversation_recording_metered_overage_enabled",
+        true,
+      );
+    });
+
     it("rejects unknown setting names", async () => {
       await expect(
         runProjectsSessionSettingsSet({ name: "unknown", value: "1" }),
