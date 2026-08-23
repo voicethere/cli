@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-23
+
+### Added
+
+- **`projects session-settings`** — `conversation_recording_enabled` and `conversation_recording_metered_overage_enabled` (bool) for opt-in conversation audio recording and overage mode.
+- **`projects billing-settings list|set`** — subscription overage toggles and budget cap (`conversation_recording_metered_overage_enabled`, agent-log overage, budget cap).
+- **`sessions recording <sessionId>`** — download a session’s conversation recording (`--wait`, `--output`, `--json`).
+
 ## [0.11.0] - 2026-08-12
 
 ### Changed
