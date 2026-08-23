@@ -31,6 +31,8 @@ import { runProjectsSubscriptionShow } from "./commands/projects/subscription/sh
 import { runProjectsUsageShow } from "./commands/projects/usage/show.js";
 import { runProjectsSessionSettingsList } from "./commands/projects/session-settings/list.js";
 import { runProjectsSessionSettingsSet } from "./commands/projects/session-settings/set.js";
+import { runProjectsBillingSettingsList } from "./commands/projects/billing-settings/list.js";
+import { runProjectsBillingSettingsSet } from "./commands/projects/billing-settings/set.js";
 import { runProjectsLogsList } from "./commands/projects/logs/list.js";
 import {
   runProjectsConversationExport,
@@ -42,6 +44,10 @@ import {
   formatSessionSettingsGroupHelp,
   sessionSettingNamesHelp,
 } from "./commands/projects/session-settings/defs.js";
+import {
+  billingSettingNamesHelp,
+  formatBillingSettingsGroupHelp,
+} from "./commands/projects/billing-settings/defs.js";
 import { runProjectsVoiceCatalog } from "./commands/projects/voice/catalog.js";
 import { runProjectsVoiceShow } from "./commands/projects/voice/show.js";
 import {
@@ -556,6 +562,46 @@ async function main(): Promise<void> {
     .action(
       async (name: string, value: string, options: { project?: string }) => {
         await runProjectsSessionSettingsSet({
+          name,
+          value,
+          projectId: options.project,
+        });
+      },
+    );
+
+  const billingSettings = projects
+    .command("billing-settings")
+    .description(
+      "Project billing toggles and spend caps (metered overage, storage overage, budget cap)",
+    )
+    .addHelpText("after", formatBillingSettingsGroupHelp());
+
+  billingSettings
+    .command("list")
+    .description(
+      "List billing settings for the active project (key=value lines)",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .addHelpText(
+      "after",
+      "\nOutput: settable keys plus effective/org context fields.\n",
+    )
+    .action(async (options: { project?: string }) => {
+      await runProjectsBillingSettingsList({ projectId: options.project });
+    });
+
+  billingSettings
+    .command("set")
+    .description("Set one billing setting; prints updated settings as JSON")
+    .argument("<name>", `Setting name: ${billingSettingNamesHelp()}`)
+    .argument(
+      "<value>",
+      "Boolean, amount, currency, or null|none to clear (see billing-settings --help)",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(
+      async (name: string, value: string, options: { project?: string }) => {
+        await runProjectsBillingSettingsSet({
           name,
           value,
           projectId: options.project,

@@ -260,10 +260,11 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects delete [projectId] [--force] [--wait]`                                                 | Delete project + builds (type name to confirm, or `--force`; `--wait` polls async deletion) |
 | `projects settings list`                                                                         | set Runner pool settings (warm pool, scale-down)                                            |
 | `projects session-settings list`                                                                 | set WebRTC idle timeout + crash error message (see below)                                   |
+| `projects billing-settings list`                                                                 | project billing toggles and spend cap (metered/storage overage, budget cap)                 |
 | `projects conversation list [--q] [--json]`                                                      | Stored voice transcripts; `--q` searches turn text or session id                            |
 | `projects conversation get <sessionId>`                                                          | Full turn timeline for one session                                                          |
 | `projects conversation search <query>`                                                           | Alias for `conversation list --q`                                                           |
-| `projects logs list [--session] [--level\|--severity] [--q] [--json]`                             | Searchable agent logs; use `--severity error` for session failures (dual-written)           |
+| `projects logs list [--session] [--level\|--severity] [--q] [--json]`                            | Searchable agent logs; use `--severity error` for session failures (dual-written)           |
 | `projects voice catalog`                                                                         | show STT/TTS vendors and models                                                             |
 | `build list`                                                                                     | Builds for the active project                                                               |
 | `build validate [file]`                                                                          | Sandbox verify (default bundle from config)                                                 |
@@ -323,6 +324,18 @@ voicethere projects session-settings set error_message "Sorry, something went wr
 | `error_message`                  | string                                | _(none)_ | Crash TTS in voice mode                       |
 
 Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
+
+## Billing settings
+
+Per-project metered overage, conversation/agent-log overage toggles, and optional spend cap. Matches dashboard **Billing** / subscriptions permissions.
+
+```bash
+voicethere projects billing-settings --help
+voicethere projects billing-settings list
+voicethere projects billing-settings set metered_overage_enabled true
+voicethere projects billing-settings set budget_cap_amount 50
+voicethere projects billing-settings set budget_cap_amount null
+```
 
 ## Conversation history
 

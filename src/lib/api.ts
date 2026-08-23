@@ -220,6 +220,30 @@ export interface ProjectSessionSettingsResponse {
 export type ProjectSessionSettingKey =
   keyof ProjectSessionSettingsResponse["settings"];
 
+export interface ProjectBillingSettingsResponse {
+  project_id: string;
+  budget_cap_amount: number | null;
+  budget_cap_currency: string | null;
+  metered_overage_enabled: boolean;
+  conversation_overage_enabled: boolean;
+  agent_log_overage_enabled: boolean;
+  org_metered_overage_enabled: boolean;
+  org_payment_ready: boolean;
+  effective_metered_overage_enabled: boolean;
+  org_budget_cap_amount: number | null;
+  org_budget_cap_currency: string | null;
+  period: Record<string, unknown> | null;
+  validation_warning: string | null;
+}
+
+export interface UpdateProjectBillingSettingsInput {
+  budget_cap_amount?: number | null;
+  budget_cap_currency?: "eur" | "usd" | string | null;
+  metered_overage_enabled?: boolean;
+  conversation_overage_enabled?: boolean;
+  agent_log_overage_enabled?: boolean;
+}
+
 export type VoiceProviderId =
   | "local-sherpa"
   | "openai"
@@ -946,6 +970,26 @@ export class VoicethereApi {
       "PATCH",
       `/projects/${projectId}/session-settings`,
       { json: { key, value } },
+    );
+  }
+
+  async getProjectBillingSettings(
+    projectId: string,
+  ): Promise<ProjectBillingSettingsResponse> {
+    return this.request<ProjectBillingSettingsResponse>(
+      "GET",
+      `/projects/${projectId}/billing-settings`,
+    );
+  }
+
+  async updateProjectBillingSettings(
+    projectId: string,
+    patch: UpdateProjectBillingSettingsInput,
+  ): Promise<ProjectBillingSettingsResponse> {
+    return this.request<ProjectBillingSettingsResponse>(
+      "PATCH",
+      `/projects/${projectId}/billing-settings`,
+      { json: patch },
     );
   }
 
