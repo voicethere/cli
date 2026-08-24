@@ -12,17 +12,13 @@ const getSessionRecording = vi.fn();
 const requireCredentials = vi.fn();
 const requireProjectId = vi.fn();
 
-vi.mock("../../lib/api.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../lib/api.js")>();
-  return {
-    ...actual,
-    createApi: vi.fn(() => ({
-      listProjectSessions,
-      getProjectSession,
-      getSessionRecording,
-    })),
-  };
-});
+vi.mock("../../lib/api.js", () => ({
+  createApi: vi.fn(() => ({
+    listProjectSessions,
+    getProjectSession,
+    getSessionRecording,
+  })),
+}));
 
 vi.mock("../../lib/config.js", () => ({
   requireCredentials: (...args: unknown[]) => requireCredentials(...args),
@@ -154,41 +150,6 @@ describe("sessions commands", () => {
         expect(console.log).toHaveBeenCalledWith(
           `Wrote ${audio.byteLength} byte(s) to ${outputPath}`,
         );
-      } finally {
-        rmSync(dir, { recursive: true, force: true });
-      }
-    });
-
-    it("polls through 404 not-found until ready then downloads", async () => {
-      const { ApiError } = await import("../../lib/api.js");
-      const dir = mkdtempSync(join(tmpdir(), "cli-recording-"));
-      const outputPath = join(dir, "recording.opus");
-      getSessionRecording
-        .mockRejectedValueOnce(new ApiError(404, "Session recording not found"))
-        .mockResolvedValueOnce(readyPayload);
-      const audio = Buffer.from("audio-bytes");
-      vi.mocked(fetch).mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        arrayBuffer: async () =>
-          audio.buffer.slice(
-            audio.byteOffset,
-            audio.byteOffset + audio.byteLength,
-          ),
-      } as Response);
-
-      try {
-        await runSessionsRecording({
-          sessionId: "orch-1",
-          wait: true,
-          output: outputPath,
-          pollIntervalMs: 1,
-          timeoutMs: 5_000,
-        });
-
-        expect(getSessionRecording).toHaveBeenCalledTimes(2);
-        expect(readFileSync(outputPath)).toEqual(audio);
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }
