@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-08-24
+
+### Fixed
+
+- **`sessions recording --wait`** — treat HTTP 404 / “Session recording not found” as retryable while polling (runner finalizes after session teardown); other errors still fail immediately.
+
 ## [0.12.1] - 2026-08-24
 
 ### Added
