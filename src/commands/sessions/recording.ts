@@ -1,10 +1,16 @@
 import { writeFile } from "node:fs/promises";
 
 import { ApiError, type SessionRecordingPlayPayload } from "../../lib/api.js";
+import { convertOpusRecording } from "../../lib/audio-convert.js";
 import { logStep, logVerbose } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
 import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
 import { pollWithBackoff } from "../../lib/poll-backoff.js";
+import {
+  resolveRecordingOutputFormat,
+  resolveRecordingOutputPath,
+  type RecordingOutputFormat,
+} from "../../lib/recording-format.js";
 import { requireProjectId } from "../../lib/project-config.js";
 
 export interface SessionsRecordingOptions {
@@ -14,6 +20,7 @@ export interface SessionsRecordingOptions {
   timeoutMs?: number;
   pollIntervalMs?: number;
   output?: string;
+  format?: string;
   json?: boolean;
 }
 
@@ -61,10 +68,7 @@ function pendingSessionRecordingPayload(
   };
 }
 
-async function downloadRecordingArtifact(
-  playUrl: string,
-  outputPath: string,
-): Promise<number> {
+async function downloadRecordingBytes(playUrl: string): Promise<Buffer> {
   const response = await fetch(playUrl);
   if (!response.ok) {
     throw new Error(
@@ -75,8 +79,25 @@ async function downloadRecordingArtifact(
   if (body.byteLength <= 0) {
     throw new Error("Session recording download returned empty body");
   }
-  await writeFile(outputPath, body);
-  return body.byteLength;
+  return body;
+}
+
+async function downloadAndWriteRecording(
+  playUrl: string,
+  outputPath: string,
+  format: RecordingOutputFormat,
+): Promise<number> {
+  const opusBody = await downloadRecordingBytes(playUrl);
+
+  if (format === "opus") {
+    await writeFile(outputPath, opusBody);
+    return opusBody.byteLength;
+  }
+
+  logStep(`Converted recording to ${format}`);
+  const converted = await convertOpusRecording(opusBody, format);
+  await writeFile(outputPath, converted);
+  return converted.byteLength;
 }
 
 async function pollSessionRecording(
@@ -190,9 +211,23 @@ export async function runSessionsRecording(
         "Recording is not ready for download (missing play_url); use --wait",
       );
     }
-    logStep(`Writing recording to ${outputPath}`);
-    const bytesWritten = await downloadRecordingArtifact(playUrl, outputPath);
-    console.log(`Wrote ${bytesWritten} byte(s) to ${outputPath}`);
+    const outputFormat = resolveRecordingOutputFormat({
+      formatFlag: options.format,
+      outputPath,
+    });
+    const resolvedOutputPath = resolveRecordingOutputPath(
+      outputPath,
+      outputFormat,
+    );
+    logStep(`Writing recording to ${resolvedOutputPath}`);
+    const bytesWritten = await downloadAndWriteRecording(
+      playUrl,
+      resolvedOutputPath,
+      outputFormat,
+    );
+    console.log(
+      `Wrote ${bytesWritten} byte(s) to ${resolvedOutputPath}`,
+    );
   }
 
   if (options.json) {
