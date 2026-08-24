@@ -44,8 +44,7 @@ describe("config", () => {
       api_key: "vth_env_override",
       api_base: "https://file.example.com/api/v1",
     });
-    process.env.VOICETHERE_API_BASE =
-      "https://app.voicethere.dev/api/v1";
+    process.env.VOICETHERE_API_BASE = "https://app.voicethere.dev/api/v1";
 
     const effective = await resolveEffectiveCredentials();
     expect(effective).toMatchObject({
@@ -537,6 +536,24 @@ describe("VoicethereApi", () => {
 
     const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(url.pathname).toBe("/api/v1/projects/proj-1/secrets/legacy%2Fkey");
+    expect(init.method).toBe("DELETE");
+  });
+
+  it("deletes a session recording", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 204,
+      statusText: "No Content",
+      text: async () => "",
+    } as Response);
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    await api.deleteSessionRecording("proj-1", "orch/session");
+
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.pathname).toBe(
+      "/api/v1/projects/proj-1/sessions/orch%2Fsession/recording",
+    );
     expect(init.method).toBe("DELETE");
   });
 

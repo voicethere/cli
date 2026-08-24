@@ -68,7 +68,8 @@ async function pollSessionRecording(
 ): Promise<SessionRecordingPlayPayload> {
   const payload = await pollWithBackoff({
     poll: () => api.getSessionRecording(projectId, sessionId),
-    isTerminal: (recording) => RECORDING_TERMINAL_STATUSES.has(recording.status),
+    isTerminal: (recording) =>
+      RECORDING_TERMINAL_STATUSES.has(recording.status),
     getProgress: (recording) => ({
       status: recording.status,
       progressId: recording.play_url ?? null,
@@ -132,7 +133,8 @@ export async function runSessionsRecording(
   if (options.wait) {
     logStep("Waiting for session recording to become ready");
     payload = await pollSessionRecording(api, projectId, sessionId, {
-      pollIntervalMs: options.pollIntervalMs ?? defaultRecordingPollIntervalMs(),
+      pollIntervalMs:
+        options.pollIntervalMs ?? defaultRecordingPollIntervalMs(),
       timeoutMs: options.timeoutMs ?? defaultRecordingTimeoutMs(),
     });
   } else {

@@ -75,6 +75,7 @@ import { runUndeploy } from "./commands/undeploy.js";
 import { runSessionsBilling } from "./commands/sessions/billing.js";
 import { runSessionsList } from "./commands/sessions/list.js";
 import { runSessionsRecording } from "./commands/sessions/recording.js";
+import { runSessionsRecordingDelete } from "./commands/sessions/recording/delete.js";
 import { configureLogging } from "./lib/command-log.js";
 import { formatCliError } from "./lib/api.js";
 import { DEFAULT_API_BASE } from "./lib/config.js";
@@ -1049,9 +1050,13 @@ async function main(): Promise<void> {
       },
     );
 
-  sessions
+  const recording = sessions
     .command("recording")
-    .description("Show or download session audio recording metadata")
+    .description("Show, download, or delete session audio recordings");
+
+  recording
+    .command("get", { isDefault: true })
+    .description("Show or download session audio recording metadata (default)")
     .argument(
       "<sessionId>",
       "Orchestrator session id from list or startSession",
@@ -1089,6 +1094,21 @@ async function main(): Promise<void> {
         });
       },
     );
+
+  recording
+    .command("delete")
+    .description("Delete a session recording")
+    .argument(
+      "<sessionId>",
+      "Orchestrator session id from list or startSession",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(async (sessionId: string, options: { project?: string }) => {
+      await runSessionsRecordingDelete({
+        sessionId,
+        projectId: options.project,
+      });
+    });
 
   program
     .command("deploy")
