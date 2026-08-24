@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-08-24
+
+### Added
+
+- **`sessions recording --format <opus|wav|mp3>`** — when using `--output`, download stored Opus/Ogg from the API and write WAV (default when the path has no extension), MP3, or raw Opus. Infer format from `.wav`/`.mp3`/`.opus`/`.ogg` when `--format` is omitted. Conversion uses system `ffmpeg` (`FFMPEG_PATH` or PATH; optional `ffmpeg-static` if installed).
+
 ## [0.12.2] - 2026-08-24
 
 ### Fixed

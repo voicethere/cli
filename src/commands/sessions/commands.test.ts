@@ -8,6 +8,12 @@ import { runSessionsList } from "./list.js";
 import { runSessionsRecording } from "./recording.js";
 import { runSessionsRecordingDelete } from "./recording/delete.js";
 
+const convertOpusRecording = vi.fn();
+
+vi.mock("../../lib/audio-convert.js", () => ({
+  convertOpusRecording: (...args: unknown[]) => convertOpusRecording(...args),
+}));
+
 const listProjectSessions = vi.fn();
 const getProjectSession = vi.fn();
 const getSessionRecording = vi.fn();
@@ -44,6 +50,7 @@ describe("sessions commands", () => {
     deleteSessionRecording.mockReset();
     requireCredentials.mockReset();
     requireProjectId.mockReset();
+    convertOpusRecording.mockReset();
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.stubGlobal("fetch", vi.fn());
 
@@ -295,6 +302,58 @@ describe("sessions commands", () => {
           timeoutMs: 5_000,
         }),
       ).rejects.toThrow(/no play_url/);
+    });
+
+    it("converts to wav with --format wav and appends extension", async () => {
+      const dir = mkdtempSync(join(tmpdir(), "cli-recording-"));
+      const outputPath = join(dir, "recording");
+      getSessionRecording.mockResolvedValue(readyPayload);
+      const audio = Buffer.from([0x4f, 0x67, 0x67, 0x53]);
+      const wav = Buffer.from("RIFFwav");
+      convertOpusRecording.mockResolvedValue(wav);
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        arrayBuffer: async () =>
+          audio.buffer.slice(
+            audio.byteOffset,
+            audio.byteOffset + audio.byteLength,
+          ),
+      } as Response);
+
+      try {
+        await runSessionsRecording({
+          sessionId: "orch-1",
+          wait: true,
+          output: outputPath,
+          format: "wav",
+          pollIntervalMs: 1,
+          timeoutMs: 5_000,
+        });
+
+        expect(convertOpusRecording).toHaveBeenCalledWith(audio, "wav");
+        expect(readFileSync(join(dir, "recording.wav"))).toEqual(wav);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("errors when output extension conflicts with --format", async () => {
+      getSessionRecording.mockResolvedValue(readyPayload);
+
+      await expect(
+        runSessionsRecording({
+          sessionId: "orch-1",
+          wait: true,
+          output: "/tmp/recording.opus",
+          format: "wav",
+          pollIntervalMs: 1,
+          timeoutMs: 5_000,
+        }),
+      ).rejects.toThrow(/does not match format wav/);
+      expect(fetch).not.toHaveBeenCalled();
+      expect(convertOpusRecording).not.toHaveBeenCalled();
     });
   });
 

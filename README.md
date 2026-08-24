@@ -369,12 +369,16 @@ voicethere sessions billing <orchestratorSessionId> --project <projectId>
 voicethere sessions billing <orchestratorSessionId> --json
 ```
 
-Download session audio recording (poll until ready, then fetch signed `play_url` as binary):
+Download session audio recording (poll until ready, then fetch signed `play_url`; storage is Opus/Ogg — use `--format` or the output extension to write WAV, MP3, or raw Opus):
 
 ```bash
-voicethere sessions recording <orchestratorSessionId> --project <projectId> --wait --output ./recording.opus
+voicethere sessions recording <orchestratorSessionId> --project <projectId> --wait --output ./recording.wav
+voicethere sessions recording <orchestratorSessionId> --wait --output ./recording.mp3 --format mp3
+voicethere sessions recording <orchestratorSessionId> --wait --output ./recording.opus --format opus
 voicethere sessions recording <orchestratorSessionId> --wait --json
 ```
+
+WAV/MP3 conversion requires `ffmpeg` on your PATH (or set `FFMPEG_PATH`). JSON metadata always reports the API storage format (`opus`).
 
 `voicethere sessions recording get <sessionId>` is equivalent (get is the default subcommand).
 

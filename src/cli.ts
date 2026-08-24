@@ -1072,6 +1072,10 @@ async function main(): Promise<void> {
       "-o, --output <path>",
       "Write recording audio to this path (requires --wait)",
     )
+    .option(
+      "--format <opus|wav|mp3>",
+      "Output audio format when writing --output (default: infer from extension, else wav)",
+    )
     .option("--json", "Output recording metadata as JSON")
     .action(
       async (
@@ -1081,6 +1085,7 @@ async function main(): Promise<void> {
           wait?: boolean;
           timeoutMs?: number;
           output?: string;
+          format?: string;
           json?: boolean;
         },
       ) => {
@@ -1090,6 +1095,7 @@ async function main(): Promise<void> {
           wait: options.wait,
           timeoutMs: options.timeoutMs,
           output: options.output,
+          format: options.format,
           json: options.json,
         });
       },
