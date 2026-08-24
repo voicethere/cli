@@ -1,6 +1,7 @@
 import { writeFile } from "node:fs/promises";
 
 import type { SessionRecordingPlayPayload } from "../../lib/api.js";
+import { ApiError } from "../../lib/api.js";
 import { logStep, logVerbose } from "../../lib/command-log.js";
 import { requireCredentials } from "../../lib/config.js";
 import { createApiFromCredentials } from "../../lib/control-plane-auth.js";
@@ -60,6 +61,25 @@ async function downloadRecordingArtifact(
   return body.byteLength;
 }
 
+function isRecordingNotFoundError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
+
+function pendingSessionRecordingPayload(
+  projectId: string,
+  sessionId: string,
+): SessionRecordingPlayPayload {
+  return {
+    project_id: projectId,
+    orchestrator_session_id: sessionId,
+    status: "pending",
+    format: "opus",
+    duration_ms: 0,
+    byte_size: 0,
+    created_at: new Date(0).toISOString(),
+  };
+}
+
 async function pollSessionRecording(
   api: ReturnType<typeof createApiFromCredentials>,
   projectId: string,
@@ -67,7 +87,16 @@ async function pollSessionRecording(
   options: { pollIntervalMs: number; timeoutMs: number },
 ): Promise<SessionRecordingPlayPayload> {
   const payload = await pollWithBackoff({
-    poll: () => api.getSessionRecording(projectId, sessionId),
+    poll: async () => {
+      try {
+        return await api.getSessionRecording(projectId, sessionId);
+      } catch (error: unknown) {
+        if (isRecordingNotFoundError(error)) {
+          return pendingSessionRecordingPayload(projectId, sessionId);
+        }
+        throw error;
+      }
+    },
     isTerminal: (recording) => RECORDING_TERMINAL_STATUSES.has(recording.status),
     getProgress: (recording) => ({
       status: recording.status,
