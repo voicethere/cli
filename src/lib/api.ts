@@ -1126,6 +1126,16 @@ export class VoicethereApi {
     );
   }
 
+  async deleteSessionRecording(
+    projectId: string,
+    orchestratorSessionId: string,
+  ): Promise<void> {
+    await this.request<Record<string, never>>(
+      "DELETE",
+      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/recording`,
+    );
+  }
+
   async listProjectLogs(
     projectId: string,
     query: ListAgentLogsQuery = {},

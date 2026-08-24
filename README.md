@@ -376,6 +376,14 @@ voicethere sessions recording <orchestratorSessionId> --project <projectId> --wa
 voicethere sessions recording <orchestratorSessionId> --wait --json
 ```
 
+`voicethere sessions recording get <sessionId>` is equivalent (get is the default subcommand).
+
+Delete a session recording:
+
+```bash
+voicethere sessions recording delete <orchestratorSessionId> --project <projectId>
+```
+
 `--output` requires `--wait`. Default wait timeout is 120s (`--timeout-ms` or `VOICETHERE_SESSION_RECORDING_TIMEOUT_MS`).
 
 These commands call the platform control-plane API (`GET /api/v1/projects/:id/sessions`).

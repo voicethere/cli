@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-08-24
+
+### Added
+
+- **`sessions recording delete <sessionId>`** — delete a session’s conversation recording (`DELETE` control-plane API).
+
 ## [0.12.0] - 2026-08-23
 
 ### Added

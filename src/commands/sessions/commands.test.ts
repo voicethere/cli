@@ -5,10 +5,12 @@ import { tmpdir } from "node:os";
 import { runSessionsBilling } from "./billing.js";
 import { runSessionsList } from "./list.js";
 import { runSessionsRecording } from "./recording.js";
+import { runSessionsRecordingDelete } from "./recording/delete.js";
 
 const listProjectSessions = vi.fn();
 const getProjectSession = vi.fn();
 const getSessionRecording = vi.fn();
+const deleteSessionRecording = vi.fn();
 const requireCredentials = vi.fn();
 const requireProjectId = vi.fn();
 
@@ -17,6 +19,7 @@ vi.mock("../../lib/api.js", () => ({
     listProjectSessions,
     getProjectSession,
     getSessionRecording,
+    deleteSessionRecording,
   })),
 }));
 
@@ -33,6 +36,7 @@ describe("sessions commands", () => {
     listProjectSessions.mockReset();
     getProjectSession.mockReset();
     getSessionRecording.mockReset();
+    deleteSessionRecording.mockReset();
     requireCredentials.mockReset();
     requireProjectId.mockReset();
     vi.spyOn(console, "log").mockImplementation(() => {});
@@ -134,7 +138,11 @@ describe("sessions commands", () => {
         ok: true,
         status: 200,
         statusText: "OK",
-        arrayBuffer: async () => audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength),
+        arrayBuffer: async () =>
+          audio.buffer.slice(
+            audio.byteOffset,
+            audio.byteOffset + audio.byteLength,
+          ),
       } as Response);
 
       try {
@@ -170,7 +178,11 @@ describe("sessions commands", () => {
         ok: true,
         status: 200,
         statusText: "OK",
-        arrayBuffer: async () => audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength),
+        arrayBuffer: async () =>
+          audio.buffer.slice(
+            audio.byteOffset,
+            audio.byteOffset + audio.byteLength,
+          ),
       } as Response);
 
       try {
@@ -231,6 +243,26 @@ describe("sessions commands", () => {
           timeoutMs: 5_000,
         }),
       ).rejects.toThrow(/no play_url/);
+    });
+  });
+
+  describe("runSessionsRecordingDelete", () => {
+    it("deletes a session recording", async () => {
+      deleteSessionRecording.mockResolvedValue(undefined);
+
+      await runSessionsRecordingDelete({ sessionId: "orch-1" });
+
+      expect(deleteSessionRecording).toHaveBeenCalledWith("proj-1", "orch-1");
+      expect(console.log).toHaveBeenCalledWith(
+        "Deleted session recording for orch-1",
+      );
+    });
+
+    it("requires a session id", async () => {
+      await expect(
+        runSessionsRecordingDelete({ sessionId: "  " }),
+      ).rejects.toThrow(/session id is required/);
+      expect(deleteSessionRecording).not.toHaveBeenCalled();
     });
   });
 });
