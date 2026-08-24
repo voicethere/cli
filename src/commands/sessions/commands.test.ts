@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { ApiError } from "../../lib/api.js";
 import { runSessionsBilling } from "./billing.js";
 import { runSessionsList } from "./list.js";
 import { runSessionsRecording } from "./recording.js";
@@ -14,14 +15,18 @@ const deleteSessionRecording = vi.fn();
 const requireCredentials = vi.fn();
 const requireProjectId = vi.fn();
 
-vi.mock("../../lib/api.js", () => ({
-  createApi: vi.fn(() => ({
-    listProjectSessions,
-    getProjectSession,
-    getSessionRecording,
-    deleteSessionRecording,
-  })),
-}));
+vi.mock("../../lib/api.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/api.js")>();
+  return {
+    ...actual,
+    createApi: vi.fn(() => ({
+      listProjectSessions,
+      getProjectSession,
+      getSessionRecording,
+      deleteSessionRecording,
+    })),
+  };
+});
 
 vi.mock("../../lib/config.js", () => ({
   requireCredentials: (...args: unknown[]) => requireCredentials(...args),
@@ -161,6 +166,53 @@ describe("sessions commands", () => {
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }
+    });
+
+    it("retries 404 not-found during --wait until ready", async () => {
+      getSessionRecording
+        .mockRejectedValueOnce(new ApiError(404, "Session recording not found"))
+        .mockResolvedValueOnce(readyPayload);
+
+      await runSessionsRecording({
+        sessionId: "orch-1",
+        wait: true,
+        pollIntervalMs: 1,
+        timeoutMs: 5_000,
+      });
+
+      expect(getSessionRecording).toHaveBeenCalledTimes(2);
+      expect(console.log).toHaveBeenCalledWith("status=ready");
+    });
+
+    it("times out when recording stays not-found during --wait", async () => {
+      getSessionRecording.mockRejectedValue(
+        new ApiError(404, "Session recording not found"),
+      );
+
+      await expect(
+        runSessionsRecording({
+          sessionId: "orch-1",
+          wait: true,
+          pollIntervalMs: 1,
+          timeoutMs: 10,
+        }),
+      ).rejects.toThrow(
+        /Timed out after 10ms waiting for session recording orch-1/,
+      );
+    });
+
+    it("fails immediately on non-404 errors during --wait", async () => {
+      getSessionRecording.mockRejectedValue(new ApiError(500, "server error"));
+
+      await expect(
+        runSessionsRecording({
+          sessionId: "orch-1",
+          wait: true,
+          pollIntervalMs: 1,
+          timeoutMs: 5_000,
+        }),
+      ).rejects.toThrow(/server error/);
+      expect(getSessionRecording).toHaveBeenCalledTimes(1);
     });
 
     it("polls until ready then downloads", async () => {
