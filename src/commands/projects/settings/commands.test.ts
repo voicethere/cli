@@ -86,7 +86,7 @@ describe("projects settings commands", () => {
   });
 
   describe("runProjectsSettingsSet", () => {
-    it("sets a boolean setting and prints JSON", async () => {
+    it("sets a boolean setting and prints key=value", async () => {
       setProjectSetting.mockResolvedValue({
         project_id: "proj-1",
         settings: {
@@ -106,17 +106,7 @@ describe("projects settings commands", () => {
         "warm_pool_enabled",
         true,
       );
-      expect(console.log).toHaveBeenCalledWith(
-        JSON.stringify(
-          {
-            mode: "voice",
-            warm_pool_enabled: true,
-            idle_scale_down_seconds: 600,
-          },
-          null,
-          2,
-        ),
-      );
+      expect(console.log).toHaveBeenCalledWith("warm_pool_enabled=true");
     });
 
     it("sets a numeric setting", async () => {
@@ -139,6 +129,7 @@ describe("projects settings commands", () => {
         "idle_scale_down_seconds",
         300,
       );
+      expect(console.log).toHaveBeenCalledWith("idle_scale_down_seconds=300");
     });
 
     it("rejects unknown setting names", async () => {

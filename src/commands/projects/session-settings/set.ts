@@ -76,6 +76,6 @@ export async function runProjectsSessionSettingsSet(
 
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
-  const result = await api.setProjectSessionSetting(projectId, key, value);
-  console.log(JSON.stringify(result.settings, null, 2));
+  await api.setProjectSessionSetting(projectId, key, value);
+  console.log(`${key}=${String(value)}`);
 }

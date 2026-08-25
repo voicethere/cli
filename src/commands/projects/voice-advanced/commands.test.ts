@@ -80,6 +80,9 @@ describe("projects voice-advanced commands", () => {
       "vad.bargeIn.requireSttPartial",
       false,
     );
+    expect(console.log).toHaveBeenCalledWith(
+      "vad.bargeIn.requireSttPartial=false",
+    );
   });
 
   it("sets fractional tts.speed", async () => {
@@ -98,6 +101,7 @@ describe("projects voice-advanced commands", () => {
       "tts.speed",
       0.7,
     );
+    expect(console.log).toHaveBeenCalledWith("tts.speed=0.7");
   });
 
   it("rejects tts.speed outside 0.2–2.0", async () => {
@@ -115,5 +119,6 @@ describe("projects voice-advanced commands", () => {
     await runProjectsVoiceAdvancedReset({});
 
     expect(resetProjectVoiceAdvancedSettings).toHaveBeenCalledWith("proj-1");
+    expect(console.log).toHaveBeenCalledWith("reset=defaults");
   });
 });

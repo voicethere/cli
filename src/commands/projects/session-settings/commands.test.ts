@@ -73,7 +73,7 @@ describe("projects session-settings commands", () => {
   });
 
   describe("runProjectsSessionSettingsSet", () => {
-    it("sets a numeric setting and prints JSON", async () => {
+    it("sets a numeric setting and prints key=value", async () => {
       setProjectSessionSetting.mockResolvedValue({
         project_id: "proj-1",
         settings: {
@@ -91,6 +91,7 @@ describe("projects session-settings commands", () => {
         "idle_timeout_seconds",
         90,
       );
+      expect(console.log).toHaveBeenCalledWith("idle_timeout_seconds=90");
     });
 
     it("sets a boolean setting", async () => {

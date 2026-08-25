@@ -141,7 +141,7 @@ export async function runProjectsVoiceSet(
     `voice set stt=${stt_provider}/${stt_model_id} tts=${tts_provider}/${tts_model_id}`,
   );
 
-  const next = await api.updateProjectVoiceSettings(projectId, {
+  await api.updateProjectVoiceSettings(projectId, {
     stt_provider,
     tts_provider,
     stt_model_id,
@@ -152,5 +152,35 @@ export async function runProjectsVoiceSet(
     tts_voice: options.ttsVoice?.trim() || current.tts_voice,
   });
 
-  console.log(JSON.stringify(next, null, 2));
+  if (wantInteractive) {
+    console.log(`stt_provider=${stt_provider}`);
+    console.log(`tts_provider=${tts_provider}`);
+    if (stt_provider === "local-sherpa") {
+      console.log(`stt_model_id=${stt_model_id}`);
+    }
+    if (tts_provider === "local-sherpa") {
+      console.log(`tts_model_id=${tts_model_id}`);
+    }
+    return;
+  }
+
+  const explicitFields: Array<[string | undefined, string, string]> = [
+    [options.sttProvider?.trim(), "stt_provider", stt_provider],
+    [options.ttsProvider?.trim(), "tts_provider", tts_provider],
+    [options.sttModelId?.trim(), "stt_model_id", stt_model_id],
+    [options.ttsModelId?.trim(), "tts_model_id", tts_model_id],
+    [options.sttModel?.trim(), "stt_model", options.sttModel?.trim() ?? ""],
+    [
+      options.sttLanguage?.trim(),
+      "stt_language",
+      options.sttLanguage?.trim() ?? "",
+    ],
+    [options.ttsModel?.trim(), "tts_model", options.ttsModel?.trim() ?? ""],
+    [options.ttsVoice?.trim(), "tts_voice", options.ttsVoice?.trim() ?? ""],
+  ];
+  for (const [passed, fieldName, value] of explicitFields) {
+    if (passed) {
+      console.log(`${fieldName}=${value}`);
+    }
+  }
 }
