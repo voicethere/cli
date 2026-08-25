@@ -378,7 +378,7 @@ voicethere sessions recording <orchestratorSessionId> --wait --output ./recordin
 voicethere sessions recording <orchestratorSessionId> --wait --json
 ```
 
-WAV/MP3 conversion requires `ffmpeg` on your PATH (or set `FFMPEG_PATH`). JSON metadata always reports the API storage format (`opus`).
+WAV/MP3 conversion uses a bundled `ffmpeg` binary shipped with the CLI. Override with `FFMPEG_PATH` if needed. JSON metadata always reports the API storage format (`opus`).
 
 `voicethere sessions recording get <sessionId>` is equivalent (get is the default subcommand).
 
