@@ -159,6 +159,26 @@ describe("projects settings commands", () => {
       );
     });
 
+    it("sets webhooks_enabled boolean", async () => {
+      setProjectSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {
+          webhooks_enabled: true,
+        },
+      });
+
+      await runProjectsSettingsSet({
+        name: "webhooks_enabled",
+        value: "true",
+      });
+
+      expect(setProjectSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "webhooks_enabled",
+        true,
+      );
+    });
+
     it("rejects invalid boolean values", async () => {
       await expect(
         runProjectsSettingsSet({ name: "warm_pool_enabled", value: "maybe" }),

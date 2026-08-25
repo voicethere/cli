@@ -186,6 +186,7 @@ export interface ProjectSettingsResponse {
     mode?: "voice" | "data" | "voice+data";
     warm_pool_enabled: boolean;
     redis_enabled: boolean;
+    webhooks_enabled: boolean;
     idle_scale_down_seconds: number;
     data_only?: boolean;
     shared_child_per_session?: boolean;
@@ -196,6 +197,7 @@ export interface ProjectSettingsResponse {
     mode?: "voice" | "data" | "voice+data";
     warm_pool_enabled: boolean;
     redis_enabled: boolean;
+    webhooks_enabled: boolean;
     idle_scale_down_seconds: number;
     data_only?: boolean;
     shared_child_per_session?: boolean;
@@ -408,6 +410,7 @@ export type ProjectSettingKey =
   | "mode"
   | "warm_pool_enabled"
   | "redis_enabled"
+  | "webhooks_enabled"
   | "idle_scale_down_seconds"
   | "data_only"
   | "shared_child_per_session"
