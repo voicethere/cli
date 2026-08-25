@@ -1,6 +1,6 @@
 {
   "name": "@voicethere/cli",
-  "version": "0.12.4",
+  "version": "0.12.5",
   "description": "VoiceThere cloud CLI — login, projects, and agent bundle upload",
   "type": "module",
   "bin": {
@@ -38,7 +38,8 @@
   },
   "license": "MIT",
   "dependencies": {
-    "commander": "^13.1.0"
+    "commander": "^13.1.0",
+    "ffmpeg-static": "^5.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

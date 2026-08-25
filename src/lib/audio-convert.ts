@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 export const FFMPEG_MISSING_MESSAGE =
-  "ffmpeg is required to convert session recordings. Install ffmpeg on your PATH or set FFMPEG_PATH to the ffmpeg binary.";
+  "ffmpeg is required to convert session recordings. Reinstall @voicethere/cli (bundled ffmpeg missing) or set FFMPEG_PATH to a working ffmpeg binary.";
 
 export type FfmpegConvertRunner = (
   ffmpegPath: string,
@@ -22,14 +22,14 @@ export async function resolveFfmpegPath(): Promise<string> {
     return fromEnv;
   }
 
-  const fromPath = await findFfmpegOnPath();
-  if (fromPath) {
-    return fromPath;
-  }
-
   const fromStatic = await tryResolveFfmpegStatic();
   if (fromStatic) {
     return fromStatic;
+  }
+
+  const fromPath = await findFfmpegOnPath();
+  if (fromPath) {
+    return fromPath;
   }
 
   throw new Error(FFMPEG_MISSING_MESSAGE);
@@ -62,7 +62,10 @@ async function findFfmpegOnPath(): Promise<string | undefined> {
 async function tryResolveFfmpegStatic(): Promise<string | undefined> {
   try {
     const require = createRequire(import.meta.url);
-    const staticPath = require.resolve("ffmpeg-static") as string;
+    const staticPath = require("ffmpeg-static") as string | null;
+    if (!staticPath || typeof staticPath !== "string") {
+      return undefined;
+    }
     await access(staticPath, constants.F_OK);
     return staticPath;
   } catch {

@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.5] - 2026-08-25
+
+### Fixed
+
+- **Session recording WAV/MP3 conversion** — bundle `ffmpeg-static` so conversion works without a system `ffmpeg` install (`FFMPEG_PATH` still overrides; PATH is last resort).
+
 ## [0.12.4] - 2026-08-25
 
 ### Changed
