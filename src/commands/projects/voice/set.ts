@@ -178,9 +178,9 @@ export async function runProjectsVoiceSet(
     [options.ttsModel?.trim(), "tts_model", options.ttsModel?.trim() ?? ""],
     [options.ttsVoice?.trim(), "tts_voice", options.ttsVoice?.trim() ?? ""],
   ];
-  for (const [passed, apiKey, value] of explicitFields) {
+  for (const [passed, fieldName, value] of explicitFields) {
     if (passed) {
-      console.log(`${apiKey}=${value}`);
+      console.log(`${fieldName}=${value}`);
     }
   }
 }
