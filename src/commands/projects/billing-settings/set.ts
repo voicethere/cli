@@ -80,6 +80,6 @@ export async function runProjectsBillingSettingsSet(
   const patch: UpdateProjectBillingSettingsInput = { [key]: value };
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
-  const result = await api.updateProjectBillingSettings(projectId, patch);
-  console.log(JSON.stringify(result, null, 2));
+  await api.updateProjectBillingSettings(projectId, patch);
+  console.log(`${key}=${value === null ? "null" : String(value)}`);
 }

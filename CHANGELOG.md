@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.4] - 2026-08-25
+
+### Changed
+
+- **`projects settings set`**, **`session-settings set`**, **`billing-settings set`**, **`voice-advanced set`**, and **`voice set`** — print only the updated key(s) as `key=value` (same style as `list`), not the full settings JSON. **`voice-advanced reset`** prints `reset=defaults`.
+
 ## [0.12.3] - 2026-08-24
 
 ### Added

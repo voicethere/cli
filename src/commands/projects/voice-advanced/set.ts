@@ -30,12 +30,8 @@ export async function runProjectsVoiceAdvancedSet(
 
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
-  const result = await api.setProjectVoiceAdvancedSetting(
-    projectId,
-    key,
-    value,
-  );
-  console.log(JSON.stringify(result.settings, null, 2));
+  await api.setProjectVoiceAdvancedSetting(projectId, key, value);
+  console.log(`${key}=${String(value)}`);
 }
 
 export interface ProjectsVoiceAdvancedResetOptions {
@@ -50,6 +46,6 @@ export async function runProjectsVoiceAdvancedReset(
 
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
-  const result = await api.resetProjectVoiceAdvancedSettings(projectId);
-  console.log(JSON.stringify(result.settings, null, 2));
+  await api.resetProjectVoiceAdvancedSettings(projectId);
+  console.log("reset=defaults");
 }

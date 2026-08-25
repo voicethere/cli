@@ -91,6 +91,7 @@ describe("projects billing-settings commands", () => {
       expect(updateProjectBillingSettings).toHaveBeenCalledWith("proj-1", {
         metered_overage_enabled: true,
       });
+      expect(console.log).toHaveBeenCalledWith("metered_overage_enabled=true");
     });
 
     it("sets conversation_overage_enabled", async () => {
@@ -157,6 +158,7 @@ describe("projects billing-settings commands", () => {
       expect(updateProjectBillingSettings).toHaveBeenCalledWith("proj-1", {
         budget_cap_amount: null,
       });
+      expect(console.log).toHaveBeenCalledWith("budget_cap_amount=null");
     });
 
     it("sets budget_cap_currency", async () => {
