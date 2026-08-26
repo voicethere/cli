@@ -1,4 +1,7 @@
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { createRequire } from "node:module";
 
 import {
   logResolvedBundle,
@@ -18,6 +21,37 @@ export interface BuildValidateOptions {
   logContext?: boolean;
 }
 
+export interface AgentVerifySpawnArgs {
+  cmd: string;
+  args: string[];
+}
+
+/** Resolve the installed @voicethere/agent CLI entry (dist/cli.js). */
+export function resolveAgentCliJs(): string {
+  const require = createRequire(import.meta.url);
+  const agentEntry = require.resolve("@voicethere/agent");
+  const packageDir = dirname(dirname(agentEntry));
+  const pkg = JSON.parse(
+    readFileSync(join(packageDir, "package.json"), "utf8"),
+  ) as { bin?: string | Record<string, string> };
+  const binField = pkg.bin;
+  const binRel =
+    typeof binField === "string"
+      ? binField
+      : (binField?.["@voicethere/agent"] ?? binField?.agent);
+  if (!binRel) {
+    throw new Error("@voicethere/agent package.json is missing a bin field");
+  }
+  return join(packageDir, binRel);
+}
+
+export function agentVerifySpawnArgs(bundlePath: string): AgentVerifySpawnArgs {
+  return {
+    cmd: process.execPath,
+    args: [resolveAgentCliJs(), "verify", "--no-build", "--bundle", bundlePath],
+  };
+}
+
 export async function runBuildValidate(
   options: BuildValidateOptions,
 ): Promise<void> {
@@ -34,15 +68,12 @@ export async function runBuildValidate(
 }
 
 async function spawnAgentVerify(bundlePath: string): Promise<void> {
+  const { cmd, args } = agentVerifySpawnArgs(bundlePath);
   return new Promise((resolve, reject) => {
-    const child = spawn(
-      "npx",
-      ["@voicethere/agent", "verify", "--no-build", "--bundle", bundlePath],
-      {
-        stdio: "inherit",
-        shell: process.platform === "win32",
-      },
-    );
+    const child = spawn(cmd, args, {
+      stdio: "inherit",
+      shell: process.platform === "win32",
+    });
 
     child.on("error", (error) => {
       reject(error);
