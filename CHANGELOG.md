@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.7] - 2026-08-26
+
+### Fixed
+
+- **`build validate`** — run the installed `@voicethere/agent` CLI via `node` instead of `npx`, so machines with another `agent` binary on PATH (e.g. Cursor’s CLI) no longer fail with `unknown option '--no-build'`.
+
+### Changed
+
+- Dependency: `@voicethere/agent` **^0.5.1** (runtime dependency for bundle verify).
+
 ## [0.12.6] - 2026-08-26
 
 ### Added
