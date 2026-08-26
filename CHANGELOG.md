@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.6] - 2026-08-26
+
+### Added
+
+- **`projects settings`** — list and set `webhooks_enabled` (toggle inbound HTTPS webhooks for a project).
+
 ## [0.12.5] - 2026-08-25
 
 ### Fixed
