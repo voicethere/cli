@@ -106,7 +106,7 @@ After browser login, if those env vars are set, the CLI prints a warning that th
 - Linked-project mismatch: the CLI keeps `.voicethere/config.json` unchanged and fails login (nonzero) if the new personal key cannot access that project.
 - Prefer personal keys over the legacy `--dashboard-cookie` path.
 
-More detail: [CLI login guide](https://app.voicethere.dev/docs/cli-login) on the VoiceThere docs site.
+More detail: [CLI login guide](https://app.voicethere.io/docs/cli-login) on the VoiceThere docs site.
 
 ### 2. New agent repo — create project and commit config
 
