@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.12.8] - 2026-08-30
+
+### Changed
+
+- **`deploy --wait` / other poll timeouts** — timeout errors include the last observed job status (`queued`, `active`, or `none`), e.g. `Timed out after 600000ms waiting for deployment <id> (last status=queued)`.
+
 ## [0.12.7] - 2026-08-26
 
 ### Fixed
