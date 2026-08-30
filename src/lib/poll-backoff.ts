@@ -129,6 +129,7 @@ export async function pollWithBackoff<T>(options: {
   const started = runtime.now();
   let attemptIndex = 0;
   let previousProgress: PollProgressSnapshot | null = null;
+  let lastProgress: PollProgressSnapshot | null = null;
 
   while (runtime.now() - started < options.timeoutMs) {
     const value = await options.poll();
@@ -138,6 +139,7 @@ export async function pollWithBackoff<T>(options: {
     }
 
     const currentProgress = options.getProgress(value);
+    lastProgress = currentProgress;
     if (shouldResetPollBackoff(previousProgress, currentProgress)) {
       attemptIndex = 0;
     }
@@ -154,5 +156,8 @@ export async function pollWithBackoff<T>(options: {
     await runtime.sleep(delayMs);
   }
 
-  throw new Error(options.timeoutMessage);
+  const lastStatusSuffix = lastProgress
+    ? ` (last status=${lastProgress.status})`
+    : ` (last status=none)`;
+  throw new Error(`${options.timeoutMessage}${lastStatusSuffix}`);
 }

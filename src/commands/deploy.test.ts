@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runDeploy } from "./deploy.js";
 
 const createDeployment = vi.fn();
@@ -19,6 +19,10 @@ vi.mock("../lib/project-config.js", () => ({
 }));
 
 describe("runDeploy", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     createDeployment.mockReset();
     getDeployment.mockReset();
@@ -96,6 +100,32 @@ describe("runDeploy", () => {
 
     expect(getDeployment).toHaveBeenCalledWith("dep-1");
     expect(console.log).toHaveBeenCalledWith("Deployment completed: dep-1");
+  });
+
+  it("includes last queued status when --wait times out", async () => {
+    vi.useFakeTimers();
+
+    getDeployment.mockResolvedValue({
+      id: "dep-1",
+      org_id: "org-1",
+      project_id: "proj-1",
+      build_id: "build-1",
+      status: "queued",
+      mode: "drain",
+      bullmq_job_id: "job-1",
+      error: null,
+      created_at: "2026-01-01T00:00:00Z",
+      completed_at: null,
+    });
+
+    const promise = runDeploy({
+      wait: true,
+      pollIntervalMs: 1,
+      timeoutMs: 5_000,
+    });
+    const rejection = expect(promise).rejects.toThrow(/last status=queued/);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await rejection;
   });
 
   it("throws when deployment fails after wait", async () => {

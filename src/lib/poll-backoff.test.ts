@@ -193,8 +193,28 @@ describe("pollWithBackoff", () => {
       },
     });
 
-    await expect(promise).rejects.toThrow("timed out");
+    await expect(promise).rejects.toThrow(/timed out \(last status=active\)/);
     expect(pollCount).toBe(3);
     expect(pollCount).toBeLessThan(5);
+  });
+
+  it("includes last status=none when timeout elapses before any poll", async () => {
+    await expect(
+      pollWithBackoff({
+        poll: async () => {
+          throw new Error("poll should not run");
+        },
+        isTerminal: () => false,
+        getProgress: () => ({ status: "queued" }),
+        baseIntervalMs: 1000,
+        timeoutMs: 0,
+        timeoutMessage: "timed out",
+        runtime: {
+          sleep: async () => {},
+          now: () => 0,
+          random: () => 0.5,
+        },
+      }),
+    ).rejects.toThrow(/timed out \(last status=none\)/);
   });
 });
