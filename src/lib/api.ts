@@ -652,6 +652,37 @@ export interface SessionConversationResponse {
   turns: ConversationTurn[];
 }
 
+export type ProjectWidgetPublishStatus =
+  "idle" | "queued" | "publishing" | "published" | "failed";
+
+export type VoiceThereWidgetConfigV1 = {
+  v: 1;
+  publicId?: string;
+  projectId?: string;
+  apiBase?: string;
+  revision?: number;
+  preset?:
+    "pill-dark" | "pill-light" | "rounded-card" | "minimal-bar" | "voice-orb";
+  theme?: { primary?: string; background?: string; text?: string };
+  launcherLabel?: string;
+  greeting?: string;
+  position?: "bottom-right" | "bottom-left";
+  mode?: "chat" | "voice";
+};
+
+export interface ProjectWidgetConfigResponse {
+  project_id: string;
+  public_id: string;
+  draft: VoiceThereWidgetConfigV1;
+  published: VoiceThereWidgetConfigV1 | null;
+  published_revision: number;
+  publish_status: ProjectWidgetPublishStatus;
+  publish_error: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 function buildConversationSearchParams(
   query: ListProjectConversationsQuery,
 ): URLSearchParams {
@@ -1202,6 +1233,36 @@ export class VoicethereApi {
     return this.request<ConversationExportJobResponse>(
       "GET",
       `/projects/${projectId}/conversation/exports/${encodeURIComponent(jobId)}`,
+    );
+  }
+
+  async getProjectWidget(
+    projectId: string,
+  ): Promise<ProjectWidgetConfigResponse> {
+    return this.request<ProjectWidgetConfigResponse>(
+      "GET",
+      `/projects/${projectId}/widget`,
+    );
+  }
+
+  async updateProjectWidgetDraft(
+    projectId: string,
+    draft: VoiceThereWidgetConfigV1,
+  ): Promise<ProjectWidgetConfigResponse> {
+    return this.request<ProjectWidgetConfigResponse>(
+      "PUT",
+      `/projects/${projectId}/widget`,
+      { json: { draft } },
+    );
+  }
+
+  async publishProjectWidget(
+    projectId: string,
+  ): Promise<ProjectWidgetConfigResponse> {
+    return this.request<ProjectWidgetConfigResponse>(
+      "POST",
+      `/projects/${projectId}/widget/publish`,
+      { json: {} },
     );
   }
 

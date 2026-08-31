@@ -6,7 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
-## [0.12.8] - 2026-08-30
+### Added
+
+- **`projects widget`** — `show`, `set` (merge draft flags), and `deploy` (publish to CDN; `--wait` polls until published or failed).
 
 ### Changed
 
