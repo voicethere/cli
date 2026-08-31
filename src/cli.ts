@@ -41,6 +41,11 @@ import {
   runProjectsConversationSearch,
 } from "./commands/projects/conversation/commands.js";
 import {
+  runProjectsWidgetDeploy,
+  runProjectsWidgetSet,
+  runProjectsWidgetShow,
+} from "./commands/projects/widget/commands.js";
+import {
   formatSessionSettingsGroupHelp,
   sessionSettingNamesHelp,
 } from "./commands/projects/session-settings/defs.js";
@@ -794,6 +799,102 @@ async function main(): Promise<void> {
           to: options.to,
           wait: options.wait,
           output: options.output,
+          json: options.json,
+        });
+      },
+    );
+
+  const widget = projects
+    .command("widget")
+    .description("Configure and publish the embeddable voice/chat widget");
+
+  widget
+    .command("show")
+    .description("Show widget draft, publish status, and CDN URLs")
+    .option("--project <id>", "Project UUID")
+    .option("--cdn-base <url>", "Override widget CDN origin")
+    .option("--json", "Output JSON")
+    .action(
+      async (options: {
+        project?: string;
+        cdnBase?: string;
+        json?: boolean;
+      }) => {
+        await runProjectsWidgetShow({
+          projectId: options.project,
+          cdnBase: options.cdnBase,
+          json: options.json,
+        });
+      },
+    );
+
+  widget
+    .command("set")
+    .description("Merge flags into the widget draft and save")
+    .option("--project <id>", "Project UUID")
+    .option(
+      "--preset <id>",
+      "pill-dark, pill-light, rounded-card, minimal-bar, or voice-orb",
+    )
+    .option("--position <corner>", "bottom-right or bottom-left")
+    .option("--mode <mode>", "chat or voice")
+    .option("--launcher-label <text>", "Launcher button label")
+    .option("--greeting <text>", "Initial greeting text")
+    .option("--theme-primary <hex>", "Theme primary color (#RGB or #RRGGBB)")
+    .option("--theme-background <hex>", "Theme background color")
+    .option("--theme-text <hex>", "Theme text color")
+    .option("--json", "Output JSON")
+    .action(
+      async (options: {
+        project?: string;
+        preset?: string;
+        position?: string;
+        mode?: string;
+        launcherLabel?: string;
+        greeting?: string;
+        themePrimary?: string;
+        themeBackground?: string;
+        themeText?: string;
+        json?: boolean;
+      }) => {
+        await runProjectsWidgetSet({
+          projectId: options.project,
+          preset: options.preset,
+          position: options.position,
+          mode: options.mode,
+          launcherLabel: options.launcherLabel,
+          greeting: options.greeting,
+          themePrimary: options.themePrimary,
+          themeBackground: options.themeBackground,
+          themeText: options.themeText,
+          json: options.json,
+        });
+      },
+    );
+
+  widget
+    .command("deploy")
+    .description("Publish the widget draft to the CDN")
+    .option("--project <id>", "Project UUID")
+    .option("--wait", "Poll until publish completes or fails")
+    .option("--timeout-ms <ms>", "Max wait time when using --wait", "90000")
+    .option("--cdn-base <url>", "Override widget CDN origin for printed URLs")
+    .option("--json", "Output JSON")
+    .action(
+      async (options: {
+        project?: string;
+        wait?: boolean;
+        timeoutMs?: string;
+        cdnBase?: string;
+        json?: boolean;
+      }) => {
+        await runProjectsWidgetDeploy({
+          projectId: options.project,
+          wait: options.wait,
+          timeoutMs: options.timeoutMs
+            ? Number.parseInt(options.timeoutMs, 10)
+            : undefined,
+          cdnBase: options.cdnBase,
           json: options.json,
         });
       },

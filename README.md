@@ -264,6 +264,9 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects conversation list [--q] [--json]`                                                      | Stored voice transcripts; `--q` searches turn text or session id                            |
 | `projects conversation get <sessionId>`                                                          | Full turn timeline for one session                                                          |
 | `projects conversation search <query>`                                                           | Alias for `conversation list --q`                                                           |
+| `projects widget show`                                                                           | Embed widget draft, publish status, and CDN config URL                                      |
+| `projects widget set`                                                                            | Update widget draft (preset, position, mode, theme, labels)                                 |
+| `projects widget deploy [--wait]`                                                                | Publish widget config to CDN                                                                |
 | `projects logs list [--session] [--level\|--severity] [--q] [--json]`                            | Searchable agent logs; use `--severity error` for session failures (dual-written)           |
 | `projects voice catalog`                                                                         | show STT/TTS vendors and models                                                             |
 | `build list`                                                                                     | Builds for the active project                                                               |
@@ -349,6 +352,20 @@ voicethere projects conversation get orch-session-abc123 --json
 ```
 
 Use `projects session-settings set conversation_history_enabled false` to stop storing new transcripts.
+
+## Embed widget
+
+Configure the embeddable voice/chat widget, then publish its JSON config to the CDN:
+
+```bash
+voicethere projects widget show
+voicethere projects widget set --preset pill-light --position bottom-right --mode voice
+voicethere projects widget deploy --wait
+```
+
+`show` prints `public_id`, publish status, and the stable CDN URL. `set` merges only the flags you pass into the current draft. `deploy` queues a CDN publish; add `--wait` to block until `publish_status` is `published` or `failed`.
+
+Override the CDN origin with `VOICETHERE_WIDGET_CDN_BASE` or `--cdn-base` when needed (defaults derive from your API host: `app.voicethere.io` → `cdn.voicethere.io`, `app.voicethere.dev` → `cdn.voicethere.dev`).
 
 ## Sessions and billing
 
