@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-09-01
+
+### Changed
+
+- **`projects subscription set`** and **`projects subscription show`** — print compact JSON (project id, subscription identity, and per-mode capacity limits) instead of the full entitlement snapshot (`settingGrants`, Stripe ids, millicredits, catalog revision).
+
 ## [0.13.0] - 2026-08-31
 
 ### Added

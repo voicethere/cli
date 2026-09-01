@@ -62,23 +62,58 @@ describe("projects subscription commands", () => {
   it("shows project subscription", async () => {
     getProjectSubscription.mockResolvedValue({
       project_id: "proj-1",
-      subscription: { id: "sub-1" },
+      subscription: {
+        id: "sub-1",
+        tier: "advanced",
+        status: "active",
+        billing_source: "internal",
+        entitlement_snapshot: {
+          settingGrants: { "runner.mode": { enabled: true } },
+          runner: {
+            data: {
+              maxPodsDefault: 3,
+              maxTotalConcurrentConnections: 60,
+              maxActiveConnectionsPerPod: 20,
+              warmPoolEnabledDefault: false,
+              warmPoolMinPodsDefault: 0,
+            },
+          },
+        },
+      },
     });
 
     await runProjectsSubscriptionShow({});
 
     expect(getProjectSubscription).toHaveBeenCalledWith("proj-1");
+    const printed = String(
+      (console.log as ReturnType<typeof vi.fn>).mock.calls[0]?.[0],
+    );
+    expect(printed).not.toContain("settingGrants");
+    expect(printed).toContain('"id": "sub-1"');
+    expect(printed).toContain('"maxPodsDefault": 3');
   });
 
   it("assigns a project subscription", async () => {
     setProjectSubscription.mockResolvedValue({
       project_id: "proj-1",
-      subscription: { id: "sub-2" },
+      subscription: {
+        id: "sub-2",
+        tier: "free",
+        status: "active",
+        entitlement_snapshot: {
+          settingGrants: { "voice.tts_provider": { enabled: true } },
+        },
+      },
     });
 
     await runProjectsSubscriptionSet({ subscriptionId: "sub-2" });
 
     expect(setProjectSubscription).toHaveBeenCalledWith("proj-1", "sub-2");
+    const printed = String(
+      (console.log as ReturnType<typeof vi.fn>).mock.calls[0]?.[0],
+    );
+    expect(printed).not.toContain("settingGrants");
+    expect(printed).toContain('"id": "sub-2"');
   });
 
   it("clears subscription assignment", async () => {
@@ -90,5 +125,8 @@ describe("projects subscription commands", () => {
     await runProjectsSubscriptionSet({ subscriptionId: "none" });
 
     expect(setProjectSubscription).toHaveBeenCalledWith("proj-1", null);
+    expect(console.log).toHaveBeenCalledWith(
+      JSON.stringify({ project_id: "proj-1", subscription: null }, null, 2),
+    );
   });
 });
