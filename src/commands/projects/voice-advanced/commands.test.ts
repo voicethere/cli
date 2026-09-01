@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { VOICE_ADVANCED_SETTING_KEYS } from "./defs.js";
 import { runProjectsVoiceAdvancedList } from "./list.js";
 import {
   runProjectsVoiceAdvancedReset,
@@ -43,6 +44,11 @@ describe("projects voice-advanced commands", () => {
     requireProjectId.mockResolvedValue("proj-1");
   });
 
+  it("lists every canonical voice-advanced key", () => {
+    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("noiseSuppression.enabled");
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(22);
+  });
+
   it("lists resolved advanced settings", async () => {
     listProjectVoiceAdvancedSettings.mockResolvedValue({
       project_id: "proj-1",
@@ -51,6 +57,7 @@ describe("projects voice-advanced commands", () => {
           enabled: true,
           bargeIn: { requireSttPartial: false },
         },
+        noiseSuppression: { enabled: true },
         events: { mode: "both" },
       },
     });
@@ -62,6 +69,26 @@ describe("projects voice-advanced commands", () => {
     expect(console.log).toHaveBeenCalledWith(
       "vad.bargeIn.requireSttPartial=false",
     );
+    expect(console.log).toHaveBeenCalledWith("noiseSuppression.enabled=true");
+  });
+
+  it("sets noiseSuppression.enabled false", async () => {
+    setProjectVoiceAdvancedSetting.mockResolvedValue({
+      project_id: "proj-1",
+      settings: { noiseSuppression: { enabled: false } },
+    });
+
+    await runProjectsVoiceAdvancedSet({
+      name: "noiseSuppression.enabled",
+      value: "false",
+    });
+
+    expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
+      "proj-1",
+      "noiseSuppression.enabled",
+      false,
+    );
+    expect(console.log).toHaveBeenCalledWith("noiseSuppression.enabled=false");
   });
 
   it("sets a boolean advanced setting", async () => {
