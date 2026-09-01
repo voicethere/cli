@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runProjectsSessionSettingsList } from "./list.js";
 import { runProjectsSessionSettingsSet } from "./set.js";
+import { SESSION_SETTING_KEYS } from "./defs.js";
 
 const listProjectSessionSettings = vi.fn();
 const setProjectSessionSetting = vi.fn();
@@ -23,6 +24,10 @@ vi.mock("../../../lib/project-config.js", () => ({
 }));
 
 describe("projects session-settings commands", () => {
+  it("SESSION_SETTING_KEYS includes stt_enabled", () => {
+    expect(SESSION_SETTING_KEYS).toContain("stt_enabled");
+  });
+
   beforeEach(() => {
     listProjectSessionSettings.mockReset();
     setProjectSessionSetting.mockReset();
@@ -46,6 +51,7 @@ describe("projects session-settings commands", () => {
           idle_timeout_enabled: true,
           idle_timeout_seconds: 30,
           conversation_history_enabled: true,
+          stt_enabled: true,
         },
       });
 
@@ -57,6 +63,7 @@ describe("projects session-settings commands", () => {
       expect(console.log).toHaveBeenCalledWith(
         "conversation_history_enabled=true",
       );
+      expect(console.log).toHaveBeenCalledWith("stt_enabled=true");
     });
 
     it("uses explicit project id over linked config", async () => {
@@ -112,6 +119,24 @@ describe("projects session-settings commands", () => {
       );
       expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining("billable"),
+      );
+    });
+
+    it("sets stt_enabled", async () => {
+      setProjectSessionSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { stt_enabled: false },
+      });
+
+      await runProjectsSessionSettingsSet({
+        name: "stt_enabled",
+        value: "false",
+      });
+
+      expect(setProjectSessionSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "stt_enabled",
+        false,
       );
     });
 

@@ -5,6 +5,7 @@ export const SESSION_SETTING_KEYS = [
   "data_only_idle_timeout_seconds",
   "idle_timeout_voice_activity",
   "idle_timeout_dc_inbound",
+  "stt_enabled",
   "conversation_history_enabled",
   "conversation_recording_enabled",
   "conversation_recording_metered_overage_enabled",
@@ -71,11 +72,17 @@ export const SESSION_SETTING_DEFS: Record<
     description:
       "When on, client→server data-channel messages reset the idle countdown. When off, data-channel traffic does not extend the session.",
   },
+  stt_enabled: {
+    type: "boolean",
+    default: true,
+    description:
+      "When on (default), inbound user audio is transcribed on Voice and Voice+Data sessions. false disables project-default STT (sessions/clients can still enable STT at runtime).",
+  },
   conversation_history_enabled: {
     type: "boolean",
     default: true,
     description:
-      "When on (default), store final user speech and agent TTS text for the dashboard Conversation tab. false stops recording new transcripts (existing history kept until retention).",
+      "When on (default), store final user speech and agent TTS text for Voice and Voice+Data sessions in the dashboard Conversation tab. false stops recording new transcripts (existing history kept until retention).",
   },
   conversation_recording_enabled: {
     type: "boolean",
@@ -140,6 +147,7 @@ export function formatSessionSettingsGroupHelp(): string {
   lines.push(
     "  $ voicethere projects session-settings set conversation_history_enabled false",
   );
+  lines.push("  $ voicethere projects session-settings set stt_enabled false");
   lines.push(
     "  $ voicethere projects session-settings set conversation_recording_enabled true",
   );
