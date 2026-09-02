@@ -218,6 +218,7 @@ export interface ProjectSessionSettingsResponse {
     conversation_history_enabled?: boolean;
     conversation_recording_enabled?: boolean;
     conversation_recording_metered_overage_enabled?: boolean;
+    stt_enabled?: boolean;
   };
 }
 
