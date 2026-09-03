@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-09-03
+
+### Added
+
+- **`projects voice-advanced`** — `noiseSuppression.enabled` (boolean, default true) to toggle inbound RNNoise on Voice / Voice+Data projects.
+- **`projects session-settings`** — `stt_enabled` (boolean) to disable STT for a project’s sessions.
+
 ## [0.13.1] - 2026-09-01
 
 ### Changed
