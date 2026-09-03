@@ -19,6 +19,7 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "vad.bargeIn.agentPlaybackGuardMs",
   "tts.speed",
   "tts.postUtteranceSilenceMs",
+  "noiseSuppression.enabled",
   "events.mode",
 ] as const;
 
@@ -161,6 +162,12 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     max: 15000,
     description:
       "Silent PCM after each TTS utterance so remote listeners can finalize STT.",
+  },
+  "noiseSuppression.enabled": {
+    type: "boolean",
+    default: true,
+    description:
+      "Applies Xiph RNNoise to inbound PCM before VAD and STT on voice runners.",
   },
   "events.mode": {
     type: "string",

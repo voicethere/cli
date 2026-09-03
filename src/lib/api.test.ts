@@ -23,11 +23,15 @@ describe("config", () => {
     );
     credentialsPath = join(tempDir, "credentials.json");
     process.env.VOICETHERE_CREDENTIALS_PATH = credentialsPath;
+    delete process.env.VOICETHERE_API_KEY;
+    delete process.env.VOICETHERE_USER_API_KEY;
   });
 
   afterEach(async () => {
     delete process.env.VOICETHERE_CREDENTIALS_PATH;
     delete process.env.VOICETHERE_API_BASE;
+    delete process.env.VOICETHERE_API_KEY;
+    delete process.env.VOICETHERE_USER_API_KEY;
     await rm(tempDir, { recursive: true, force: true });
   });
 

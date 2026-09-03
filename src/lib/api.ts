@@ -290,7 +290,8 @@ export type VoiceAdvancedSettingKey =
   | "vad.bargeIn.agentPlaybackGuardMs"
   | "tts.speed"
   | "tts.postUtteranceSilenceMs"
-  | "events.mode";
+  | "events.mode"
+  | "noiseSuppression.enabled";
 
 export interface ProjectVoiceAdvancedSettingsResponse {
   project_id: string;
