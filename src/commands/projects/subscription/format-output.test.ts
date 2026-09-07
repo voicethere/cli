@@ -33,7 +33,6 @@ describe("formatProjectSubscriptionOutput", () => {
               maxActiveConnectionsPerPod: 20,
               warmPoolEnabledDefault: false,
               warmPoolMinPodsDefault: 0,
-              maxMonthlyBillableMinutes: 99999,
               resources: { requests: { cpu: "1", memory: "2Gi" }, limits: {} },
             },
             voice: {},
