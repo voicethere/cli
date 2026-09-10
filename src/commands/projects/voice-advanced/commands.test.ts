@@ -46,7 +46,9 @@ describe("projects voice-advanced commands", () => {
 
   it("lists every canonical voice-advanced key", () => {
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("noiseSuppression.enabled");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(22);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.enabled");
+    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.minSpeechMs");
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(24);
   });
 
   it("lists resolved advanced settings", async () => {
