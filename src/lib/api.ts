@@ -291,7 +291,9 @@ export type VoiceAdvancedSettingKey =
   | "tts.speed"
   | "tts.postUtteranceSilenceMs"
   | "events.mode"
-  | "noiseSuppression.enabled";
+  | "noiseSuppression.enabled"
+  | "languageId.enabled"
+  | "languageId.minSpeechMs";
 
 export interface ProjectVoiceAdvancedSettingsResponse {
   project_id: string;
