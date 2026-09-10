@@ -1,5 +1,5 @@
 /** Customer workspace pin — may differ from the CLI runtime `@voicethere/agent` dependency. */
-export const CUSTOMER_AGENT_VERSION = "0.7.6";
+export const CUSTOMER_AGENT_VERSION = "0.7.7";
 
 /** Extra npm deps for platform create templates (not in every agent registry release). */
 const EXTRA_TEMPLATE_NPM_DEPS: Record<string, Record<string, string>> = {

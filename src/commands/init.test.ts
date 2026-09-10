@@ -108,7 +108,7 @@ describe("runInit", () => {
       dependencies: Record<string, string>;
       scripts: Record<string, string>;
     };
-    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.7.6");
+    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.7.7");
     expect(packageJson.scripts.verify).toContain("echo.ts");
     expect(packageJson.scripts.upload).toBe("voicethere build upload");
     expect(packageJson.scripts["source:push"]).toBe("voicethere source push");
