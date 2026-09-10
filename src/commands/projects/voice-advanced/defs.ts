@@ -20,6 +20,8 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "tts.speed",
   "tts.postUtteranceSilenceMs",
   "noiseSuppression.enabled",
+  "languageId.enabled",
+  "languageId.minSpeechMs",
   "events.mode",
 ] as const;
 
@@ -168,6 +170,20 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     default: true,
     description:
       "Applies Xiph RNNoise to inbound PCM before VAD and STT on voice runners.",
+  },
+  "languageId.enabled": {
+    type: "boolean",
+    default: true,
+    description:
+      "Enable spoken language identification (Sherpa Whisper tiny) on voice deploys.",
+  },
+  "languageId.minSpeechMs": {
+    type: "number",
+    default: 2500,
+    min: 1000,
+    max: 5000,
+    description:
+      "Minimum inbound PCM (ms) before first spoken-language identify per utterance (cloud default 2500).",
   },
   "events.mode": {
     type: "string",
