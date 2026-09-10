@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-10
+
+### Added
+
+- **`voicethere init [dir]`** — scaffold a local npm agent workspace from a platform template (default `echo`), optionally create a linked cloud project, write `.voicethere/config.json`, and seed the dashboard Code workspace. Flags: `--name`, `--slug`, `--template`, `--local-only`, `--no-install`, `--force`.
+- **`voicethere source push`** / **`source pull`** — upload or download Code workspace sources (`.ts`, `.tsx`, `.js`, `.json`, `.d.ts`) with optimistic revision on push.
+- **`createProject` API client** — optional `template` field on `POST /projects`.
+
 ## [0.13.2] - 2026-09-03
 
 ### Added

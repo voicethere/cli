@@ -108,7 +108,32 @@ After browser login, if those env vars are set, the CLI prints a warning that th
 
 More detail: [CLI login guide](https://app.voicethere.io/docs/cli-login) on the VoiceThere docs site.
 
-### 2. New agent repo — create project and commit config
+### 2. New agent project — `voicethere init`
+
+Scaffold a local npm workspace (sources, `package.json`, `.gitignore`) and optionally create a linked VoiceThere project in one step:
+
+```bash
+voicethere init my-agent --template echo
+cd my-agent
+npm install   # skipped when you pass --no-install on init
+npm run verify
+```
+
+| Flag              | Behavior                                                                                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--template <id>` | Platform template (default: `echo`). Also: `blank`, `voice-starter`, `echo-dc`, `voice-showcase`, `game-sync`, `recording-consent`, `positional-tts` |
+| `--local-only`    | Write files on disk only — no login, cloud project, or source upload                                                                                 |
+| `--no-install`    | Skip `npm install` after scaffolding                                                                                                                 |
+| `--force`         | Overwrite when `package.json` already exists                                                                                                         |
+
+Sync edits with the dashboard **Code** tab:
+
+```bash
+voicethere source push   # upload local `.ts` / `.json` sources
+voicethere source pull   # download cloud workspace (does not delete extra local files)
+```
+
+### 3. New agent repo — create project and commit config (manual)
 
 From your agent project root (where you build `dist/agent.js`):
 
@@ -123,7 +148,7 @@ git add .voicethere/config.json
 git commit -m "chore: use VoiceThere project"
 ```
 
-### 3. Upload a build (store artifact)
+### 4. Upload a build (store artifact)
 
 Upload **stores** a new immutable build in history — it does **not** go live yet.
 
@@ -134,7 +159,7 @@ voicethere build upload -m "Add Spanish greeting and fix barge-in"
 
 `-m` / `--message` is like a git commit message: a short label so you can tell builds apart in `build list` and the dashboard.
 
-### 4. Promote a build (set active in control plane)
+### 5. Promote a build (set active in control plane)
 
 **Promote** sets the **active** build in the VoiceThere control plane only. To roll out to cloud runners, run **`voicethere deploy --wait`** (promote + cluster rollout in one step).
 
@@ -154,7 +179,7 @@ voicethere build upload -m "v0.2 — shorter silence timeout"
 voicethere build promote <build-uuid-from-upload-or-list>
 ```
 
-### 5. Clone an existing repo (config already in git)
+### 6. Clone an existing repo (config already in git)
 
 ```bash
 git clone <your-agent-repo>
@@ -169,7 +194,7 @@ voicethere build promote <build-uuid>
 
 No `projects use` needed — the active project travels with the repo.
 
-### 6. Use a different cloud project
+### 7. Use a different cloud project
 
 ```bash
 voicethere projects list
@@ -185,7 +210,7 @@ Inspect the selection anytime:
 voicethere projects show
 ```
 
-### 7. CI / automation
+### 8. CI / automation
 
 **With committed `.voicethere/config.json`** (typical agent repo):
 
@@ -215,7 +240,7 @@ Other CI notes:
 
 Split upload and promote across jobs if you want a human approval gate between them.
 
-### 8. Deploy to cloud runners
+### 9. Deploy to cloud runners
 
 `voicethere deploy --wait` **promotes the build (when needed) and rolls out to cloud runners**, blocking until the deployment is active (or failed).
 
