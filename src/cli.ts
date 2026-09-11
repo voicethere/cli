@@ -77,6 +77,8 @@ import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
 import { runDeploy } from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
+import { runInit } from "./commands/init.js";
+import { runSourcePull, runSourcePush } from "./commands/source.js";
 import { runSessionsBilling } from "./commands/sessions/billing.js";
 import { runSessionsList } from "./commands/sessions/list.js";
 import { runSessionsRecording } from "./commands/sessions/recording.js";
@@ -1215,6 +1217,73 @@ async function main(): Promise<void> {
         sessionId,
         projectId: options.project,
       });
+    });
+
+  program
+    .command("init")
+    .description(
+      "Scaffold a local npm agent workspace and optionally create a linked cloud project",
+    )
+    .argument("[dir]", "Target directory (default: current directory)", ".")
+    .option(
+      "--name <name>",
+      "Cloud and package display name (default: directory name)",
+    )
+    .option(
+      "--slug <slug>",
+      "URL-safe project slug (derived from name when omitted)",
+    )
+    .option(
+      "--template <id>",
+      "Platform template (default: echo). Use blank for a minimal stub.",
+      "echo",
+    )
+    .option(
+      "--local-only",
+      "Write files locally only — no login, cloud project, or source upload",
+    )
+    .option("--no-install", "Skip npm install in the target directory")
+    .option("--force", "Overwrite when package.json already exists")
+    .action(
+      async (
+        dir: string,
+        options: {
+          name?: string;
+          slug?: string;
+          template?: string;
+          localOnly?: boolean;
+          noInstall?: boolean;
+          force?: boolean;
+        },
+      ) => {
+        await runInit({
+          dir,
+          name: options.name,
+          slug: options.slug,
+          template: options.template,
+          localOnly: options.localOnly,
+          noInstall: options.noInstall,
+          force: options.force,
+        });
+      },
+    );
+
+  const source = program
+    .command("source")
+    .description("Sync agent source with the dashboard Code workspace");
+
+  source
+    .command("push")
+    .description("Upload local workspace sources to the cloud project")
+    .action(async () => {
+      await runSourcePush();
+    });
+
+  source
+    .command("pull")
+    .description("Download cloud workspace sources to the local repo")
+    .action(async () => {
+      await runSourcePull();
     });
 
   program

@@ -96,6 +96,25 @@ export interface Project {
   created_at: string;
 }
 
+export interface ProjectSourceFile {
+  path: string;
+  content: string;
+}
+
+export interface ProjectSourceResponse {
+  project_id: string;
+  entry_path: string;
+  files: ProjectSourceFile[];
+  revision: number;
+  updated_at?: string | null;
+}
+
+export interface PutProjectSourceInput {
+  entry_path: string;
+  files: ProjectSourceFile[];
+  revision: number;
+}
+
 export interface Build {
   id: string;
   project_id: string;
@@ -759,10 +778,39 @@ export class VoicethereApi {
     return Array.isArray(response) ? response : response.projects;
   }
 
-  async createProject(name: string, slug: string): Promise<Project> {
+  async createProject(
+    name: string,
+    slug: string,
+    template?: string,
+  ): Promise<Project> {
+    const body: { name: string; slug: string; template?: string } = {
+      name,
+      slug,
+    };
+    if (template?.trim()) {
+      body.template = template.trim();
+    }
     return this.request<Project>("POST", "/projects", {
-      json: { name, slug },
+      json: body,
     });
+  }
+
+  async getProjectSource(projectId: string): Promise<ProjectSourceResponse> {
+    return this.request<ProjectSourceResponse>(
+      "GET",
+      `/projects/${projectId}/source`,
+    );
+  }
+
+  async putProjectSource(
+    projectId: string,
+    input: PutProjectSourceInput,
+  ): Promise<ProjectSourceResponse> {
+    return this.request<ProjectSourceResponse>(
+      "PUT",
+      `/projects/${projectId}/source`,
+      { json: input },
+    );
   }
 
   async getProject(projectId: string): Promise<Project> {

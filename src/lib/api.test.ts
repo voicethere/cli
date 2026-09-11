@@ -272,6 +272,87 @@ describe("VoicethereApi", () => {
     );
   });
 
+  it("creates a project with optional template", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "proj-3",
+          org_id: "org-1",
+          name: "Echo Agent",
+          slug: "echo-agent",
+          active_build_id: null,
+          created_at: "2026-06-09T12:00:00.000Z",
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    await api.createProject("Echo Agent", "echo-agent", "echo");
+
+    const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(init.body).toBe(
+      JSON.stringify({
+        name: "Echo Agent",
+        slug: "echo-agent",
+        template: "echo",
+      }),
+    );
+  });
+
+  it("gets and puts project source workspace", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            project_id: "proj-src",
+            entry_path: "echo.ts",
+            files: [{ path: "echo.ts", content: "old" }],
+            revision: 2,
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            project_id: "proj-src",
+            entry_path: "echo.ts",
+            files: [{ path: "echo.ts", content: "new" }],
+            revision: 3,
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const remote = await api.getProjectSource("proj-src");
+    expect(remote.revision).toBe(2);
+
+    const updated = await api.putProjectSource("proj-src", {
+      entry_path: "echo.ts",
+      files: [{ path: "echo.ts", content: "new" }],
+      revision: 2,
+    });
+    expect(updated.revision).toBe(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const getCall = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(getCall[0].toString()).toBe(`${apiBase}/projects/proj-src/source`);
+    expect(getCall[1].method).toBe("GET");
+
+    const putCall = fetchMock.mock.calls[1] as [URL, RequestInit];
+    expect(putCall[1].method).toBe("PUT");
+    expect(putCall[1].body).toBe(
+      JSON.stringify({
+        entry_path: "echo.ts",
+        files: [{ path: "echo.ts", content: "new" }],
+        revision: 2,
+      }),
+    );
+  });
+
   it("throws ApiError with server message", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
