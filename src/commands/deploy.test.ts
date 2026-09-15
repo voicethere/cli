@@ -102,6 +102,33 @@ describe("runDeploy", () => {
     expect(console.log).toHaveBeenCalledWith("Deployment completed: dep-1");
   });
 
+  it("includes capacity error when --wait times out with queued job error", async () => {
+    vi.useFakeTimers();
+
+    getDeployment.mockResolvedValue({
+      id: "dep-1",
+      org_id: "org-1",
+      project_id: "proj-1",
+      build_id: "build-1",
+      status: "queued",
+      mode: "drain",
+      bullmq_job_id: "job-1",
+      error:
+        "CLUSTER_NO_CAPACITY: deploy_admission cpu_deficit=255m memory_deficit=0",
+      created_at: "2026-01-01T00:00:00Z",
+      completed_at: null,
+    });
+
+    const promise = runDeploy({
+      wait: true,
+      pollIntervalMs: 1,
+      timeoutMs: 5_000,
+    });
+    const rejection = expect(promise).rejects.toThrow(/CLUSTER_NO_CAPACITY/);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await rejection;
+  });
+
   it("includes last queued status when --wait times out", async () => {
     vi.useFakeTimers();
 

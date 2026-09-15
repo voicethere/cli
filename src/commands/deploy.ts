@@ -29,6 +29,7 @@ async function pollDeployment(
       progressId: job.build_id,
     }),
     getRetryAfterMs: (job) => job.retry_after_ms,
+    getLastDetail: (job) => job.error,
     onPoll: (job) => logVerbose(`deployment ${jobId}: status=${job.status}`),
     baseIntervalMs: options.pollIntervalMs,
     timeoutMs: options.timeoutMs,

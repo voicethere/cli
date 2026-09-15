@@ -119,6 +119,8 @@ export async function pollWithBackoff<T>(options: {
   isTerminal: (value: T) => boolean;
   getProgress: (value: T) => PollProgressSnapshot;
   getRetryAfterMs?: (value: T) => number | null | undefined;
+  /** Optional extra detail appended after last status on timeout (e.g. deploy job error). */
+  getLastDetail?: (value: T) => string | null | undefined;
   onPoll?: (value: T) => void;
   baseIntervalMs: number;
   timeoutMs: number;
@@ -130,9 +132,11 @@ export async function pollWithBackoff<T>(options: {
   let attemptIndex = 0;
   let previousProgress: PollProgressSnapshot | null = null;
   let lastProgress: PollProgressSnapshot | null = null;
+  let lastValue: T | null = null;
 
   while (runtime.now() - started < options.timeoutMs) {
     const value = await options.poll();
+    lastValue = value;
     options.onPoll?.(value);
     if (options.isTerminal(value)) {
       return value;
@@ -156,8 +160,14 @@ export async function pollWithBackoff<T>(options: {
     await runtime.sleep(delayMs);
   }
 
+  const lastDetail =
+    lastValue != null ? options.getLastDetail?.(lastValue) : undefined;
+  const detailSuffix =
+    lastDetail != null && lastDetail.trim() !== ""
+      ? `; ${lastDetail.trim()}`
+      : "";
   const lastStatusSuffix = lastProgress
-    ? ` (last status=${lastProgress.status})`
+    ? ` (last status=${lastProgress.status}${detailSuffix})`
     : ` (last status=none)`;
   throw new Error(`${options.timeoutMessage}${lastStatusSuffix}`);
 }
