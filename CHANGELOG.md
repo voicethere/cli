@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-09-15
+
+### Fixed
+
+- **`deploy --wait` timeout** — timeout errors now include the last deploy job error after `(last status=…)` (voicethere/cli#88).
+
 ## [0.14.0] - 2026-09-10
 
 ### Added
