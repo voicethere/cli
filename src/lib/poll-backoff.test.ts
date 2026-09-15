@@ -198,6 +198,37 @@ describe("pollWithBackoff", () => {
     expect(pollCount).toBeLessThan(5);
   });
 
+  it("includes last detail after status when timeout elapses", async () => {
+    vi.useFakeTimers();
+
+    const promise = pollWithBackoff({
+      poll: async () => ({
+        status: "queued",
+        build_id: "build-1",
+        error:
+          "CLUSTER_NO_CAPACITY: deploy_admission cpu_deficit=255m memory_deficit=0",
+      }),
+      isTerminal: () => false,
+      getProgress: (job) => ({
+        status: job.status,
+        progressId: job.build_id,
+      }),
+      getLastDetail: (job) => job.error,
+      baseIntervalMs: 1000,
+      timeoutMs: 5_000,
+      timeoutMessage: "timed out",
+      runtime: {
+        sleep: (ms) => vi.advanceTimersByTimeAsync(ms),
+        now: () => Date.now(),
+        random: () => 0.5,
+      },
+    });
+
+    await expect(promise).rejects.toThrow(
+      /timed out \(last status=queued; CLUSTER_NO_CAPACITY: deploy_admission cpu_deficit=255m memory_deficit=0\)/,
+    );
+  });
+
   it("includes last status=none when timeout elapses before any poll", async () => {
     await expect(
       pollWithBackoff({
