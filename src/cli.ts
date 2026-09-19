@@ -838,7 +838,10 @@ async function main(): Promise<void> {
       "--preset <id>",
       "pill-dark, pill-light, rounded-card, minimal-bar, or voice-orb",
     )
-    .option("--position <corner>", "bottom-right or bottom-left")
+    .option(
+      "--position <corner>",
+      "bottom-right, bottom-left, top-right, top-left, bottom-center, top-center, center-right, center-left, or custom",
+    )
     .option("--mode <mode>", "chat or voice")
     .option("--launcher-label <text>", "Launcher button label")
     .option("--greeting <text>", "Initial greeting text")
