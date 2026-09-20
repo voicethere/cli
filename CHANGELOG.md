@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.2] - 2026-09-20
+
+### Added
+
+- **`projects widget set --position`** — eight named corners/edges plus `custom`. Config types include optional `positionOffset`, `customCss`, and nested `theme.chat`.
+
 ## [0.14.1] - 2026-09-15
 
 ### Fixed
