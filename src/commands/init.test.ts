@@ -74,7 +74,7 @@ describe("runInit", () => {
     });
     putProjectSource.mockResolvedValue({
       project_id: "proj-init",
-      entry_path: "echo.ts",
+      entry_path: "echo/agent.ts",
       files: [],
       revision: 1,
     });
@@ -108,12 +108,12 @@ describe("runInit", () => {
       dependencies: Record<string, string>;
       scripts: Record<string, string>;
     };
-    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.7.7");
-    expect(packageJson.scripts.verify).toContain("echo.ts");
+    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.8.0");
+    expect(packageJson.scripts.verify).toContain("echo/agent.ts");
     expect(packageJson.scripts.upload).toBe("voicethere build upload");
     expect(packageJson.scripts["source:push"]).toBe("voicethere source push");
 
-    await expect(access(join(target, "echo.ts"))).resolves.toBeUndefined();
+    await expect(access(join(target, "echo", "agent.ts"))).resolves.toBeUndefined();
     await expect(access(join(target, ".gitignore"))).resolves.toBeUndefined();
     await expect(
       access(join(target, ".voicethere", "config.json")),
@@ -133,6 +133,36 @@ describe("runInit", () => {
       await readFile(join(target, "package.json"), "utf8"),
     ) as { dependencies: Record<string, string> };
     expect(packageJson.dependencies.ioredis).toBe("^5.11.1");
+  });
+
+  it("writes world-sync JSON template under world-sync/agent.ts", async () => {
+    const target = join(tempDir, "world-sync-local");
+    await runInit({
+      dir: target,
+      template: "world-sync",
+      localOnly: true,
+      noInstall: true,
+    });
+
+    const packageJson = JSON.parse(
+      await readFile(join(target, "package.json"), "utf8"),
+    ) as { dependencies: Record<string, string>; scripts: Record<string, string> };
+    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.8.0");
+    expect(packageJson.scripts.build).toContain("world-sync/agent.ts");
+    await expect(
+      access(join(target, "world-sync", "agent.ts")),
+    ).resolves.toBeUndefined();
+  });
+
+  it("rejects e2e-only redis-sync as a create template", async () => {
+    await expect(
+      runInit({
+        dir: join(tempDir, "redis-sync-local"),
+        template: "redis-sync",
+        localOnly: true,
+        noInstall: true,
+      }),
+    ).rejects.toThrow(/Unknown template "redis-sync"/);
   });
 
   it("writes blank stub with agent.ts entry", async () => {
@@ -157,8 +187,8 @@ describe("runInit", () => {
     const target = join(tempDir, "cloud-echo");
     getProjectSource.mockResolvedValueOnce({
       project_id: "proj-init",
-      entry_path: "echo.ts",
-      files: [{ path: "echo.ts", content: "seed" }],
+      entry_path: "echo/agent.ts",
+      files: [{ path: "echo/agent.ts", content: "seed" }],
       revision: 1,
     });
 
@@ -185,7 +215,7 @@ describe("runInit", () => {
     expect(putProjectSource).toHaveBeenCalledWith(
       "proj-init",
       expect.objectContaining({
-        entry_path: "echo.ts",
+        entry_path: "echo/agent.ts",
         revision: 1,
         files: expect.arrayContaining([
           expect.objectContaining({ path: "package.json" }),
