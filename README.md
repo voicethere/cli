@@ -121,7 +121,7 @@ npm run verify
 
 | Flag              | Behavior                                                                                                                                             |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--template <id>` | Platform template (default: `echo`). Also: `blank`, `voice-starter`, `echo-dc`, `voice-showcase`, `game-sync`, `recording-consent`, `positional-tts` |
+| `--template <id>` | Platform template (default: `echo`). Also: `blank`, `voice-starter`, `echo-dc`, `voice-showcase`, `world-sync`, `world-sync-binary`, `game-sync`, `recording-consent`, `positional-tts`, `spatial-showcase` |
 | `--local-only`    | Write files on disk only — no login, cloud project, or source upload                                                                                 |
 | `--no-install`    | Skip `npm install` after scaffolding                                                                                                                 |
 | `--force`         | Overwrite when `package.json` already exists                                                                                                         |

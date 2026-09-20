@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.3] - 2026-09-20
+
+### Changed
+
+- Dependency: `@voicethere/agent` **0.8.0** (runtime verify). Customer `init` workspaces pin `^0.8.0` and seed `templates/<id>/` sources (`echo/agent.ts` instead of `echo.ts`).
+- **`voicethere init --template`** — add `world-sync`, `world-sync-binary`, and `spatial-showcase` (same ids as dashboard create).
+
 ## [0.14.2] - 2026-09-20
 
 ### Added
