@@ -5,6 +5,7 @@ import {
   runProjectsWidgetSet,
   runProjectsWidgetShow,
   validateWidgetHexColor,
+  validateWidgetPosition,
   validateWidgetPreset,
 } from "./commands.js";
 
@@ -125,10 +126,37 @@ describe("projects widget commands", () => {
       );
     });
 
+    it("sets top-left position", async () => {
+      getProjectWidget.mockResolvedValue(sampleWidgetResponse);
+      updateProjectWidgetDraft.mockResolvedValue({
+        ...sampleWidgetResponse,
+        draft: {
+          ...sampleWidgetResponse.draft,
+          position: "top-left",
+        },
+      });
+
+      await runProjectsWidgetSet({ position: "top-left" });
+
+      expect(updateProjectWidgetDraft).toHaveBeenCalledWith("proj-1", {
+        v: 1,
+        preset: "pill-dark",
+        position: "top-left",
+        mode: "voice",
+      });
+    });
+
     it("rejects unknown preset", async () => {
       await expect(
         runProjectsWidgetSet({ preset: "unknown-preset" }),
       ).rejects.toThrow(/Unknown widget preset/);
+      expect(getProjectWidget).not.toHaveBeenCalled();
+    });
+
+    it("rejects unknown position", async () => {
+      await expect(
+        runProjectsWidgetSet({ position: "center-stage" }),
+      ).rejects.toThrow(/Unknown widget position/);
       expect(getProjectWidget).not.toHaveBeenCalled();
     });
 
@@ -160,6 +188,17 @@ describe("projects widget commands", () => {
     it("rejects unknown presets", () => {
       expect(() => validateWidgetPreset("neon")).toThrow(
         /Unknown widget preset/,
+      );
+    });
+
+    it("accepts top-left and custom positions", () => {
+      expect(validateWidgetPosition("top-left")).toBe("top-left");
+      expect(validateWidgetPosition("custom")).toBe("custom");
+    });
+
+    it("rejects unknown positions", () => {
+      expect(() => validateWidgetPosition("middle")).toThrow(
+        /Unknown widget position/,
       );
     });
   });

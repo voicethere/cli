@@ -21,7 +21,17 @@ export const WIDGET_PRESETS = [
   "voice-orb",
 ] as const;
 
-export const WIDGET_POSITIONS = ["bottom-right", "bottom-left"] as const;
+export const WIDGET_POSITIONS = [
+  "bottom-right",
+  "bottom-left",
+  "top-right",
+  "top-left",
+  "bottom-center",
+  "top-center",
+  "center-right",
+  "center-left",
+  "custom",
+] as const;
 
 export const WIDGET_MODES = ["chat", "voice"] as const;
 

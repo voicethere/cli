@@ -678,6 +678,40 @@ export interface SessionConversationResponse {
 export type ProjectWidgetPublishStatus =
   "idle" | "queued" | "publishing" | "published" | "failed";
 
+export type WidgetMessageRoleTheme = {
+  fontFamily?: string;
+  fontSize?: string;
+  color?: string;
+  bubble?: string;
+};
+
+export type VoiceThereWidgetChatTheme = {
+  incoming?: WidgetMessageRoleTheme;
+  outgoing?: WidgetMessageRoleTheme;
+  headerBackground?: string;
+  inputBackground?: string;
+  inputColor?: string;
+  panelWidth?: string;
+  panelHeight?: string;
+  panelRadius?: string;
+};
+
+export type VoiceThereWidgetTheme = {
+  primary?: string;
+  background?: string;
+  text?: string;
+  fontFamily?: string;
+  fontSize?: string;
+  chat?: VoiceThereWidgetChatTheme;
+};
+
+export type WidgetPositionOffset = {
+  top?: string;
+  right?: string;
+  bottom?: string;
+  left?: string;
+};
+
 export type VoiceThereWidgetConfigV1 = {
   v: 1;
   publicId?: string;
@@ -686,10 +720,21 @@ export type VoiceThereWidgetConfigV1 = {
   revision?: number;
   preset?:
     "pill-dark" | "pill-light" | "rounded-card" | "minimal-bar" | "voice-orb";
-  theme?: { primary?: string; background?: string; text?: string };
+  theme?: VoiceThereWidgetTheme;
   launcherLabel?: string;
   greeting?: string;
-  position?: "bottom-right" | "bottom-left";
+  position?:
+    | "bottom-right"
+    | "bottom-left"
+    | "top-right"
+    | "top-left"
+    | "bottom-center"
+    | "top-center"
+    | "center-right"
+    | "center-left"
+    | "custom";
+  positionOffset?: WidgetPositionOffset;
+  customCss?: string;
   mode?: "chat" | "voice";
 };
 
