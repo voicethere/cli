@@ -72,6 +72,7 @@ import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";
 import { runBuildPromote } from "./commands/build/promote.js";
+import { runBuildDownload } from "./commands/build/download.js";
 import { runBuildList } from "./commands/build/list.js";
 import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
@@ -79,7 +80,11 @@ import { runDeploy } from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
 import { runInit } from "./commands/init.js";
 import { formatInitTemplateHelp } from "./lib/project-templates.js";
-import { runSourcePull, runSourcePush } from "./commands/source.js";
+import {
+  runSourceDownload,
+  runSourcePull,
+  runSourcePush,
+} from "./commands/source.js";
 import { runSessionsBilling } from "./commands/sessions/billing.js";
 import { runSessionsList } from "./commands/sessions/list.js";
 import { runSessionsRecording } from "./commands/sessions/recording.js";
@@ -1059,6 +1064,29 @@ async function main(): Promise<void> {
       await runBuildPromote({ buildId });
     });
 
+  build
+    .command("download")
+    .description("Download a compiled agent bundle as JavaScript")
+    .requiredOption("-o, --output <path>", "Write bundle to this path")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option(
+      "--build-id <id>",
+      "Build UUID (default: active or newest passed build)",
+    )
+    .action(
+      async (options: {
+        output: string;
+        project?: string;
+        buildId?: string;
+      }) => {
+        await runBuildDownload({
+          output: options.output,
+          projectId: options.project,
+          buildId: options.buildId,
+        });
+      },
+    );
+
   const apiKeys = program
     .command("api-keys")
     .description("Manage organization API keys");
@@ -1295,6 +1323,18 @@ async function main(): Promise<void> {
     .description("Download cloud workspace sources to the local repo")
     .action(async () => {
       await runSourcePull();
+    });
+
+  source
+    .command("download")
+    .description("Download saved Code workspace as a zip file")
+    .requiredOption("-o, --output <path>", "Write zip to this path")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(async (options: { output: string; project?: string }) => {
+      await runSourceDownload({
+        output: options.output,
+        projectId: options.project,
+      });
     });
 
   program

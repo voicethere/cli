@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { createApiFromCredentials } from "../lib/control-plane-auth.js";
 import { requireCredentials } from "../lib/config.js";
@@ -8,6 +8,7 @@ import {
   readProjectConfig,
   repoRootFromConfigPath,
   requireProjectId,
+  resolveProjectId,
 } from "../lib/project-config.js";
 import {
   collectWorkspaceSourceFiles,
@@ -63,4 +64,43 @@ export async function runSourcePull(): Promise<void> {
   logCommandInfo(
     `pulled ${remote.files.length} file(s) at revision ${remote.revision}`,
   );
+}
+
+export interface SourceDownloadOptions {
+  output: string;
+  projectId?: string;
+  startDir?: string;
+}
+
+export async function runSourceDownload(
+  options: SourceDownloadOptions,
+): Promise<void> {
+  const output = options.output?.trim();
+  if (!output) {
+    throw new Error(
+      "Output path required. Use: voicethere source download -o <path>",
+    );
+  }
+
+  const credentials = await requireCredentials();
+  const api = createApiFromCredentials(credentials);
+  const explicitId = options.projectId?.trim();
+  const project = explicitId
+    ? { projectId: explicitId }
+    : await resolveProjectId(
+        options.startDir ? { startDir: options.startDir } : undefined,
+      );
+
+  logStep("Downloading Code workspace zip from VoiceThere");
+  const { bytes, filename } = await api.getProjectSourceDownload(
+    project.projectId,
+  );
+
+  const outputPath = resolve(output);
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, bytes);
+
+  const nameHint = filename ? ` (${filename})` : "";
+  logCommandInfo(`wrote ${bytes.length} byte(s) to ${outputPath}${nameHint}`);
+  console.log(outputPath);
 }

@@ -2,15 +2,17 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runSourcePull, runSourcePush } from "./source.js";
+import { runSourceDownload, runSourcePull, runSourcePush } from "./source.js";
 
 const getProjectSource = vi.fn();
+const getProjectSourceDownload = vi.fn();
 const putProjectSource = vi.fn();
 const requireCredentials = vi.fn();
 
 vi.mock("../lib/control-plane-auth.js", () => ({
   createApiFromCredentials: vi.fn(() => ({
     getProjectSource,
+    getProjectSourceDownload,
     putProjectSource,
   })),
 }));
@@ -25,6 +27,11 @@ vi.mock("../lib/project-config.js", async (importOriginal) => {
   return {
     ...actual,
     requireProjectId: vi.fn(async () => "proj-src"),
+    resolveProjectId: vi.fn(async () => ({
+      projectId: "proj-src",
+      source: "config",
+      configPath: "",
+    })),
     readProjectConfig: vi.fn(async () => ({
       config: { project_id: "proj-src" },
       path: "",
@@ -70,7 +77,11 @@ describe("source push/pull", () => {
       path: configPath,
     });
 
+    const { resolveProjectId } = await import("../lib/project-config.js");
+    vi.mocked(resolveProjectId).mockClear();
+
     getProjectSource.mockReset();
+    getProjectSourceDownload.mockReset();
     putProjectSource.mockReset();
     requireCredentials.mockReset();
     requireCredentials.mockResolvedValue({
@@ -149,5 +160,44 @@ describe("source push/pull", () => {
     expect(await readFile(join(tempDir, "helpers", "util.ts"), "utf8")).toBe(
       "export const x = 1;\n",
     );
+  });
+
+  it("source download writes zip bytes to --output", async () => {
+    const zip = Buffer.from("PK\x03\x04workspace");
+    getProjectSourceDownload.mockResolvedValue({
+      bytes: zip,
+      filename: "demo-source-r1.zip",
+    });
+
+    const outPath = join(tempDir, "out", "workspace.zip");
+    const previousCwd = process.cwd();
+    process.chdir(tempDir);
+    try {
+      await runSourceDownload({ output: outPath });
+    } finally {
+      process.chdir(previousCwd);
+    }
+
+    expect(getProjectSourceDownload).toHaveBeenCalledWith("proj-src");
+    expect(await readFile(outPath)).toEqual(zip);
+  });
+
+  it("source download uses explicit project id when provided", async () => {
+    const { resolveProjectId } = await import("../lib/project-config.js");
+    const zip = Buffer.from("PK\x03\x04explicit");
+    getProjectSourceDownload.mockResolvedValue({
+      bytes: zip,
+      filename: "other.zip",
+    });
+
+    const outPath = join(tempDir, "explicit.zip");
+    await runSourceDownload({
+      output: outPath,
+      projectId: "proj-explicit",
+    });
+
+    expect(resolveProjectId).not.toHaveBeenCalled();
+    expect(getProjectSourceDownload).toHaveBeenCalledWith("proj-explicit");
+    expect(await readFile(outPath)).toEqual(zip);
   });
 });

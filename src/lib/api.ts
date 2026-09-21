@@ -65,6 +65,44 @@ function formatHttpRetryLog(error: unknown): string {
   return String(error);
 }
 
+export interface BinaryDownloadResult {
+  bytes: Buffer;
+  filename: string | null;
+}
+
+/** Parse `Content-Disposition` attachment filename (quoted or RFC 5987). */
+export function parseContentDispositionFilename(
+  header: string | null,
+): string | null {
+  if (!header) {
+    return null;
+  }
+
+  const starMatch = /filename\*\s*=\s*([^;]+)/i.exec(header);
+  if (starMatch) {
+    const raw = starMatch[1].trim().replace(/^"|"$/, "");
+    const utf8Match = /^UTF-8''(.+)$/i.exec(raw);
+    const encoded = utf8Match ? utf8Match[1] : raw;
+    try {
+      return decodeURIComponent(encoded);
+    } catch {
+      return encoded;
+    }
+  }
+
+  const quoted = /filename\s*=\s*"([^"]+)"/i.exec(header);
+  if (quoted) {
+    return quoted[1];
+  }
+
+  const unquoted = /filename\s*=\s*([^;\s]+)/i.exec(header);
+  if (unquoted) {
+    return unquoted[1].replace(/^"|"$/, "");
+  }
+
+  return null;
+}
+
 export function throwApiErrorFromResponse(
   method: string,
   pathname: string,
@@ -858,6 +896,22 @@ export class VoicethereApi {
     );
   }
 
+  async getProjectSourceDownload(
+    projectId: string,
+  ): Promise<BinaryDownloadResult> {
+    return this.requestBinary("GET", `/projects/${projectId}/source/download`);
+  }
+
+  async getProjectBuildDownload(
+    projectId: string,
+    buildId: string,
+  ): Promise<BinaryDownloadResult> {
+    return this.requestBinary(
+      "GET",
+      `/projects/${projectId}/builds/${encodeURIComponent(buildId)}/download`,
+    );
+  }
+
   async getProject(projectId: string): Promise<Project> {
     return this.request<Project>("GET", `/projects/${projectId}`);
   }
@@ -1361,6 +1415,73 @@ export class VoicethereApi {
       `/projects/${projectId}/widget/publish`,
       { json: {} },
     );
+  }
+
+  private async requestBinary(
+    method: string,
+    path: string,
+  ): Promise<BinaryDownloadResult> {
+    const url = new URL(
+      path.replace(/^\//, ""),
+      `${this.apiBase.replace(/\/$/, "")}/`,
+    );
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.apiKey}`,
+    };
+    if (this.orgId && isUserApiKeyToken(this.apiKey)) {
+      headers[USER_ORG_ID_HEADER] = this.orgId;
+    }
+
+    const pathWithQuery = `${url.pathname}${url.search}`;
+    logVerbose(`${method} ${pathWithQuery}`);
+
+    return withHttpRetries(
+      async () => {
+        const started = performance.now();
+        const response = await fetch(url, { method, headers });
+        logVerbose(
+          `response: ${response.status} (${Math.round(performance.now() - started)}ms)`,
+        );
+
+        if (!response.ok && isRetryableHttpStatus(response.status)) {
+          const text = await response.text();
+          throw new RetryableHttpStatusError(response.status, text);
+        }
+
+        if (!response.ok) {
+          const text = await response.text();
+          throwApiErrorFromResponse(
+            method,
+            url.pathname,
+            response.status,
+            text,
+          );
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const filename = parseContentDispositionFilename(
+          response.headers.get("Content-Disposition"),
+        );
+        return { bytes: Buffer.from(arrayBuffer), filename };
+      },
+      {
+        onRetry: ({ attempt, maxAttempts, delayMs, error }) => {
+          logVerbose(
+            `retrying after ${delayMs}ms (attempt ${attempt}/${maxAttempts}): ${formatHttpRetryLog(error)}`,
+          );
+        },
+      },
+    ).catch((error: unknown) => {
+      if (error instanceof RetryableHttpStatusError) {
+        throwApiErrorFromResponse(
+          method,
+          url.pathname,
+          error.status,
+          error.bodyText,
+        );
+      }
+      throw error;
+    });
   }
 
   private async request<T>(
