@@ -1,10 +1,7 @@
+import { templateNpmDependencies } from "./project-templates.js";
+
 /** Customer workspace pin — may differ from the CLI runtime `@voicethere/agent` dependency. */
 export const CUSTOMER_AGENT_VERSION = "0.8.0";
-
-/** Extra npm deps for platform create templates (not in every agent registry release). */
-const EXTRA_TEMPLATE_NPM_DEPS: Record<string, Record<string, string>> = {
-  "game-sync": { ioredis: "^5.11.1" },
-};
 
 export interface BuildCustomerPackageJsonOptions {
   templateId: string;
@@ -28,7 +25,7 @@ export function buildCustomerPackageJson(
   const name = options.packageName ?? defaultCustomerPackageName(templateId);
   const dependencies: Record<string, string> = {
     "@voicethere/agent": `^${CUSTOMER_AGENT_VERSION}`,
-    ...(EXTRA_TEMPLATE_NPM_DEPS[templateId] ?? {}),
+    ...templateNpmDependencies(templateId),
   };
 
   const pkg = {

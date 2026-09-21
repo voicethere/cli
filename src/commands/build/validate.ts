@@ -64,7 +64,7 @@ export async function runBuildValidate(
   logStep("Running @voicethere/agent verify on bundle");
   logVerbose(`verify bundle: ${bundle.absolutePath}`);
   await spawnAgentVerify(bundle.absolutePath);
-  console.log(`Bundle validated: ${bundle.absolutePath}`);
+  logStep(`Bundle validated: ${bundle.absolutePath}`);
 }
 
 async function spawnAgentVerify(bundlePath: string): Promise<void> {
