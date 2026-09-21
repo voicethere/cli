@@ -18,6 +18,8 @@ import { runBuildValidate, type BuildValidateOptions } from "./validate.js";
 export interface BuildUploadOptions extends BuildValidateOptions {
   message?: string;
   skipValidate?: boolean;
+  /** Print only the build UUID on stdout (progress stays on stderr). */
+  printId?: boolean;
 }
 
 export async function runBuildUpload(
@@ -48,6 +50,11 @@ export async function runBuildUpload(
     bundle.absolutePath,
     options.message,
   );
+
+  if (options.printId) {
+    console.log(build.id);
+    return;
+  }
 
   console.log(`Uploaded build ${build.id}`);
   if (build.message) {

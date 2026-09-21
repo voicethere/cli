@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.4] - 2026-09-21
+
+### Added
+
+- **`build upload --print-id`** — print only the new build UUID on stdout (progress stays on stderr) so CI can `BUILD_ID=$(voicethere build upload --print-id)` and pass `"$BUILD_ID"` to `build promote` or `deploy --build-id`.
+- **`voicethere init --template`** — accept every product template from the installed `@voicethere/agent` registry (including `webhooks` and `webhooks-redis`) plus `blank`. `init --help` lists the live ids and links to https://github.com/voicethere/agent/tree/main/templates.
+
+### Changed
+
+- README CI / release examples capture `$BUILD_ID` with `--print-id` instead of `<build-uuid>` placeholders (those are stdin redirects in bash).
+- `build validate` reports success on stderr so `--print-id` stays a single-line UUID even when local verify runs.
+
 ## [0.14.3] - 2026-09-20
 
 ### Changed

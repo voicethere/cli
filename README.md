@@ -17,7 +17,7 @@ npm install -g @voicethere/cli
 Or run without a global install:
 
 ```bash
-npx @voicethere/cli <command>
+npx @voicethere/cli --help
 ```
 
 ## Debugging
@@ -121,10 +121,34 @@ npm run verify
 
 | Flag              | Behavior                                                                                                                                             |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--template <id>` | Platform template (default: `echo`). Also: `blank`, `voice-starter`, `echo-dc`, `voice-showcase`, `world-sync`, `world-sync-binary`, `game-sync`, `recording-consent`, `positional-tts`, `spatial-showcase` |
+| `--template <id>` | Product template from the installed `@voicethere/agent` package (default: `echo`), or `blank` for a minimal stub. Run `voicethere init --help` for the live list. |
 | `--local-only`    | Write files on disk only — no login, cloud project, or source upload                                                                                 |
 | `--no-install`    | Skip `npm install` after scaffolding                                                                                                                 |
 | `--force`         | Overwrite when `package.json` already exists                                                                                                         |
+
+#### Templates
+
+`init --template` follows the product registry in `@voicethere/agent` (plus CLI-only `blank`). When the CLI bumps its agent dependency, new product templates become available without a hardcoded allow-list.
+
+Sources: [github.com/voicethere/agent/tree/main/templates](https://github.com/voicethere/agent/tree/main/templates)
+
+| Id | Summary |
+| -- | ------- |
+| `blank` | Minimal stub (`agent.ts`) — CLI only, not in the agent package |
+| `echo` | Voice + chat echo with TTS playback |
+| `echo-dc` | Data-channel echo, no TTS |
+| `voice-starter` | Every speech event — customize `onUserSpeechFinal` for your LLM |
+| `world-sync` | JSON pose broadcast, one in-memory agent, no Redis |
+| `world-sync-binary` | Binary pose `ArrayBuffer` via `onDataChannelBinary`, no Redis |
+| `game-sync` | Authoritative sim with binary snapshots; Redis when `AGENT_REDIS_URL` is set |
+| `voice-showcase` | Conversational landing demo |
+| `recording-consent` | Recording consent flow |
+| `positional-tts` | Orbiting TTS with per-client `setTtsPose` |
+| `spatial-showcase` | Orbit / soundboard / proximity via DataChannel commands |
+| `webhooks` | Inbound HMAC webhook handler, then DataChannel + speak fan-out |
+| `webhooks-redis` | Webhooks plus a Redis atomic counter |
+
+E2e-only templates live in the same folder (`echo-smoke`, `crash`, `game-sync-smoke`, `redis-sync`, `mix-smoke`) and are **not** accepted by `init`.
 
 Sync edits with the dashboard **Code** tab:
 
@@ -163,33 +187,32 @@ voicethere build upload -m "Add Spanish greeting and fix barge-in"
 
 **Promote** sets the **active** build in the VoiceThere control plane only. To roll out to cloud runners, run **`voicethere deploy --wait`** (promote + cluster rollout in one step).
 
-Pass the build UUID from **`build upload`** or **`build list`**, or omit it in an interactive terminal to pick from a list:
+Pass the build UUID from **`build upload --print-id`** or **`build list`**, or omit it in an interactive terminal to pick from a list:
 
 ```bash
 voicethere build list
-voicethere build promote <build-uuid>
-# interactive: voicethere build promote
+voicethere build promote
+# interactive picker when stdout is a TTY and you omit the id
 ```
 
 Typical release loop:
 
 ```bash
 npx @voicethere/agent build
-voicethere build upload -m "v0.2 — shorter silence timeout"
-voicethere build promote <build-uuid-from-upload-or-list>
+BUILD_ID=$(voicethere build upload -m "v0.2 — shorter silence timeout" --print-id)
+voicethere build promote "$BUILD_ID"
 ```
 
 ### 6. Clone an existing repo (config already in git)
 
 ```bash
-git clone <your-agent-repo>
-cd <your-agent-repo>
+git clone "$AGENT_REPO_URL"
+cd my-agent
 voicethere login --api-key "$VOICETHERE_API_KEY"
 
 npx @voicethere/agent build
-voicethere build upload
-voicethere build list
-voicethere build promote <build-uuid>
+BUILD_ID=$(voicethere build upload --print-id)
+voicethere build promote "$BUILD_ID"
 ```
 
 No `projects use` needed — the active project travels with the repo.
@@ -198,7 +221,7 @@ No `projects use` needed — the active project travels with the repo.
 
 ```bash
 voicethere projects list
-voicethere projects use <uuid> --slug my-agent --bundle dist/agent.js
+voicethere projects use "$PROJECT_ID" --slug my-agent --bundle dist/agent.js
 git add .voicethere/config.json && git commit -m "chore: use VoiceThere project"
 ```
 
@@ -212,13 +235,21 @@ voicethere projects show
 
 ### 8. CI / automation
 
+`--print-id` writes **only** the new build UUID to stdout. Progress stays on stderr, so command substitution is safe:
+
+```bash
+BUILD_ID=$(voicethere build upload --print-id)
+voicethere build promote "$BUILD_ID"
+# or: voicethere deploy --wait --build-id "$BUILD_ID"
+```
+
 **With committed `.voicethere/config.json`** (typical agent repo):
 
 ```bash
 voicethere login --api-key "$VOICETHERE_API_KEY"
 npx @voicethere/agent build
-voicethere build upload -m "$GITHUB_SHA — $GITHUB_REF_NAME" --skip-validate
-voicethere build promote <build-uuid-from-upload>
+BUILD_ID=$(voicethere build upload -m "$GITHUB_SHA — $GITHUB_REF_NAME" --skip-validate --print-id)
+voicethere build promote "$BUILD_ID"
 ```
 
 No `projects use` step — the config file is the active project.
@@ -227,10 +258,10 @@ No `projects use` step — the config file is the active project.
 
 ```bash
 voicethere login --api-key "$VOICETHERE_API_KEY"
-voicethere projects use <project-uuid>
+voicethere projects use "$PROJECT_ID"
 npx @voicethere/agent build
-voicethere build upload --skip-validate
-voicethere build promote <build-uuid-from-upload>
+BUILD_ID=$(voicethere build upload --skip-validate --print-id)
+voicethere build promote "$BUILD_ID"
 ```
 
 Other CI notes:
@@ -245,9 +276,8 @@ Split upload and promote across jobs if you want a human approval gate between t
 `voicethere deploy --wait` **promotes the build (when needed) and rolls out to cloud runners**, blocking until the deployment is active (or failed).
 
 ```bash
-voicethere build upload -m "v0.2 — shorter silence timeout"
-voicethere deploy --wait
-# or pin a build: voicethere deploy --wait --build-id <build-uuid>
+BUILD_ID=$(voicethere build upload -m "v0.2 — shorter silence timeout" --print-id)
+voicethere deploy --wait --build-id "$BUILD_ID"
 ```
 
 Use **`build promote`** alone when you only need to update the control plane (e.g. smoke tests); use **`deploy --wait`** for anything that must run on staging runners.
@@ -296,7 +326,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects voice catalog`                                                                         | show STT/TTS vendors and models                                                             |
 | `build list`                                                                                     | Builds for the active project                                                               |
 | `build validate [file]`                                                                          | Sandbox verify (default bundle from config)                                                 |
-| `build upload [file] [-m <msg>]`                                                                 | Upload to active project                                                                    |
+| `build upload [file] [-m <msg>] [--skip-validate] [--print-id]`                                  | Upload to active project; `--print-id` prints only the build UUID                       |
 | `build promote [buildId]`                                                                        | Promote on active project (picker when omitted in TTY)                                      |
 | `deploy [--wait] [--build-id]`                                                                   | Promote (if needed) + cloud rollout; `--wait` blocks                                        |
 
@@ -324,6 +354,12 @@ voicethere -v build upload
 # …plus [voicethere:verbose] api: https://…
 #           [voicethere:verbose] POST /projects/…/builds
 #           [voicethere:verbose] response: 201 (842ms)
+
+BUILD_ID=$(voicethere build upload --skip-validate --print-id)
+# stdout: 550e8400-e29b-41d4-a716-446655440000
+# stderr: [voicethere] Uploading agent bundle
+#         [voicethere] project: …
+#         [voicethere] bundle: …
 ```
 
 Global `-v` works on any subcommand: `voicethere -v projects list`.
@@ -397,7 +433,7 @@ Override the CDN origin with `VOICETHERE_WIDGET_CDN_BASE` or `--cdn-base` when n
 List recent voice sessions (orchestrator session id, status, billable seconds):
 
 ```bash
-voicethere sessions list <projectId> --start 0 --end 50
+voicethere sessions list "$PROJECT_ID" --start 0 --end 50
 # or with .voicethere/config.json:
 voicethere sessions list --start 0 --end 50
 ```
@@ -407,27 +443,27 @@ The API returns `{ sessions, start, end, count }` (max 50 rows per page). The CL
 After a call ends (runner keep-alive billing), fetch billable duration:
 
 ```bash
-voicethere sessions billing <orchestratorSessionId> --project <projectId>
-voicethere sessions billing <orchestratorSessionId> --json
+voicethere sessions billing "$SESSION_ID" --project "$PROJECT_ID"
+voicethere sessions billing "$SESSION_ID" --json
 ```
 
 Download session audio recording (poll until ready, then fetch signed `play_url`; storage is Opus/Ogg — use `--format` or the output extension to write WAV, MP3, or raw Opus):
 
 ```bash
-voicethere sessions recording <orchestratorSessionId> --project <projectId> --wait --output ./recording.wav
-voicethere sessions recording <orchestratorSessionId> --wait --output ./recording.mp3 --format mp3
-voicethere sessions recording <orchestratorSessionId> --wait --output ./recording.opus --format opus
-voicethere sessions recording <orchestratorSessionId> --wait --json
+voicethere sessions recording "$SESSION_ID" --project "$PROJECT_ID" --wait --output ./recording.wav
+voicethere sessions recording "$SESSION_ID" --wait --output ./recording.mp3 --format mp3
+voicethere sessions recording "$SESSION_ID" --wait --output ./recording.opus --format opus
+voicethere sessions recording "$SESSION_ID" --wait --json
 ```
 
 WAV/MP3 conversion uses a bundled `ffmpeg` binary shipped with the CLI. Override with `FFMPEG_PATH` if needed. JSON metadata always reports the API storage format (`opus`).
 
-`voicethere sessions recording get <sessionId>` is equivalent (get is the default subcommand).
+`voicethere sessions recording get "$SESSION_ID"` is equivalent (get is the default subcommand).
 
 Delete a session recording:
 
 ```bash
-voicethere sessions recording delete <orchestratorSessionId> --project <projectId>
+voicethere sessions recording delete "$SESSION_ID" --project "$PROJECT_ID"
 ```
 
 `--output` requires `--wait`. Default wait timeout is 120s (`--timeout-ms` or `VOICETHERE_SESSION_RECORDING_TIMEOUT_MS`).

@@ -79,6 +79,7 @@ import { runBuildValidate } from "./commands/build/validate.js";
 import { runDeploy } from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
 import { runInit } from "./commands/init.js";
+import { formatInitTemplateHelp } from "./lib/project-templates.js";
 import {
   runSourceDownload,
   runSourcePull,
@@ -1028,18 +1029,24 @@ async function main(): Promise<void> {
     .argument("[file]", "Bundle path (default: config bundle or dist/agent.js)")
     .option("-m, --message <text>", "Build label (like a git commit message)")
     .option("--skip-validate", "Upload without local sandbox verify")
+    .option(
+      "--print-id",
+      "Print only the new build UUID on stdout (for scripts / CI)",
+    )
     .action(
       async (
         file: string | undefined,
         options: {
           message?: string;
           skipValidate?: boolean;
+          printId?: boolean;
         },
       ) => {
         await runBuildUpload({
           file,
           message: options.message,
           skipValidate: options.skipValidate,
+          printId: options.printId,
         });
       },
     );
@@ -1266,7 +1273,7 @@ async function main(): Promise<void> {
     )
     .option(
       "--template <id>",
-      "Platform template (default: echo). Use blank for a minimal stub.",
+      "Product template from @voicethere/agent, or blank (default: echo)",
       "echo",
     )
     .option(
@@ -1275,6 +1282,7 @@ async function main(): Promise<void> {
     )
     .option("--no-install", "Skip npm install in the target directory")
     .option("--force", "Overwrite when package.json already exists")
+    .addHelpText("after", () => formatInitTemplateHelp())
     .action(
       async (
         dir: string,
