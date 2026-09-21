@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.5] - 2026-09-21
+
 ### Added
 
 - **`source download -o`** — download the saved Code workspace as a zip. `--project <uuid>` skips a linked `.voicethere/config.json` (same flag as `deploy`).
