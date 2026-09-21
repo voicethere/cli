@@ -162,7 +162,46 @@ describe("runInit", () => {
         localOnly: true,
         noInstall: true,
       }),
-    ).rejects.toThrow(/Unknown template "redis-sync"/);
+    ).rejects.toThrow(/e2e-only template/);
+  });
+
+  it("writes webhooks and webhooks-redis product templates", async () => {
+    const webhooksDir = join(tempDir, "webhooks-local");
+    await runInit({
+      dir: webhooksDir,
+      template: "webhooks",
+      localOnly: true,
+      noInstall: true,
+    });
+    await expect(
+      access(join(webhooksDir, "webhooks", "agent.ts")),
+    ).resolves.toBeUndefined();
+
+    const redisDir = join(tempDir, "webhooks-redis-local");
+    await runInit({
+      dir: redisDir,
+      template: "webhooks-redis",
+      localOnly: true,
+      noInstall: true,
+    });
+    const packageJson = JSON.parse(
+      await readFile(join(redisDir, "package.json"), "utf8"),
+    ) as { dependencies: Record<string, string> };
+    expect(packageJson.dependencies.ioredis).toBe("^5.11.1");
+  });
+
+  it("scaffolds every product template from the installed agent registry", async () => {
+    const { listTemplates } = await import("@voicethere/agent/templates");
+    for (const template of listTemplates({ kind: "product" })) {
+      const target = join(tempDir, `all-${template.id}`);
+      await runInit({
+        dir: target,
+        template: template.id,
+        localOnly: true,
+        noInstall: true,
+      });
+      await expect(access(join(target, template.entry))).resolves.toBeUndefined();
+    }
   });
 
   it("writes blank stub with agent.ts entry", async () => {

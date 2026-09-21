@@ -90,4 +90,20 @@ describe("runBuildValidate", () => {
     ]);
     expect(args.join(" ")).not.toContain("npx");
   });
+
+  it("reports success on stderr so stdout stays scriptable", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
+
+    try {
+      await runBuildValidate({ file: "dist/agent.js", logContext: false });
+
+      expect(console.log).not.toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalledWith(
+        "[voicethere] Bundle validated: /proj/dist/agent.js",
+      );
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
 });
