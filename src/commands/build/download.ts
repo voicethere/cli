@@ -9,6 +9,7 @@ import { resolveProjectId } from "../../lib/project-config.js";
 
 export interface BuildDownloadOptions {
   output: string;
+  projectId?: string;
   buildId?: string;
   startDir?: string;
 }
@@ -51,9 +52,12 @@ export async function runBuildDownload(
 
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
-  const project = await resolveProjectId(
-    options.startDir ? { startDir: options.startDir } : undefined,
-  );
+  const explicitId = options.projectId?.trim();
+  const project = explicitId
+    ? { projectId: explicitId }
+    : await resolveProjectId(
+        options.startDir ? { startDir: options.startDir } : undefined,
+      );
 
   const buildId =
     options.buildId?.trim() ||

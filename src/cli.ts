@@ -1061,16 +1061,24 @@ async function main(): Promise<void> {
     .command("download")
     .description("Download a compiled agent bundle as JavaScript")
     .requiredOption("-o, --output <path>", "Write bundle to this path")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .option(
       "--build-id <id>",
       "Build UUID (default: active or newest passed build)",
     )
-    .action(async (options: { output: string; buildId?: string }) => {
-      await runBuildDownload({
-        output: options.output,
-        buildId: options.buildId,
-      });
-    });
+    .action(
+      async (options: {
+        output: string;
+        project?: string;
+        buildId?: string;
+      }) => {
+        await runBuildDownload({
+          output: options.output,
+          projectId: options.project,
+          buildId: options.buildId,
+        });
+      },
+    );
 
   const apiKeys = program
     .command("api-keys")
@@ -1313,8 +1321,12 @@ async function main(): Promise<void> {
     .command("download")
     .description("Download saved Code workspace as a zip file")
     .requiredOption("-o, --output <path>", "Write zip to this path")
-    .action(async (options: { output: string }) => {
-      await runSourceDownload({ output: options.output });
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(async (options: { output: string; project?: string }) => {
+      await runSourceDownload({
+        output: options.output,
+        projectId: options.project,
+      });
     });
 
   program

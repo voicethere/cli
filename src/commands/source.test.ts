@@ -178,4 +178,23 @@ describe("source push/pull", () => {
     expect(getProjectSourceDownload).toHaveBeenCalledWith("proj-src");
     expect(await readFile(outPath)).toEqual(zip);
   });
+
+  it("source download uses explicit project id when provided", async () => {
+    const { resolveProjectId } = await import("../lib/project-config.js");
+    const zip = Buffer.from("PK\x03\x04explicit");
+    getProjectSourceDownload.mockResolvedValue({
+      bytes: zip,
+      filename: "other.zip",
+    });
+
+    const outPath = join(tempDir, "explicit.zip");
+    await runSourceDownload({
+      output: outPath,
+      projectId: "proj-explicit",
+    });
+
+    expect(resolveProjectId).not.toHaveBeenCalled();
+    expect(getProjectSourceDownload).toHaveBeenCalledWith("proj-explicit");
+    expect(await readFile(outPath)).toEqual(zip);
+  });
 });

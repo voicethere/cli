@@ -68,6 +68,7 @@ export async function runSourcePull(): Promise<void> {
 
 export interface SourceDownloadOptions {
   output: string;
+  projectId?: string;
   startDir?: string;
 }
 
@@ -83,9 +84,12 @@ export async function runSourceDownload(
 
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
-  const project = await resolveProjectId(
-    options.startDir ? { startDir: options.startDir } : undefined,
-  );
+  const explicitId = options.projectId?.trim();
+  const project = explicitId
+    ? { projectId: explicitId }
+    : await resolveProjectId(
+        options.startDir ? { startDir: options.startDir } : undefined,
+      );
 
   logStep("Downloading Code workspace zip from VoiceThere");
   const { bytes, filename } = await api.getProjectSourceDownload(

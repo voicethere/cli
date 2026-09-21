@@ -62,6 +62,30 @@ describe("build download", () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
+  it("uses explicit project id when provided with --build-id", async () => {
+    const { resolveProjectId } = await import("../../lib/project-config.js");
+    const js = Buffer.from("export default {};\n");
+    getProjectBuildDownload.mockResolvedValue({
+      bytes: js,
+      filename: "demo.js",
+    });
+
+    const outPath = join(tempDir, "agent.js");
+    await runBuildDownload({
+      output: outPath,
+      projectId: "proj-explicit",
+      buildId: "b-explicit",
+    });
+
+    expect(resolveProjectId).not.toHaveBeenCalled();
+    expect(getProjectBuildDownload).toHaveBeenCalledWith(
+      "proj-explicit",
+      "b-explicit",
+    );
+    expect(getProject).not.toHaveBeenCalled();
+    expect(await readFile(outPath)).toEqual(js);
+  });
+
   it("writes bundle bytes for an explicit build id", async () => {
     const js = Buffer.from("export default {};\n");
     getProjectBuildDownload.mockResolvedValue({
