@@ -45,6 +45,9 @@ describe("build download", () => {
     );
     await mkdir(tempDir, { recursive: true });
 
+    const { resolveProjectId } = await import("../../lib/project-config.js");
+    vi.mocked(resolveProjectId).mockClear();
+
     getProject.mockReset();
     listBuilds.mockReset();
     getProjectBuildDownload.mockReset();

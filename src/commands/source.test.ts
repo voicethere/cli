@@ -77,6 +77,9 @@ describe("source push/pull", () => {
       path: configPath,
     });
 
+    const { resolveProjectId } = await import("../lib/project-config.js");
+    vi.mocked(resolveProjectId).mockClear();
+
     getProjectSource.mockReset();
     getProjectSourceDownload.mockReset();
     putProjectSource.mockReset();
