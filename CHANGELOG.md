@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- **`source download -o`** — download the saved Code workspace as a zip. `--project <uuid>` skips a linked `.voicethere/config.json` (same flag as `deploy`).
+- **`build download -o`** — download a compiled `agent.js`. Defaults to the active build, else the newest passed build; `--build-id` and `--project` override.
+
 ## [0.14.4] - 2026-09-21
 
 ### Added
