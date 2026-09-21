@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.4] - 2026-09-21
+
 ### Added
 
 - **`build upload --print-id`** — print only the new build UUID on stdout (progress stays on stderr) so CI can `BUILD_ID=$(voicethere build upload --print-id)` and pass `"$BUILD_ID"` to `build promote` or `deploy --build-id`.
