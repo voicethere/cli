@@ -2,7 +2,12 @@ import { chmod, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, formatCliError, VoicethereApi } from "./api.js";
+import {
+  ApiError,
+  formatCliError,
+  parseContentDispositionFilename,
+  VoicethereApi,
+} from "./api.js";
 import {
   DEFAULT_API_BASE,
   getCredentialsPath,
@@ -151,6 +156,24 @@ describe("slugifyName", () => {
 
   it("strips leading and trailing punctuation", () => {
     expect(slugifyName("  --Hello World!!  ")).toBe("hello-world");
+  });
+});
+
+describe("parseContentDispositionFilename", () => {
+  it("parses quoted filename", () => {
+    expect(
+      parseContentDispositionFilename(
+        'attachment; filename="demo-source-r3.zip"',
+      ),
+    ).toBe("demo-source-r3.zip");
+  });
+
+  it("parses RFC 5987 filename*", () => {
+    expect(
+      parseContentDispositionFilename(
+        "attachment; filename*=UTF-8''my%20build.js",
+      ),
+    ).toBe("my build.js");
   });
 });
 
@@ -485,6 +508,71 @@ describe("VoicethereApi", () => {
     const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(url.toString()).toBe(`${apiBase}/projects/proj-1/promote`);
     expect(init.body).toBe(JSON.stringify({ build_id: "build-1" }));
+  });
+
+  it("downloads project source zip as binary", async () => {
+    const zipBytes = Buffer.from("PK\x03\x04fake-zip");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(zipBytes, {
+        status: 200,
+        headers: {
+          "Content-Disposition": 'attachment; filename="echo-source-r2.zip"',
+          "Content-Type": "application/zip",
+        },
+      }),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const result = await api.getProjectSourceDownload("proj-1");
+
+    expect(result.bytes.equals(zipBytes)).toBe(true);
+    expect(result.filename).toBe("echo-source-r2.zip");
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(url.toString()).toBe(`${apiBase}/projects/proj-1/source/download`);
+    expect(init.method).toBe("GET");
+  });
+
+  it("downloads project build bundle as binary", async () => {
+    const js = "export default function agent() {}";
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(js, {
+        status: 200,
+        headers: {
+          "Content-Disposition": 'attachment; filename="echo-build-build-9.js"',
+          "Content-Type": "application/javascript",
+        },
+      }),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    const result = await api.getProjectBuildDownload("proj-1", "build-9");
+
+    expect(result.bytes.toString("utf8")).toBe(js);
+    expect(result.filename).toBe("echo-build-build-9.js");
+    const [url] = fetchMock.mock.calls[0] as [URL];
+    expect(url.toString()).toBe(
+      `${apiBase}/projects/proj-1/builds/build-9/download`,
+    );
+  });
+
+  it("surfaces ApiError when source download returns 404 JSON", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: { message: "Project not found", code: "not_found" },
+        }),
+        { status: 404, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const api = new VoicethereApi(apiKey, apiBase);
+    await expect(api.getProjectSourceDownload("missing")).rejects.toMatchObject(
+      {
+        name: "ApiError",
+        status: 404,
+        message: "Project not found",
+      },
+    );
   });
 
   it("lists project environment variables", async () => {
