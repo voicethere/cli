@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.6] - 2026-09-27
+
 ### Changed
 
 - **`api-keys create --kind client`** — binds the key to the linked project in `.voicethere/config.json` when `--project-id` is omitted. `--project-id <uuid>` overrides that linked project.
