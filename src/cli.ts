@@ -1103,7 +1103,10 @@ async function main(): Promise<void> {
     .description("Create an API key (plaintext shown once)")
     .requiredOption("--name <name>", "Display name for the key")
     .option("--kind <kind>", "admin or client", "admin")
-    .option("--project-id <id>", "Project UUID (required for client keys)")
+    .option(
+      "--project-id <id>",
+      "Project UUID for a client key (overrides the linked project)",
+    )
     .option("--expires-in-days <days>", "Lifetime in days (max 180)", (value) =>
       Number.parseInt(value, 10),
     )

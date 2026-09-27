@@ -311,6 +311,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects list`                                                                                  | List org projects                                                                           |
 | `projects create <name> [--slug <slug>]`                                                         | Create project; uses it (writes config)                                                     |
 | `projects use [projectId]`                                                                       | Use project (picker or existing config when omitted)                                        |
+| `api-keys create --name <name> [--kind client] [--project-id <uuid>]`                            | Create an API key. Client keys use the linked project unless `--project-id` overrides it   |
 | `projects show`                                                                                  | Print `.voicethere/config.json`                                                             |
 | `projects delete [projectId] [--force] [--wait]`                                                 | Delete project + builds (type name to confirm, or `--force`; `--wait` polls async deletion) |
 | `projects settings list`                                                                         | set Runner pool settings (warm pool, scale-down)                                            |
