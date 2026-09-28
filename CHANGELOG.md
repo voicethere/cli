@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.7] - 2026-09-28
+
+### Added
+
+- **`@node-webrtc-rust/voice-catalog` 0.9.16** — `VoiceProviderId` and offline STT/TTS provider fallbacks come from the published allowlist (no duplicated id lists). Dashboard Voice settings remain the source of truth at runtime.
+
 ## [0.14.6] - 2026-09-27
 
 ### Changed
