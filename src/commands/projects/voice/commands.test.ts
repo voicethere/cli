@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import {
+  customerSttProviderIds,
+  customerTtsProviderIds,
+} from "@node-webrtc-rust/voice-catalog";
 
 import {
   assertSherpaModelId,
@@ -38,6 +42,8 @@ describe("projects voice set", () => {
   it("accepts new cloud vendors in offline DEFAULT sets", () => {
     expect(() => assertVoiceProviders("groq", "deepgram")).not.toThrow();
     expect(() => assertVoiceProviders("aws", "azure")).not.toThrow();
+    expect(customerSttProviderIds()).not.toContain("mock");
+    expect(customerTtsProviderIds()).not.toContain("mock");
   });
 });
 
