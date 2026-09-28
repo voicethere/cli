@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Fixed
+
+- **Node 22+ ESM login** — load `@node-webrtc-rust/voice-catalog` via `require()` so `voicethere login` and every other command work. The catalog’s ESM build still imports JSON without `with { type: "json" }` (`ERR_IMPORT_ATTRIBUTE_MISSING`).
+
 ## [0.14.7] - 2026-09-28
 
 ### Added

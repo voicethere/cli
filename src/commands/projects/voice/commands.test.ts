@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   customerSttProviderIds,
   customerTtsProviderIds,
-} from "@node-webrtc-rust/voice-catalog";
+} from "../../../lib/voice-catalog.js";
 
 import {
   assertSherpaModelId,

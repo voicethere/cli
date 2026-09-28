@@ -2,7 +2,7 @@ import type { VoiceProviderId } from "../../../lib/api.js";
 import {
   customerSttProviderIds,
   customerTtsProviderIds,
-} from "@node-webrtc-rust/voice-catalog";
+} from "../../../lib/voice-catalog.js";
 import { logStep, logVerbose } from "../../../lib/command-log.js";
 import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
