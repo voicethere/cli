@@ -1,4 +1,8 @@
 import type { VoiceProviderId } from "../../../lib/api.js";
+import {
+  customerSttProviderIds,
+  customerTtsProviderIds,
+} from "@node-webrtc-rust/voice-catalog";
 import { logStep, logVerbose } from "../../../lib/command-log.js";
 import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
@@ -30,21 +34,8 @@ export function assertVoiceProviders(
 }
 
 /** Fallback when catalog fetch is unavailable (tests / offline). */
-const DEFAULT_STT_PROVIDERS = new Set([
-  "local-sherpa",
-  "openai",
-  "deepgram",
-  "assemblyai",
-  "google",
-]);
-
-const DEFAULT_TTS_PROVIDERS = new Set([
-  "local-sherpa",
-  "openai",
-  "elevenlabs",
-  "cartesia",
-  "google",
-]);
+const DEFAULT_STT_PROVIDERS = new Set<string>(customerSttProviderIds());
+const DEFAULT_TTS_PROVIDERS = new Set<string>(customerTtsProviderIds());
 
 export interface ProjectsVoiceSetOptions {
   projectId?: string;

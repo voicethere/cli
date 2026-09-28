@@ -306,14 +306,12 @@ export interface UpdateProjectBillingSettingsInput {
   agent_log_overage_enabled?: boolean;
 }
 
-export type VoiceProviderId =
-  | "local-sherpa"
-  | "openai"
-  | "deepgram"
-  | "assemblyai"
-  | "google"
-  | "elevenlabs"
-  | "cartesia";
+import type { VoiceVendorId } from "@node-webrtc-rust/voice-catalog";
+
+/**
+ * Voice provider ids accepted by the CLI (excludes SDK `mock` vendor).
+ */
+export type VoiceProviderId = Exclude<VoiceVendorId, "mock">;
 
 export interface ProjectVoiceSettings {
   stt_provider: VoiceProviderId;
