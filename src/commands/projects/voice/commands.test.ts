@@ -34,6 +34,11 @@ describe("projects voice set", () => {
       ),
     ).toThrow(/Unknown STT provider/);
   });
+
+  it("accepts new cloud vendors in offline DEFAULT sets", () => {
+    expect(() => assertVoiceProviders("groq", "deepgram")).not.toThrow();
+    expect(() => assertVoiceProviders("aws", "azure")).not.toThrow();
+  });
 });
 
 describe("projects voice catalog helpers", () => {

@@ -313,7 +313,10 @@ export type VoiceProviderId =
   | "assemblyai"
   | "google"
   | "elevenlabs"
-  | "cartesia";
+  | "cartesia"
+  | "groq"
+  | "azure"
+  | "aws";
 
 export interface ProjectVoiceSettings {
   stt_provider: VoiceProviderId;

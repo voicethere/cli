@@ -36,6 +36,10 @@ const DEFAULT_STT_PROVIDERS = new Set([
   "deepgram",
   "assemblyai",
   "google",
+  "elevenlabs",
+  "groq",
+  "azure",
+  "aws",
 ]);
 
 const DEFAULT_TTS_PROVIDERS = new Set([
@@ -44,6 +48,10 @@ const DEFAULT_TTS_PROVIDERS = new Set([
   "elevenlabs",
   "cartesia",
   "google",
+  "deepgram",
+  "groq",
+  "azure",
+  "aws",
 ]);
 
 export interface ProjectsVoiceSetOptions {
