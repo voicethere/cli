@@ -306,6 +306,11 @@ export interface UpdateProjectBillingSettingsInput {
   agent_log_overage_enabled?: boolean;
 }
 
+/**
+ * After `@node-webrtc-rust/voice-catalog` is on npm, pin that version and replace
+ * duplicated vendor id / model / voice allowlists with catalog lookups. Do not use a
+ * `file:` sibling-worktree dependency. Do not depend on `@node-webrtc-rust/sdk`.
+ */
 export type VoiceProviderId =
   | "local-sherpa"
   | "openai"
