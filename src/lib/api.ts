@@ -348,7 +348,16 @@ export type VoiceAdvancedSettingKey =
   | "events.mode"
   | "noiseSuppression.enabled"
   | "languageId.enabled"
-  | "languageId.minSpeechMs";
+  | "languageId.minSpeechMs"
+  | "languageId.autoSwitch.enabled"
+  | "languageId.autoSwitch.replayLastUtterance"
+  | "languageId.autoSwitch.finalHoldMs"
+  | "languageId.autoSwitch.minDwellMs"
+  | "languageId.autoSwitch.confirmUtterances"
+  | "languageId.autoSwitch.switchVoice"
+  | "voice.expectedLanguages"
+  | "voice.allowedLanguages"
+  | "voice.profilesByLanguage";
 
 export interface ProjectVoiceAdvancedSettingsResponse {
   project_id: string;
