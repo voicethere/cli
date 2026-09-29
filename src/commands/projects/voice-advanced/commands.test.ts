@@ -48,7 +48,9 @@ describe("projects voice-advanced commands", () => {
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("noiseSuppression.enabled");
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.enabled");
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.minSpeechMs");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(24);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.autoSwitch.enabled");
+    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("voice.profilesByLanguage");
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(33);
   });
 
   it("lists resolved advanced settings", async () => {

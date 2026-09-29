@@ -22,6 +22,15 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "noiseSuppression.enabled",
   "languageId.enabled",
   "languageId.minSpeechMs",
+  "languageId.autoSwitch.enabled",
+  "languageId.autoSwitch.replayLastUtterance",
+  "languageId.autoSwitch.finalHoldMs",
+  "languageId.autoSwitch.minDwellMs",
+  "languageId.autoSwitch.confirmUtterances",
+  "languageId.autoSwitch.switchVoice",
+  "voice.expectedLanguages",
+  "voice.allowedLanguages",
+  "voice.profilesByLanguage",
   "events.mode",
 ] as const;
 
@@ -185,6 +194,61 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     description:
       "Minimum inbound PCM (ms) before first spoken-language identify per utterance (cloud default 2500).",
   },
+  "languageId.autoSwitch.enabled": {
+    type: "boolean",
+    default: false,
+    description:
+      "Auto-switch STT/TTS when LID disagrees with session language (default off; requires languageId.enabled).",
+  },
+  "languageId.autoSwitch.replayLastUtterance": {
+    type: "boolean",
+    default: true,
+    description: "Replay inbound PCM after STT swap when auto-switch is on.",
+  },
+  "languageId.autoSwitch.finalHoldMs": {
+    type: "number",
+    default: 500,
+    min: 0,
+    max: 1500,
+    description: "Max ms to hold user_speech_final while waiting for user_language.",
+  },
+  "languageId.autoSwitch.minDwellMs": {
+    type: "number",
+    default: 10_000,
+    min: 0,
+    max: 60_000,
+    description: "Ignore LID flips for this long after a committed auto-switch.",
+  },
+  "languageId.autoSwitch.confirmUtterances": {
+    type: "number",
+    default: 1,
+    min: 1,
+    max: 3,
+    description: "Consecutive user_language events required before auto-switch.",
+  },
+  "languageId.autoSwitch.switchVoice": {
+    type: "boolean",
+    default: true,
+    description: "Switch TTS as well as STT on auto-switch (false = STT only).",
+  },
+  "voice.expectedLanguages": {
+    type: "string",
+    default: "",
+    description:
+      "Comma-separated ISO 639-1 codes to pre-warm at deploy (empty = boot language).",
+  },
+  "voice.allowedLanguages": {
+    type: "string",
+    default: "",
+    description:
+      "Allowed languages for setVoiceLanguage / LID auto-switch (* = any for agent API).",
+  },
+  "voice.profilesByLanguage": {
+    type: "string",
+    default: "{}",
+    description:
+      'JSON presets per language, e.g. {"de":{"stt":"de","tts":"de-thorsten-high"}}.',
+  },
   "events.mode": {
     type: "string",
     default: "both",
@@ -225,6 +289,12 @@ export function formatVoiceAdvancedSettingsGroupHelp(): string {
     "  $ voicethere projects voice-advanced set vad.bargeIn.requireSttPartial false",
   );
   lines.push("  $ voicethere projects voice-advanced set tts.speed 0.9");
+  lines.push(
+    '  $ voicethere projects voice-advanced set voice.profilesByLanguage \'{"de":{"stt":"de","tts":"de-thorsten-high"}}\'',
+  );
+  lines.push(
+    "  $ voicethere projects voice-advanced set languageId.autoSwitch.enabled true",
+  );
   lines.push("  $ voicethere projects voice-advanced reset");
 
   return lines.join("\n");

@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.14.9] - 2026-09-29
+
+### Added
+
+- **`projects voice-advanced`** — `languageId.autoSwitch.*` settings: `enabled`, `replayLastUtterance`, `finalHoldMs`, `minDwellMs`, `confirmUtterances`, and `switchVoice` for LID-driven STT/TTS language switches (defaults match dashboard; `enabled` is off until set).
+- **`projects voice-advanced`** — `voice.expectedLanguages`, `voice.allowedLanguages`, and `voice.profilesByLanguage` (JSON per-language STT/TTS presets) for multi-language voice projects.
+
 ## [0.14.8] - 2026-09-28
 
 ### Fixed
