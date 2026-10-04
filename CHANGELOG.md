@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-04
+
 ### Added
 
 - **`projects voice-advanced`** — language switch wait settings: `languageId.autoSwitch.waitAudio` (`buffer_replay` or `first_utterance`), `languageId.autoSwitch.waitMessage.mode` (`end_of_utterance`, `immediate`, `off`), `languageId.autoSwitch.waitMessage.skipWhenReady`, and `languageId.autoSwitch.waitMessage.texts` (JSON map of language code to text, up to 300 characters each).
