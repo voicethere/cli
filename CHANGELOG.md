@@ -6,6 +6,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- **`projects voice-advanced`** — language switch wait settings: `languageId.autoSwitch.waitAudio` (`buffer_replay` or `first_utterance`), `languageId.autoSwitch.waitMessage.mode` (`end_of_utterance`, `immediate`, `off`), `languageId.autoSwitch.waitMessage.skipWhenReady`, and `languageId.autoSwitch.waitMessage.texts` (JSON map of language code to text, up to 300 characters each).
+- **`projects voice-advanced`** — `voice.profilesByLanguage` and the wait texts are checked for JSON shape before the request is sent.
+
+### Changed
+
+- **`projects voice-advanced`** — `languageId.autoSwitch.finalHoldMs` now defaults to 5000 and accepts up to 10000, matching the dashboard (it was 500 and 1500 in the CLI).
+
+### Removed
+
+- **`projects voice-advanced`** — `voice.expectedLanguages`. Only the boot STT/TTS pools start warm now. Pools for other languages start when a switch needs them, and the per-language models come from `voice.profilesByLanguage`.
+
 ## [0.14.9] - 2026-09-29
 
 ### Added

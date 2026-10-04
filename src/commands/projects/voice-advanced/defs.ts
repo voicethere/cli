@@ -1,3 +1,21 @@
+/**
+ * Keep in step with the platform (`platform/src/lib/voice/language-switch-wait-messages.ts`):
+ * same default texts, 300 character limit and ISO 639-1 keys. The server validates the
+ * languages and model ids; the CLI checks the shape so mistakes fail before the request.
+ */
+const WAIT_MESSAGE_MAX_CHARS = 300;
+const DEFAULT_WAIT_MESSAGES_JSON = JSON.stringify({
+  de: "Einen Moment bitte, ich wechsle gerade in Ihre Sprache.",
+  en: "Please wait a moment while I switch to your language.",
+  es: "Un momento, por favor, estoy cambiando a su idioma.",
+  fr: "Un instant, s'il vous plaît, je passe dans votre langue.",
+  it: "Un momento, per favore, sto passando alla sua lingua.",
+  nl: "Een ogenblik, ik schakel over naar uw taal.",
+  pl: "Chwileczkę, przełączam się na Twój język.",
+  pt: "Um momento, por favor, estou mudando para o seu idioma.",
+  ru: "Одну минуту, я перехожу на ваш язык.",
+});
+
 export const VOICE_ADVANCED_SETTING_KEYS = [
   "vad.enabled",
   "vad.provider",
@@ -28,7 +46,10 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "languageId.autoSwitch.minDwellMs",
   "languageId.autoSwitch.confirmUtterances",
   "languageId.autoSwitch.switchVoice",
-  "voice.expectedLanguages",
+  "languageId.autoSwitch.waitAudio",
+  "languageId.autoSwitch.waitMessage.mode",
+  "languageId.autoSwitch.waitMessage.skipWhenReady",
+  "languageId.autoSwitch.waitMessage.texts",
   "voice.allowedLanguages",
   "voice.profilesByLanguage",
   "events.mode",
@@ -207,47 +228,70 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
   },
   "languageId.autoSwitch.finalHoldMs": {
     type: "number",
-    default: 500,
+    default: 5000,
     min: 0,
-    max: 1500,
-    description: "Max ms to hold user_speech_final while waiting for user_language.",
+    max: 10_000,
+    description:
+      "Max ms to hold user_speech_final while waiting for user_language.",
   },
   "languageId.autoSwitch.minDwellMs": {
     type: "number",
     default: 10_000,
     min: 0,
     max: 60_000,
-    description: "Ignore LID flips for this long after a committed auto-switch.",
+    description:
+      "Ignore LID flips for this long after a committed auto-switch.",
   },
   "languageId.autoSwitch.confirmUtterances": {
     type: "number",
     default: 1,
     min: 1,
     max: 3,
-    description: "Consecutive user_language events required before auto-switch.",
+    description:
+      "Consecutive user_language events required before auto-switch.",
   },
   "languageId.autoSwitch.switchVoice": {
     type: "boolean",
     default: true,
     description: "Switch TTS as well as STT on auto-switch (false = STT only).",
   },
-  "voice.expectedLanguages": {
+  "languageId.autoSwitch.waitAudio": {
     type: "string",
-    default: "",
+    default: "buffer_replay",
+    enum: ["buffer_replay", "first_utterance"],
     description:
-      "Comma-separated ISO 639-1 codes to pre-warm at deploy (empty = boot language).",
+      "Speech kept while the new language loads: buffer_replay replays everything said during the wait, first_utterance replays only the utterance that triggered language ID.",
+  },
+  "languageId.autoSwitch.waitMessage.mode": {
+    type: "string",
+    default: "end_of_utterance",
+    enum: ["end_of_utterance", "immediate", "off"],
+    description:
+      "When the runner plays the wait message while the target language loads: end_of_utterance, immediate (can cut the caller off), or off.",
+  },
+  "languageId.autoSwitch.waitMessage.skipWhenReady": {
+    type: "boolean",
+    default: true,
+    description:
+      "Skip the wait message when the target language is already running.",
+  },
+  "languageId.autoSwitch.waitMessage.texts": {
+    type: "string",
+    default: DEFAULT_WAIT_MESSAGES_JSON,
+    description:
+      'JSON map of ISO 639-1 code to wait text (max 300 chars each), spoken in the language being left, e.g. {"en":"One moment, switching to your language."}.',
   },
   "voice.allowedLanguages": {
     type: "string",
     default: "",
     description:
-      "Allowed languages for setVoiceLanguage / LID auto-switch (* = any for agent API).",
+      "Allowed languages for setVoiceLanguage / LID auto-switch (* = any for agent API). Empty = boot language plus the languages in voice.profilesByLanguage.",
   },
   "voice.profilesByLanguage": {
     type: "string",
     default: "{}",
     description:
-      'JSON presets per language, e.g. {"de":{"stt":"de","tts":"de-thorsten-high"}}.',
+      'STT/TTS model per language used after a switch, as JSON, e.g. {"de":{"stt":"de","tts":"de-thorsten-high"}}.',
   },
   "events.mode": {
     type: "string",
@@ -295,9 +339,76 @@ export function formatVoiceAdvancedSettingsGroupHelp(): string {
   lines.push(
     "  $ voicethere projects voice-advanced set languageId.autoSwitch.enabled true",
   );
+  lines.push(
+    "  $ voicethere projects voice-advanced set languageId.autoSwitch.waitMessage.mode immediate",
+  );
+  lines.push(
+    '  $ voicethere projects voice-advanced set languageId.autoSwitch.waitMessage.texts \'{"en":"One moment, switching to your language."}\'',
+  );
   lines.push("  $ voicethere projects voice-advanced reset");
 
   return lines.join("\n");
+}
+
+const ISO_LANG_RE = /^[a-z]{2}$/;
+
+function parseJsonObject(key: string, raw: string): Record<string, unknown> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`${key} must be a valid JSON object`);
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`${key} must be a JSON object keyed by language code`);
+  }
+  return parsed as Record<string, unknown>;
+}
+
+function validateWaitMessageTexts(raw: string): string {
+  const key = "languageId.autoSwitch.waitMessage.texts";
+  const obj = parseJsonObject(key, raw || "{}");
+  for (const [lang, text] of Object.entries(obj)) {
+    if (!ISO_LANG_RE.test(lang)) {
+      throw new Error(
+        `${key}: invalid language key "${lang}" (use ISO 639-1, e.g. en)`,
+      );
+    }
+    if (typeof text !== "string" || !text.trim()) {
+      throw new Error(`${key}.${lang} must be a non-empty string`);
+    }
+    if ([...text.trim()].length > WAIT_MESSAGE_MAX_CHARS) {
+      throw new Error(
+        `${key}.${lang} must be at most ${WAIT_MESSAGE_MAX_CHARS} characters`,
+      );
+    }
+  }
+  return raw || "{}";
+}
+
+function validateProfilesByLanguage(raw: string): string {
+  const key = "voice.profilesByLanguage";
+  const obj = parseJsonObject(key, raw || "{}");
+  for (const [lang, entry] of Object.entries(obj)) {
+    if (!ISO_LANG_RE.test(lang)) {
+      throw new Error(
+        `${key}: invalid language key "${lang}" (use ISO 639-1, e.g. en)`,
+      );
+    }
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error(`${key}.${lang} must be an object`);
+    }
+    const row = entry as Record<string, unknown>;
+    for (const field of ["stt", "tts", "voice", "sttVendor", "ttsVendor"]) {
+      if (row[field] !== undefined && typeof row[field] !== "string") {
+        throw new Error(`${key}.${lang}.${field} must be a string`);
+      }
+    }
+    if (Object.keys(row).length === 0) {
+      throw new Error(`${key}.${lang} is empty`);
+    }
+  }
+  return raw || "{}";
 }
 
 export function parseVoiceAdvancedSettingValue(
@@ -310,6 +421,12 @@ export function parseVoiceAdvancedSettingValue(
     const trimmed = raw.trim();
     if (def.enum && !def.enum.includes(trimmed)) {
       throw new Error(`${key} must be one of: ${def.enum.join(", ")}`);
+    }
+    if (key === "languageId.autoSwitch.waitMessage.texts") {
+      return validateWaitMessageTexts(trimmed);
+    }
+    if (key === "voice.profilesByLanguage") {
+      return validateProfilesByLanguage(trimmed);
     }
     return trimmed;
   }
@@ -338,11 +455,35 @@ export function parseVoiceAdvancedSettingValue(
   return def.type === "number" && keepFractional ? n : Math.floor(n);
 }
 
+/**
+ * The API returns the wait message settings flat under `languageId.autoSwitch`
+ * (`waitMessageMode`), while the setting keys use a dotted `waitMessage.` prefix.
+ */
+const RESOLVED_PATH_OVERRIDES: Partial<
+  Record<VoiceAdvancedSettingKey, string[]>
+> = {
+  "languageId.autoSwitch.waitMessage.mode": [
+    "languageId",
+    "autoSwitch",
+    "waitMessageMode",
+  ],
+  "languageId.autoSwitch.waitMessage.skipWhenReady": [
+    "languageId",
+    "autoSwitch",
+    "waitMessageSkipWhenReady",
+  ],
+  "languageId.autoSwitch.waitMessage.texts": [
+    "languageId",
+    "autoSwitch",
+    "waitMessageTexts",
+  ],
+};
+
 function getNestedValue(
   settings: Record<string, unknown>,
   key: VoiceAdvancedSettingKey,
 ): unknown {
-  const parts = key.split(".");
+  const parts = RESOLVED_PATH_OVERRIDES[key] ?? key.split(".");
   let current: unknown = settings;
   for (const part of parts) {
     if (!current || typeof current !== "object") {

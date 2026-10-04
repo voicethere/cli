@@ -355,7 +355,10 @@ export type VoiceAdvancedSettingKey =
   | "languageId.autoSwitch.minDwellMs"
   | "languageId.autoSwitch.confirmUtterances"
   | "languageId.autoSwitch.switchVoice"
-  | "voice.expectedLanguages"
+  | "languageId.autoSwitch.waitAudio"
+  | "languageId.autoSwitch.waitMessage.mode"
+  | "languageId.autoSwitch.waitMessage.skipWhenReady"
+  | "languageId.autoSwitch.waitMessage.texts"
   | "voice.allowedLanguages"
   | "voice.profilesByLanguage";
 
