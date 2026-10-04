@@ -270,26 +270,25 @@ describe("projects voice-advanced commands", () => {
       await expect(set(key, '{"de":{}}')).rejects.toThrow(/is empty/);
     });
 
-    it("sets languageId.continuous as a boolean and rejects other values", async () => {
-      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.continuous");
+    it("sets languageId.timing to each allowed value and rejects others", async () => {
+      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.timing");
+      expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
+        "languageId.continuous",
+      );
       setProjectVoiceAdvancedSetting.mockResolvedValue({
         project_id: "proj-1",
         settings: {},
       });
-      await set("languageId.continuous", "false");
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-        "proj-1",
-        "languageId.continuous",
-        false,
-      );
-      await set("languageId.continuous", "yes");
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-        "proj-1",
-        "languageId.continuous",
-        true,
-      );
-      await expect(set("languageId.continuous", "sometimes")).rejects.toThrow(
-        /Invalid boolean/,
+      for (const value of ["early", "end_of_utterance", "continuous"]) {
+        await set("languageId.timing", value);
+        expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+          "proj-1",
+          "languageId.timing",
+          value,
+        );
+      }
+      await expect(set("languageId.timing", "true")).rejects.toThrow(
+        /must be one of: early, end_of_utterance, continuous/,
       );
     });
 
@@ -301,8 +300,8 @@ describe("projects voice-advanced commands", () => {
         min: 1000,
         max: 5000,
       });
-      expect(VOICE_ADVANCED_SETTING_DEFS["languageId.continuous"].default).toBe(
-        true,
+      expect(VOICE_ADVANCED_SETTING_DEFS["languageId.timing"].default).toBe(
+        "early",
       );
       setProjectVoiceAdvancedSetting.mockResolvedValue({
         project_id: "proj-1",

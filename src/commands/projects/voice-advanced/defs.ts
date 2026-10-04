@@ -40,7 +40,7 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "noiseSuppression.enabled",
   "languageId.enabled",
   "languageId.minSpeechMs",
-  "languageId.continuous",
+  "languageId.timing",
   "languageId.autoSwitch.enabled",
   "languageId.autoSwitch.replayLastUtterance",
   "languageId.autoSwitch.finalHoldMs",
@@ -216,11 +216,12 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     description:
       "Minimum inbound PCM (ms) before first spoken-language identify per utterance (cloud default 1500). Shorter utterances skip language ID.",
   },
-  "languageId.continuous": {
-    type: "boolean",
-    default: true,
+  "languageId.timing": {
+    type: "string",
+    default: "early",
+    enum: ["early", "end_of_utterance", "continuous"],
     description:
-      "Identify the spoken language while the caller is still speaking, as soon as minSpeechMs of speech is buffered (false = once at the end of each utterance). Uses extra CPU.",
+      "When to identify the spoken language: early (once, as soon as minSpeechMs is buffered, while the caller talks), end_of_utterance (once, after the caller stops) or continuous (repeated passes; most CPU, turn off if agent audio gets choppy).",
   },
   "languageId.autoSwitch.enabled": {
     type: "boolean",

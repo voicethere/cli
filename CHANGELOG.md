@@ -9,7 +9,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 ### Added
 
 - **`projects voice-advanced`** — language switch wait settings: `languageId.autoSwitch.waitAudio` (`buffer_replay` or `first_utterance`), `languageId.autoSwitch.waitMessage.mode` (`end_of_utterance`, `immediate`, `off`), `languageId.autoSwitch.waitMessage.skipWhenReady`, and `languageId.autoSwitch.waitMessage.texts` (JSON map of language code to text, up to 300 characters each).
-- **`projects voice-advanced`** — `languageId.continuous` (default `true`): identify the spoken language while the caller is still speaking.
+- **`projects voice-advanced`** — `languageId.timing` (`early`, `end_of_utterance`, `continuous`; default `early`): when the spoken language is identified. `early` runs once as soon as `minSpeechMs` of speech is buffered, while the caller is still talking.
 - **`projects voice-advanced`** — `voice.profilesByLanguage` and the wait texts are checked for JSON shape before the request is sent.
 
 ### Changed
