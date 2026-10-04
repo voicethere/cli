@@ -349,6 +349,7 @@ export type VoiceAdvancedSettingKey =
   | "noiseSuppression.enabled"
   | "languageId.enabled"
   | "languageId.minSpeechMs"
+  | "languageId.continuous"
   | "languageId.autoSwitch.enabled"
   | "languageId.autoSwitch.replayLastUtterance"
   | "languageId.autoSwitch.finalHoldMs"

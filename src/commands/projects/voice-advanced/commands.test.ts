@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { VOICE_ADVANCED_SETTING_KEYS } from "./defs.js";
+import {
+  VOICE_ADVANCED_SETTING_DEFS,
+  VOICE_ADVANCED_SETTING_KEYS,
+} from "./defs.js";
 import { runProjectsVoiceAdvancedList } from "./list.js";
 import {
   runProjectsVoiceAdvancedReset,
@@ -52,7 +55,7 @@ describe("projects voice-advanced commands", () => {
       "languageId.autoSwitch.enabled",
     );
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("voice.profilesByLanguage");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(36);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(37);
     expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
       "voice.expectedLanguages",
     );
@@ -265,6 +268,49 @@ describe("projects voice-advanced commands", () => {
         /must be a string/,
       );
       await expect(set(key, '{"de":{}}')).rejects.toThrow(/is empty/);
+    });
+
+    it("sets languageId.continuous as a boolean and rejects other values", async () => {
+      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.continuous");
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      await set("languageId.continuous", "false");
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        "languageId.continuous",
+        false,
+      );
+      await set("languageId.continuous", "yes");
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        "languageId.continuous",
+        true,
+      );
+      await expect(set("languageId.continuous", "sometimes")).rejects.toThrow(
+        /Invalid boolean/,
+      );
+    });
+
+    it("defaults minSpeechMs to 1500 within 1000–5000", async () => {
+      expect(
+        VOICE_ADVANCED_SETTING_DEFS["languageId.minSpeechMs"],
+      ).toMatchObject({
+        default: 1500,
+        min: 1000,
+        max: 5000,
+      });
+      expect(VOICE_ADVANCED_SETTING_DEFS["languageId.continuous"].default).toBe(
+        true,
+      );
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      await expect(set("languageId.minSpeechMs", "999")).rejects.toThrow(
+        /between 1000 and 5000/,
+      );
     });
 
     it("accepts finalHoldMs up to 10000 like the dashboard", async () => {

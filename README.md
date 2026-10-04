@@ -397,6 +397,7 @@ Spoken-language auto-switch and its wait behavior are advanced voice settings. T
 ```bash
 voicethere projects voice-advanced list
 voicethere projects voice-advanced set languageId.autoSwitch.enabled true
+voicethere projects voice-advanced set languageId.continuous false
 voicethere projects voice-advanced set languageId.autoSwitch.waitAudio first_utterance
 voicethere projects voice-advanced set languageId.autoSwitch.waitMessage.mode immediate
 voicethere projects voice-advanced set languageId.autoSwitch.waitMessage.skipWhenReady false
@@ -406,6 +407,7 @@ voicethere projects voice-advanced set voice.profilesByLanguage '{"de":{"stt":"d
 
 | Key                                               | Values                                         | Default            |
 | ------------------------------------------------- | ---------------------------------------------- | ------------------ |
+| `languageId.continuous`                           | bool                                          | `true`             |
 | `languageId.autoSwitch.waitAudio`                 | `buffer_replay`, `first_utterance`             | `buffer_replay`    |
 | `languageId.autoSwitch.waitMessage.mode`          | `end_of_utterance`, `immediate`, `off`         | `end_of_utterance` |
 | `languageId.autoSwitch.waitMessage.skipWhenReady` | bool                                           | `true`             |
