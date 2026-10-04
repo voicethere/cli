@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { VOICE_ADVANCED_SETTING_KEYS } from "./defs.js";
+import {
+  VOICE_ADVANCED_SETTING_DEFS,
+  VOICE_ADVANCED_SETTING_KEYS,
+} from "./defs.js";
 import { runProjectsVoiceAdvancedList } from "./list.js";
 import {
   runProjectsVoiceAdvancedReset,
@@ -48,9 +51,22 @@ describe("projects voice-advanced commands", () => {
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("noiseSuppression.enabled");
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.enabled");
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.minSpeechMs");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.autoSwitch.enabled");
+    expect(VOICE_ADVANCED_SETTING_KEYS).toContain(
+      "languageId.autoSwitch.enabled",
+    );
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("voice.profilesByLanguage");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(33);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(37);
+    expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
+      "voice.expectedLanguages",
+    );
+    for (const key of [
+      "languageId.autoSwitch.waitAudio",
+      "languageId.autoSwitch.waitMessage.mode",
+      "languageId.autoSwitch.waitMessage.skipWhenReady",
+      "languageId.autoSwitch.waitMessage.texts",
+    ]) {
+      expect(VOICE_ADVANCED_SETTING_KEYS).toContain(key);
+    }
   });
 
   it("lists resolved advanced settings", async () => {
@@ -139,6 +155,202 @@ describe("projects voice-advanced commands", () => {
     await expect(
       runProjectsVoiceAdvancedSet({ name: "tts.speed", value: "0.1" }),
     ).rejects.toThrow(/between 0\.2 and 2/);
+  });
+
+  describe("language switch wait settings", () => {
+    const set = (name: string, value: string) =>
+      runProjectsVoiceAdvancedSet({ name, value });
+
+    it("rejects the removed voice.expectedLanguages key", async () => {
+      await expect(set("voice.expectedLanguages", "en,de")).rejects.toThrow(
+        /Unknown voice advanced setting voice\.expectedLanguages/,
+      );
+    });
+
+    it("accepts each waitAudio value and rejects others", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      for (const value of ["buffer_replay", "first_utterance"]) {
+        await set("languageId.autoSwitch.waitAudio", value);
+        expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+          "proj-1",
+          "languageId.autoSwitch.waitAudio",
+          value,
+        );
+      }
+      await expect(
+        set("languageId.autoSwitch.waitAudio", "all"),
+      ).rejects.toThrow(/must be one of: buffer_replay, first_utterance/);
+    });
+
+    it("accepts each waitMessage.mode value and rejects others", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      for (const value of ["end_of_utterance", "immediate", "off"]) {
+        await set("languageId.autoSwitch.waitMessage.mode", value);
+        expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+          "proj-1",
+          "languageId.autoSwitch.waitMessage.mode",
+          value,
+        );
+      }
+      await expect(
+        set("languageId.autoSwitch.waitMessage.mode", "later"),
+      ).rejects.toThrow(/must be one of: end_of_utterance, immediate, off/);
+    });
+
+    it("parses waitMessage.skipWhenReady as a boolean", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      await set("languageId.autoSwitch.waitMessage.skipWhenReady", "no");
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        "languageId.autoSwitch.waitMessage.skipWhenReady",
+        false,
+      );
+      await expect(
+        set("languageId.autoSwitch.waitMessage.skipWhenReady", "maybe"),
+      ).rejects.toThrow(/Invalid boolean/);
+    });
+
+    it("validates waitMessage.texts JSON", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      const key = "languageId.autoSwitch.waitMessage.texts";
+      await set(key, '{"en":"One moment, switching."}');
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        key,
+        '{"en":"One moment, switching."}',
+      );
+      await expect(set(key, "nope")).rejects.toThrow(/valid JSON object/);
+      await expect(set(key, "[]")).rejects.toThrow(
+        /JSON object keyed by language code/,
+      );
+      await expect(set(key, '{"english":"x"}')).rejects.toThrow(
+        /invalid language key/,
+      );
+      await expect(set(key, '{"en":3}')).rejects.toThrow(/non-empty string/);
+      await expect(set(key, '{"en":" "}')).rejects.toThrow(/non-empty string/);
+      await expect(
+        set(key, JSON.stringify({ en: "a".repeat(301) })),
+      ).rejects.toThrow(/at most 300 characters/);
+    });
+
+    it("validates voice.profilesByLanguage shape", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      const key = "voice.profilesByLanguage";
+      await set(key, '{"de":{"stt":"de","tts":"de-thorsten-high"}}');
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        key,
+        '{"de":{"stt":"de","tts":"de-thorsten-high"}}',
+      );
+      await expect(set(key, "{")).rejects.toThrow(/valid JSON object/);
+      await expect(set(key, '{"german":{"stt":"de"}}')).rejects.toThrow(
+        /invalid language key/,
+      );
+      await expect(set(key, '{"de":"de"}')).rejects.toThrow(
+        /must be an object/,
+      );
+      await expect(set(key, '{"de":{"stt":5}}')).rejects.toThrow(
+        /must be a string/,
+      );
+      await expect(set(key, '{"de":{}}')).rejects.toThrow(/is empty/);
+    });
+
+    it("sets languageId.timing to each allowed value and rejects others", async () => {
+      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.timing");
+      expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
+        "languageId.continuous",
+      );
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      for (const value of ["early", "end_of_utterance", "continuous"]) {
+        await set("languageId.timing", value);
+        expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+          "proj-1",
+          "languageId.timing",
+          value,
+        );
+      }
+      await expect(set("languageId.timing", "true")).rejects.toThrow(
+        /must be one of: early, end_of_utterance, continuous/,
+      );
+    });
+
+    it("defaults minSpeechMs to 1500 within 1000–5000", async () => {
+      expect(
+        VOICE_ADVANCED_SETTING_DEFS["languageId.minSpeechMs"],
+      ).toMatchObject({
+        default: 1500,
+        min: 1000,
+        max: 5000,
+      });
+      expect(VOICE_ADVANCED_SETTING_DEFS["languageId.timing"].default).toBe(
+        "early",
+      );
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      await expect(set("languageId.minSpeechMs", "999")).rejects.toThrow(
+        /between 1000 and 5000/,
+      );
+    });
+
+    it("accepts finalHoldMs up to 10000 like the dashboard", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      await set("languageId.autoSwitch.finalHoldMs", "10000");
+      await expect(
+        set("languageId.autoSwitch.finalHoldMs", "10001"),
+      ).rejects.toThrow(/between 0 and 10000/);
+    });
+
+    it("lists the wait settings from the flat API shape", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {
+          languageId: {
+            autoSwitch: {
+              waitAudio: "first_utterance",
+              waitMessageMode: "off",
+              waitMessageSkipWhenReady: false,
+              waitMessageTexts: '{"en":"Hi."}',
+            },
+          },
+        },
+      });
+      await runProjectsVoiceAdvancedList({});
+      expect(console.log).toHaveBeenCalledWith(
+        "languageId.autoSwitch.waitAudio=first_utterance",
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        "languageId.autoSwitch.waitMessage.mode=off",
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        "languageId.autoSwitch.waitMessage.skipWhenReady=false",
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        'languageId.autoSwitch.waitMessage.texts={"en":"Hi."}',
+      );
+    });
   });
 
   it("resets advanced settings", async () => {

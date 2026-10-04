@@ -390,6 +390,32 @@ voicethere projects session-settings set error_message "Sorry, something went wr
 
 Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
 
+## Language switch settings
+
+Spoken-language auto-switch and its wait behavior are advanced voice settings. They apply on the next **`voicethere deploy --wait`**. When the caller switches to a language whose models are not running yet, the runner starts them on demand and can play a short wait message in the language being left.
+
+```bash
+voicethere projects voice-advanced list
+voicethere projects voice-advanced set languageId.autoSwitch.enabled true
+voicethere projects voice-advanced set languageId.timing end_of_utterance
+voicethere projects voice-advanced set languageId.autoSwitch.waitAudio first_utterance
+voicethere projects voice-advanced set languageId.autoSwitch.waitMessage.mode immediate
+voicethere projects voice-advanced set languageId.autoSwitch.waitMessage.skipWhenReady false
+voicethere projects voice-advanced set languageId.autoSwitch.waitMessage.texts '{"en":"One moment, switching to your language."}'
+voicethere projects voice-advanced set voice.profilesByLanguage '{"de":{"stt":"de","tts":"de-thorsten-high"}}'
+```
+
+| Key                                               | Values                                         | Default            |
+| ------------------------------------------------- | ---------------------------------------------- | ------------------ |
+| `languageId.timing`                               | `early`, `end_of_utterance`, `continuous`     | `early`            |
+| `languageId.autoSwitch.waitAudio`                 | `buffer_replay`, `first_utterance`             | `buffer_replay`    |
+| `languageId.autoSwitch.waitMessage.mode`          | `end_of_utterance`, `immediate`, `off`         | `end_of_utterance` |
+| `languageId.autoSwitch.waitMessage.skipWhenReady` | bool                                           | `true`             |
+| `languageId.autoSwitch.waitMessage.texts`         | JSON map of language code to text, 300 chars   | built-in texts     |
+| `voice.profilesByLanguage`                        | JSON map of language code to `stt` / `tts` ids | `{}`               |
+
+`voice.expectedLanguages` no longer exists. Only the boot STT/TTS pools start warm.
+
 ## Billing settings
 
 Per-project metered overage, conversation/agent-log overage toggles, and optional spend cap. Matches dashboard **Billing** / subscriptions permissions.

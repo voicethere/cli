@@ -349,13 +349,17 @@ export type VoiceAdvancedSettingKey =
   | "noiseSuppression.enabled"
   | "languageId.enabled"
   | "languageId.minSpeechMs"
+  | "languageId.timing"
   | "languageId.autoSwitch.enabled"
   | "languageId.autoSwitch.replayLastUtterance"
   | "languageId.autoSwitch.finalHoldMs"
   | "languageId.autoSwitch.minDwellMs"
   | "languageId.autoSwitch.confirmUtterances"
   | "languageId.autoSwitch.switchVoice"
-  | "voice.expectedLanguages"
+  | "languageId.autoSwitch.waitAudio"
+  | "languageId.autoSwitch.waitMessage.mode"
+  | "languageId.autoSwitch.waitMessage.skipWhenReady"
+  | "languageId.autoSwitch.waitMessage.texts"
   | "voice.allowedLanguages"
   | "voice.profilesByLanguage";
 
