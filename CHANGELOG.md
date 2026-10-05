@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-10-05
+
 ### Added
 
 - **`projects voice-advanced`** — `languageId.autoSwitch.readyMessage.minSwitchMs` (0–15000 ms, default 2000, 0 = off) and `languageId.autoSwitch.readyMessage.texts` (JSON map of language code to text, up to 300 characters each) for the short "Okay, let's continue in <language>." message after a slow language switch.
