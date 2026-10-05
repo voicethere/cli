@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- **`projects voice-advanced`** — `languageId.autoSwitch.readyMessage.minSwitchMs` (0–15000 ms, default 2000, 0 = off) and `languageId.autoSwitch.readyMessage.texts` (JSON map of language code to text, up to 300 characters each) for the short "Okay, let's continue in <language>." message after a slow language switch.
+
+### Changed
+
+- **Naming** — the built-in speech vendor is now called "VoiceThere" in help and output (`voice catalog` headings, `--stt-model` / `--tts-model` help, model prompts). The vendor id stays `local-sherpa`.
+- **`projects voice-advanced`** — updated descriptions for `languageId.autoSwitch.waitMessage.mode` (whether the switch may interrupt the caller) and `languageId.autoSwitch.enabled` (requires VoiceThere for both speech-to-text and text-to-speech).
+
 ## [0.15.0] - 2026-10-04
 
 ### Added

@@ -51,6 +51,8 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "languageId.autoSwitch.waitMessage.mode",
   "languageId.autoSwitch.waitMessage.skipWhenReady",
   "languageId.autoSwitch.waitMessage.texts",
+  "languageId.autoSwitch.readyMessage.minSwitchMs",
+  "languageId.autoSwitch.readyMessage.texts",
   "voice.allowedLanguages",
   "voice.profilesByLanguage",
   "events.mode",
@@ -186,7 +188,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     min: 0.2,
     max: 2,
     description:
-      "Sherpa Piper speaking-rate multiplier for local-sherpa TTS (1.0 = model default).",
+      "Piper speaking-rate multiplier for VoiceThere TTS (1.0 = model default).",
   },
   "tts.postUtteranceSilenceMs": {
     type: "number",
@@ -206,7 +208,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     type: "boolean",
     default: true,
     description:
-      "Enable spoken language identification (Sherpa Whisper tiny) on voice deploys.",
+      "Enable spoken language identification (VoiceThere Whisper tiny) on voice deploys.",
   },
   "languageId.minSpeechMs": {
     type: "number",
@@ -227,7 +229,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     type: "boolean",
     default: false,
     description:
-      "Auto-switch STT/TTS when LID disagrees with session language (default off; requires languageId.enabled).",
+      "Auto-switch STT/TTS when LID disagrees with session language (default off; requires languageId.enabled). Requires VoiceThere (local-sherpa) for both speech-to-text and text-to-speech.",
   },
   "languageId.autoSwitch.replayLastUtterance": {
     type: "boolean",
@@ -275,7 +277,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     default: "end_of_utterance",
     enum: ["end_of_utterance", "immediate", "off"],
     description:
-      "When the runner plays the wait message while the target language loads: end_of_utterance, immediate (can cut the caller off), or off.",
+      "Whether the switch may interrupt the caller: end_of_utterance (default) waits until the caller stops, immediate speaks at once and cannot be interrupted, off plays no wait message.",
   },
   "languageId.autoSwitch.waitMessage.skipWhenReady": {
     type: "boolean",
@@ -288,6 +290,20 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     default: DEFAULT_WAIT_MESSAGES_JSON,
     description:
       'JSON map of ISO 639-1 code to wait text (max 300 chars each), spoken in the language being left, e.g. {"en":"One moment, switching to your language."}.',
+  },
+  "languageId.autoSwitch.readyMessage.minSwitchMs": {
+    type: "number",
+    default: 2000,
+    min: 0,
+    max: 15_000,
+    description:
+      "Play a short 'Okay, let's continue in <language>.' in the new voice when a language switch took at least this long and no wait message was played. 0 turns it off.",
+  },
+  "languageId.autoSwitch.readyMessage.texts": {
+    type: "string",
+    default: "{}",
+    description:
+      'Per-language ready message text, e.g. {"de":"Okay, machen wir auf Deutsch weiter."}. Unset languages use the built-in text.',
   },
   "voice.allowedLanguages": {
     type: "string",
@@ -373,8 +389,10 @@ function parseJsonObject(key: string, raw: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
-function validateWaitMessageTexts(raw: string): string {
-  const key = "languageId.autoSwitch.waitMessage.texts";
+function validateWaitMessageTexts(
+  raw: string,
+  key = "languageId.autoSwitch.waitMessage.texts",
+): string {
   const obj = parseJsonObject(key, raw || "{}");
   for (const [lang, text] of Object.entries(obj)) {
     if (!ISO_LANG_RE.test(lang)) {
@@ -433,6 +451,9 @@ export function parseVoiceAdvancedSettingValue(
     if (key === "languageId.autoSwitch.waitMessage.texts") {
       return validateWaitMessageTexts(trimmed);
     }
+    if (key === "languageId.autoSwitch.readyMessage.texts") {
+      return validateWaitMessageTexts(trimmed, key);
+    }
     if (key === "voice.profilesByLanguage") {
       return validateProfilesByLanguage(trimmed);
     }
@@ -465,7 +486,7 @@ export function parseVoiceAdvancedSettingValue(
 
 /**
  * The API returns the wait message settings flat under `languageId.autoSwitch`
- * (`waitMessageMode`), while the setting keys use a dotted `waitMessage.` prefix.
+ * (`waitMessageMode`, `readyMessageMinSwitchMs`), while the setting keys use dotted `waitMessage.` / `readyMessage.` prefixes.
  */
 const RESOLVED_PATH_OVERRIDES: Partial<
   Record<VoiceAdvancedSettingKey, string[]>
@@ -484,6 +505,16 @@ const RESOLVED_PATH_OVERRIDES: Partial<
     "languageId",
     "autoSwitch",
     "waitMessageTexts",
+  ],
+  "languageId.autoSwitch.readyMessage.minSwitchMs": [
+    "languageId",
+    "autoSwitch",
+    "readyMessageMinSwitchMs",
+  ],
+  "languageId.autoSwitch.readyMessage.texts": [
+    "languageId",
+    "autoSwitch",
+    "readyMessageTexts",
   ],
 };
 

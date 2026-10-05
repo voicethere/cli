@@ -360,6 +360,8 @@ export type VoiceAdvancedSettingKey =
   | "languageId.autoSwitch.waitMessage.mode"
   | "languageId.autoSwitch.waitMessage.skipWhenReady"
   | "languageId.autoSwitch.waitMessage.texts"
+  | "languageId.autoSwitch.readyMessage.minSwitchMs"
+  | "languageId.autoSwitch.readyMessage.texts"
   | "voice.allowedLanguages"
   | "voice.profilesByLanguage";
 
@@ -1211,7 +1213,7 @@ export class VoicethereApi {
     return this.request<VoiceCatalogResponse>("GET", "/voice/models");
   }
 
-  /** Lean Sherpa STT/TTS catalog for interactive model selection. */
+  /** Lean VoiceThere STT/TTS catalog for interactive model selection. */
   async listSherpaModels(): Promise<SherpaModelsResponse> {
     return this.request<SherpaModelsResponse>("GET", "/voice/sherpa-models");
   }

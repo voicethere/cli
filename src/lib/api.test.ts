@@ -212,6 +212,33 @@ describe("VoicethereApi", () => {
     vi.useRealTimers();
   });
 
+  it("surfaces auto_switch_requires_voicethere_speech verbatim and fails", async () => {
+    const message =
+      "Language auto-switch requires VoiceThere (local-sherpa) for both speech-to-text and text-to-speech.";
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: { code: "auto_switch_requires_voicethere_speech", message },
+        }),
+        { status: 400 },
+      ),
+    );
+    const api = new VoicethereApi(apiKey, apiBase);
+    const err = await api
+      .setProjectVoiceAdvancedSetting(
+        "proj-1",
+        "languageId.autoSwitch.enabled",
+        true,
+      )
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(400);
+    expect((err as ApiError).code).toBe(
+      "auto_switch_requires_voicethere_speech",
+    );
+    expect(formatCliError(err)).toBe(`Error: ${message}`);
+  });
+
   it("lists projects with bearer auth", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(

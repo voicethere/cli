@@ -76,7 +76,7 @@ describe("projects voice catalog helpers", () => {
 
   it("assertSherpaModelId rejects unknown ids", () => {
     expect(() => assertSherpaModelId("TTS", "nope", catalog)).toThrow(
-      /Unknown Sherpa TTS/,
+      /Unknown VoiceThere TTS/,
     );
     expect(() =>
       assertSherpaModelId("TTS", "en-lessac-high", catalog),
