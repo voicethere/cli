@@ -4,7 +4,7 @@ import { requireCredentials } from "../../../lib/config.js";
 import type { SherpaModelsResponse } from "../../../lib/api.js";
 
 export interface ProjectsVoiceCatalogOptions {
-  /** Emit full JSON (default: human-readable Sherpa tables). */
+  /** Emit full JSON (default: human-readable VoiceThere tables). */
   json?: boolean;
 }
 
@@ -48,15 +48,15 @@ export async function runProjectsVoiceCatalog(
 
   const sherpa = await api.listSherpaModels();
   logVerbose(
-    `sherpa catalog: ${sherpa.stt_models.length} STT, ${sherpa.tts_models.length} TTS`,
+    `VoiceThere catalog: ${sherpa.stt_models.length} STT, ${sherpa.tts_models.length} TTS`,
   );
   printModelTable(
-    "Sherpa STT models",
+    "VoiceThere speech-to-text models",
     sherpa.default_stt_model_id,
     sherpa.stt_models,
   );
   printModelTable(
-    "Sherpa TTS models",
+    "VoiceThere text-to-speech models",
     sherpa.default_tts_model_id,
     sherpa.tts_models,
   );
@@ -85,7 +85,7 @@ export function assertSherpaModelId(
   if (!list.some((m) => m.id === modelId)) {
     const ids = list.map((m) => m.id).join(", ");
     throw new Error(
-      `Unknown Sherpa ${kind} model id ${JSON.stringify(modelId)}. Available: ${ids}`,
+      `Unknown VoiceThere ${kind} model id ${JSON.stringify(modelId)}. Available: ${ids}`,
     );
   }
 }

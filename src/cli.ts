@@ -918,7 +918,7 @@ async function main(): Promise<void> {
   voice
     .command("catalog")
     .description(
-      "List Sherpa STT/TTS models from the control plane (no hardcoded ids)",
+      "List VoiceThere speech-to-text/text-to-speech models from the control plane (no hardcoded ids)",
     )
     .option("--json", "Print full /voice/models JSON (providers + models)")
     .action(async (options: { json?: boolean }) => {
@@ -936,18 +936,18 @@ async function main(): Promise<void> {
   voice
     .command("set")
     .description(
-      "Update voice settings (requires redeploy). Use --interactive to pick models from GET /voice/sherpa-models",
+      "Update voice settings (requires redeploy). Use --interactive to pick models from the VoiceThere model catalog",
     )
     .option("--project <id>", "Project UUID")
     .option("--stt-provider <id>", "STT provider id")
     .option("--tts-provider <id>", "TTS provider id")
     .option(
       "--stt-model-id <id>",
-      "Sherpa STT catalog id (when STT is local-sherpa); list via voice catalog",
+      "VoiceThere STT catalog id (when the STT vendor is VoiceThere, id local-sherpa); list via voice catalog",
     )
     .option(
       "--tts-model-id <id>",
-      "Sherpa TTS catalog id (when TTS is local-sherpa); list via voice catalog",
+      "VoiceThere TTS catalog id (when the TTS vendor is VoiceThere, id local-sherpa); list via voice catalog",
     )
     .option("--stt-model <name>", "Cloud STT model name")
     .option("--stt-language <code>", "Cloud STT language code")
@@ -955,7 +955,7 @@ async function main(): Promise<void> {
     .option("--tts-voice <id>", "Cloud TTS voice id")
     .option(
       "--interactive",
-      "Fetch Sherpa catalog and prompt to select STT/TTS models",
+      "Fetch VoiceThere catalog and prompt to select STT/TTS models",
     )
     .action(
       async (options: ProjectsVoiceSetOptions & { interactive?: boolean }) => {

@@ -103,7 +103,7 @@ export async function runProjectsVoiceSet(
   if (wantInteractive) {
     if (stt_provider === "local-sherpa") {
       stt_model_id = await promptChoice(
-        "Sherpa STT model",
+        "VoiceThere STT model",
         sherpa.stt_models.map((m) => ({
           value: m.id,
           label: formatSherpaModelChoiceLabel(m),
@@ -112,7 +112,7 @@ export async function runProjectsVoiceSet(
     }
     if (tts_provider === "local-sherpa") {
       tts_model_id = await promptChoice(
-        "Sherpa TTS model",
+        "VoiceThere TTS model",
         sherpa.tts_models.map((m) => ({
           value: m.id,
           label: formatSherpaModelChoiceLabel(m),

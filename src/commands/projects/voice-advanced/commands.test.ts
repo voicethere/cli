@@ -55,7 +55,7 @@ describe("projects voice-advanced commands", () => {
       "languageId.autoSwitch.enabled",
     );
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("voice.profilesByLanguage");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(37);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(39);
     expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
       "voice.expectedLanguages",
     );
@@ -64,6 +64,8 @@ describe("projects voice-advanced commands", () => {
       "languageId.autoSwitch.waitMessage.mode",
       "languageId.autoSwitch.waitMessage.skipWhenReady",
       "languageId.autoSwitch.waitMessage.texts",
+      "languageId.autoSwitch.readyMessage.minSwitchMs",
+      "languageId.autoSwitch.readyMessage.texts",
     ]) {
       expect(VOICE_ADVANCED_SETTING_KEYS).toContain(key);
     }
@@ -321,6 +323,71 @@ describe("projects voice-advanced commands", () => {
       await expect(
         set("languageId.autoSwitch.finalHoldMs", "10001"),
       ).rejects.toThrow(/between 0 and 10000/);
+    });
+
+    it("validates readyMessage.minSwitchMs as 0-15000", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      const key = "languageId.autoSwitch.readyMessage.minSwitchMs";
+      expect(VOICE_ADVANCED_SETTING_DEFS[key]).toMatchObject({
+        default: 2000,
+        min: 0,
+        max: 15000,
+      });
+      await set(key, "0");
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        key,
+        0,
+      );
+      await set(key, "15000");
+      await expect(set(key, "15001")).rejects.toThrow(/between 0 and 15000/);
+      await expect(set(key, "-1")).rejects.toThrow(/between 0 and 15000/);
+      await expect(set(key, "soon")).rejects.toThrow(/Invalid number/);
+    });
+
+    it("validates readyMessage.texts JSON", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      const key = "languageId.autoSwitch.readyMessage.texts";
+      await set(key, '{"de":"Okay, machen wir auf Deutsch weiter."}');
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        key,
+        '{"de":"Okay, machen wir auf Deutsch weiter."}',
+      );
+      await expect(set(key, "nope")).rejects.toThrow(/valid JSON object/);
+      await expect(set(key, '{"english":"x"}')).rejects.toThrow(
+        /invalid language key/,
+      );
+      await expect(
+        set(key, JSON.stringify({ de: "a".repeat(301) })),
+      ).rejects.toThrow(/at most 300 characters/);
+    });
+
+    it("lists the ready message settings from the flat API shape", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {
+          languageId: {
+            autoSwitch: {
+              readyMessageMinSwitchMs: 3000,
+              readyMessageTexts: '{"de":"Okay."}',
+            },
+          },
+        },
+      });
+      await runProjectsVoiceAdvancedList({});
+      expect(console.log).toHaveBeenCalledWith(
+        "languageId.autoSwitch.readyMessage.minSwitchMs=3000",
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        'languageId.autoSwitch.readyMessage.texts={"de":"Okay."}',
+      );
     });
 
     it("lists the wait settings from the flat API shape", async () => {

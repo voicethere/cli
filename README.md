@@ -412,7 +412,15 @@ voicethere projects voice-advanced set voice.profilesByLanguage '{"de":{"stt":"d
 | `languageId.autoSwitch.waitMessage.mode`          | `end_of_utterance`, `immediate`, `off`         | `end_of_utterance` |
 | `languageId.autoSwitch.waitMessage.skipWhenReady` | bool                                           | `true`             |
 | `languageId.autoSwitch.waitMessage.texts`         | JSON map of language code to text, 300 chars   | built-in texts     |
+| `languageId.autoSwitch.readyMessage.minSwitchMs`  | 0–15000 ms (0 = off)                           | `2000`             |
+| `languageId.autoSwitch.readyMessage.texts`        | JSON map of language code to text, 300 chars   | built-in texts     |
 | `voice.profilesByLanguage`                        | JSON map of language code to `stt` / `tts` ids | `{}`               |
+
+When a switch took at least `readyMessage.minSwitchMs` and no wait message was played, the agent says a short "Okay, let's continue in <language>." in the new voice. Set it to `0` to turn that off, or override the wording per language with `readyMessage.texts`, for example `'{"de":"Okay, machen wir auf Deutsch weiter."}'`.
+
+`languageId.autoSwitch.waitMessage.mode` decides whether the switch may interrupt the caller: `end_of_utterance` (default) waits until the caller stops, `immediate` speaks at once and cannot be interrupted, `off` plays no wait message.
+
+Language auto-switch (`languageId.autoSwitch.enabled`) requires VoiceThere (`local-sherpa`) for both speech-to-text and text-to-speech. If a project uses another vendor, the API answers `400` with `auto_switch_requires_voicethere_speech` and the CLI prints that message and exits non-zero.
 
 `voice.expectedLanguages` no longer exists. Only the boot STT/TTS pools start warm.
 
