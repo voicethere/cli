@@ -37,6 +37,7 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "vad.bargeIn.agentPlaybackGuardMs",
   "tts.speed",
   "tts.postUtteranceSilenceMs",
+  "tts.phraseCache",
   "noiseSuppression.enabled",
   "languageId.enabled",
   "languageId.minSpeechMs",
@@ -197,6 +198,12 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     max: 15000,
     description:
       "Silent PCM after each TTS utterance so remote listeners can finalize STT.",
+  },
+  "tts.phraseCache": {
+    type: "boolean",
+    default: true,
+    description:
+      "Runner TTS phrase cache: repeated replies are served from memory on the runner instead of being synthesised again. On by default.",
   },
   "noiseSuppression.enabled": {
     type: "boolean",
