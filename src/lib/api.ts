@@ -345,6 +345,7 @@ export type VoiceAdvancedSettingKey =
   | "vad.bargeIn.agentPlaybackGuardMs"
   | "tts.speed"
   | "tts.postUtteranceSilenceMs"
+  | "tts.phraseCache"
   | "events.mode"
   | "noiseSuppression.enabled"
   | "languageId.enabled"

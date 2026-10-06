@@ -55,7 +55,8 @@ describe("projects voice-advanced commands", () => {
       "languageId.autoSwitch.enabled",
     );
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("voice.profilesByLanguage");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(39);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("tts.phraseCache");
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(40);
     expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
       "voice.expectedLanguages",
     );
@@ -151,6 +152,39 @@ describe("projects voice-advanced commands", () => {
       0.7,
     );
     expect(console.log).toHaveBeenCalledWith("tts.speed=0.7");
+  });
+
+  it("defines tts.phraseCache as a boolean that defaults to on", () => {
+    expect(VOICE_ADVANCED_SETTING_DEFS["tts.phraseCache"]).toMatchObject({
+      type: "boolean",
+      default: true,
+    });
+  });
+
+  it("sets tts.phraseCache true and false and rejects other values", async () => {
+    setProjectVoiceAdvancedSetting.mockResolvedValue({
+      project_id: "proj-1",
+      settings: {},
+    });
+
+    await runProjectsVoiceAdvancedSet({ name: "tts.phraseCache", value: "false" });
+    expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+      "proj-1",
+      "tts.phraseCache",
+      false,
+    );
+    expect(console.log).toHaveBeenCalledWith("tts.phraseCache=false");
+
+    await runProjectsVoiceAdvancedSet({ name: "tts.phraseCache", value: "true" });
+    expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+      "proj-1",
+      "tts.phraseCache",
+      true,
+    );
+
+    await expect(
+      runProjectsVoiceAdvancedSet({ name: "tts.phraseCache", value: "maybe" }),
+    ).rejects.toThrow(/Invalid boolean/);
   });
 
   it("rejects tts.speed outside 0.2–2.0", async () => {
