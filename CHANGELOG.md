@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-10-07
+
+### Added
+
+- **`projects voice-advanced`** — `tts.phraseCache` (boolean, default `true`). Set it to `false` to have the agent runner synthesise every reply fresh instead of replaying repeated replies from memory; applies on the next deploy.
+
 ## [0.15.1] - 2026-10-05
 
 ### Added
