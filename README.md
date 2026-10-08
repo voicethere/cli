@@ -390,6 +390,14 @@ voicethere projects session-settings set error_message "Sorry, something went wr
 
 Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
 
+## Reconnect window
+
+`connection.reconnectWindowSec` sets how long a dropped voice conversation is held for the client to reconnect: a whole number of seconds from 15 to 30 (default 15). A recovered conversation is billed including the interruption. An unrecovered one stops billing at the drop but holds an agent runner slot for the window. It applies on the next **`voicethere deploy --wait`**.
+
+```bash
+voicethere projects voice-advanced set connection.reconnectWindowSec 30
+```
+
 ## Language switch settings
 
 Spoken-language auto-switch and its wait behavior are advanced voice settings. They apply on the next **`voicethere deploy --wait`**. When the caller switches to a language whose models are not running yet, the runner starts them on demand and can play a short wait message in the language being left.

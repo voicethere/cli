@@ -38,6 +38,7 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "tts.speed",
   "tts.postUtteranceSilenceMs",
   "tts.phraseCache",
+  "connection.reconnectWindowSec",
   "noiseSuppression.enabled",
   "languageId.enabled",
   "languageId.minSpeechMs",
@@ -204,6 +205,14 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     default: true,
     description:
       "Runner TTS phrase cache: repeated replies are served from memory on the runner instead of being synthesised again. On by default.",
+  },
+  "connection.reconnectWindowSec": {
+    type: "number",
+    default: 15,
+    min: 15,
+    max: 30,
+    description:
+      "Reconnect window in whole seconds (15-30): how long a dropped voice conversation is held for the client to reconnect. A recovered conversation is billed including the interruption. An unrecovered one stops billing at the drop but holds an agent runner slot for the window.",
   },
   "noiseSuppression.enabled": {
     type: "boolean",
@@ -481,6 +490,9 @@ export function parseVoiceAdvancedSettingValue(
   const n = Number(raw);
   if (!Number.isFinite(n)) {
     throw new Error(`Invalid number for ${key}`);
+  }
+  if (key === "connection.reconnectWindowSec" && !Number.isInteger(n)) {
+    throw new Error(`${key} must be an integer`);
   }
   const min = def.min ?? 0;
   const max = def.max ?? Number.MAX_SAFE_INTEGER;

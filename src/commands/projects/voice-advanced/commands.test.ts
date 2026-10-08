@@ -56,7 +56,10 @@ describe("projects voice-advanced commands", () => {
     );
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("voice.profilesByLanguage");
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("tts.phraseCache");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(40);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toContain(
+      "connection.reconnectWindowSec",
+    );
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(41);
     expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
       "voice.expectedLanguages",
     );
@@ -185,6 +188,74 @@ describe("projects voice-advanced commands", () => {
     await expect(
       runProjectsVoiceAdvancedSet({ name: "tts.phraseCache", value: "maybe" }),
     ).rejects.toThrow(/Invalid boolean/);
+  });
+
+  describe("connection.reconnectWindowSec", () => {
+    it("is a number 15-30 that defaults to 15", () => {
+      expect(
+        VOICE_ADVANCED_SETTING_DEFS["connection.reconnectWindowSec"],
+      ).toMatchObject({ type: "number", min: 15, max: 30, default: 15 });
+    });
+
+    it("appears in the list output with default 15", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { connection: { reconnectWindowSec: 15 } },
+      });
+
+      await runProjectsVoiceAdvancedList({});
+
+      expect(console.log).toHaveBeenCalledWith(
+        "connection.reconnectWindowSec=15",
+      );
+    });
+
+    it("sets connection.reconnectWindowSec to 30", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { connection: { reconnectWindowSec: 30 } },
+      });
+
+      await runProjectsVoiceAdvancedSet({
+        name: "connection.reconnectWindowSec",
+        value: "30",
+      });
+
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "connection.reconnectWindowSec",
+        30,
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        "connection.reconnectWindowSec=30",
+      );
+    });
+
+    it.each(["14", "31", "15.5", "abc"])("rejects %s", async (value) => {
+      await expect(
+        runProjectsVoiceAdvancedSet({
+          name: "connection.reconnectWindowSec",
+          value,
+        }),
+      ).rejects.toThrow();
+      expect(setProjectVoiceAdvancedSetting).not.toHaveBeenCalled();
+    });
+
+    it("accepts 15", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      await runProjectsVoiceAdvancedSet({
+        name: "connection.reconnectWindowSec",
+        value: "15",
+      });
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "connection.reconnectWindowSec",
+        15,
+      );
+    });
   });
 
   it("rejects tts.speed outside 0.2–2.0", async () => {
