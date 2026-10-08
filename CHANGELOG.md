@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.15.3] - 2026-10-08
+
+### Added — `connection.reconnectWindowSec` (15–30 s) for `projects voice-advanced`.
+
 ## [0.15.2] - 2026-10-07
 
 ### Added
