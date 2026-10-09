@@ -62,6 +62,104 @@ describe("sessions commands", () => {
   });
 
   describe("runSessionsList", () => {
+    it("passes --failed, --reason, --from and --to to the API", async () => {
+      listProjectSessions.mockResolvedValue({
+        sessions: [],
+        start: 0,
+        end: 0,
+        count: 0,
+      });
+
+      await runSessionsList({
+        reason: "AGENT_HANDLER_FAILED",
+        from: "2026-10-01T00:00:00Z",
+        to: "2026-10-02T00:00:00Z",
+        start: 0,
+      });
+
+      expect(listProjectSessions).toHaveBeenCalledWith("proj-1", {
+        start: 0,
+        end: undefined,
+        outcome: "failed",
+        reason: "AGENT_HANDLER_FAILED",
+        from: "2026-10-01T00:00:00Z",
+        to: "2026-10-02T00:00:00Z",
+      });
+    });
+
+    it("--failed alone sets outcome=failed without a reason", async () => {
+      listProjectSessions.mockResolvedValue({
+        sessions: [],
+        start: 0,
+        end: 0,
+        count: 0,
+      });
+
+      await runSessionsList({ failed: true });
+
+      const options = listProjectSessions.mock.calls[0][1];
+      expect(options.outcome).toBe("failed");
+      expect(options.reason).toBeUndefined();
+    });
+
+    it("does not send outcome when no failure filter is given", async () => {
+      listProjectSessions.mockResolvedValue({
+        sessions: [],
+        start: 0,
+        end: 0,
+        count: 0,
+      });
+
+      await runSessionsList({});
+
+      const options = listProjectSessions.mock.calls[0][1];
+      expect(options.outcome).toBeUndefined();
+      expect(options.from).toBeUndefined();
+    });
+
+    it.each(["", "-bad", "has space", "a".repeat(65), "x;drop"])(
+      "rejects reason %j before any HTTP call",
+      async (reason) => {
+        await expect(runSessionsList({ reason })).rejects.toThrow(/--reason/);
+        expect(listProjectSessions).not.toHaveBeenCalled();
+        expect(requireCredentials).not.toHaveBeenCalled();
+      },
+    );
+
+    it("rejects a non-ISO --from before any HTTP call", async () => {
+      await expect(runSessionsList({ from: "yesterday" })).rejects.toThrow(
+        /--from/,
+      );
+      expect(listProjectSessions).not.toHaveBeenCalled();
+    });
+
+    it("--json prints the raw page", async () => {
+      const page = {
+        sessions: [
+          {
+            id: "db-1",
+            orchestrator_session_id: "orch-1",
+            status: "failed",
+            build_id: null,
+            created_at: "2026-06-19T00:00:00.000Z",
+            ended_at: null,
+            end_reason: null,
+            billable_seconds: null,
+            expires_at: null,
+          },
+        ],
+        start: 0,
+        end: 1,
+        count: 1,
+      };
+      listProjectSessions.mockResolvedValue(page);
+
+      await runSessionsList({ json: true });
+
+      expect(console.log).toHaveBeenCalledTimes(1);
+      expect(console.log).toHaveBeenCalledWith(JSON.stringify(page, null, 2));
+    });
+
     it("lists sessions with pagination args", async () => {
       listProjectSessions.mockResolvedValue({
         sessions: [

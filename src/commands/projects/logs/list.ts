@@ -7,6 +7,7 @@ import { logStep, logVerbose } from "../../../lib/command-log.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireProjectId } from "../../../lib/project-config.js";
+import { parseIsoFlag } from "../metrics/range.js";
 
 export interface ProjectsLogsListOptions {
   projectId?: string;
@@ -16,6 +17,10 @@ export interface ProjectsLogsListOptions {
   level?: AgentLogLevel;
   /** Alias for `level` (--severity on CLI). */
   severity?: AgentLogLevel;
+  /** ISO 8601 lower bound. */
+  from?: string;
+  /** ISO 8601 upper bound. */
+  to?: string;
   json?: boolean;
 }
 
@@ -27,6 +32,12 @@ function buildQuery(options: ProjectsLogsListOptions): ListAgentLogsQuery {
   const level = options.level ?? options.severity;
   if (level) {
     query.level = level;
+  }
+  if (options.from != null) {
+    query.from = parseIsoFlag("--from", options.from);
+  }
+  if (options.to != null) {
+    query.to = parseIsoFlag("--to", options.to);
   }
   return query;
 }

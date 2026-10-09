@@ -598,6 +598,120 @@ export interface ProjectSessionListResponse {
   count: number;
 }
 
+export interface ProjectSessionListFilter {
+  /** Only `failed` is supported by the API. */
+  outcome?: "failed";
+  /** Failure reason key (as listed under failures / end_reasons in session metrics). */
+  reason?: string;
+  /** ISO 8601 lower bound. */
+  from?: string;
+  /** ISO 8601 upper bound. */
+  to?: string;
+}
+
+/** Metrics window: a preset or an explicit ISO 8601 `start` + `end`. */
+export type MetricsRange =
+  | { period?: string }
+  | { start: string; end: string };
+
+export interface ProjectMetricsResponse {
+  project_id: string;
+  period: string | null;
+  range_start: string | null;
+  range_end: string | null;
+  active_sessions: number;
+  sessions_started: number;
+  sessions_ended: number;
+  sessions_failed: number;
+  billable_seconds: number;
+  monthly_billable_seconds: number;
+  error_rate: number;
+  sessions_in_queue: number;
+  avg_queue_wait_seconds: number | null;
+  finalize_supabase_patches_total: number;
+  active_build_id: string | null;
+  last_deploy_at: string | null;
+}
+
+export interface SessionMetricsPoint {
+  bucket_start: string;
+  started: number;
+  completed: number;
+  failed: number;
+  never_connected: number;
+  peak_concurrent: number;
+  connect_p50_s: number | null;
+  connect_p95_s: number | null;
+  queue_wait_p50_s: number | null;
+  queue_wait_p95_s: number | null;
+  queued: number;
+}
+
+export interface ProjectSessionMetricsResponse {
+  project_id: string;
+  period: string | null;
+  range_start: string;
+  range_end: string;
+  bucket_seconds: number;
+  series: SessionMetricsPoint[];
+  plan_concurrency_limit: number | null;
+  duration_buckets: Array<{ label: string; count: number }>;
+  duration_p50_s: number | null;
+  duration_p95_s: number | null;
+  connect_p50_s: number | null;
+  connect_p95_s: number | null;
+  queue_wait_p95_s: number | null;
+  failures: Array<{ code: string; count: number }>;
+  end_reasons: Array<{ reason: string; count: number }>;
+}
+
+export interface AgentMetricsPoint {
+  bucket_start: string;
+  warn: number;
+  error: number;
+  info: number;
+  crashes: number;
+}
+
+export interface ProjectAgentMetricsResponse {
+  project_id: string;
+  period: string | null;
+  range_start: string;
+  range_end: string;
+  bucket_seconds: number;
+  series: AgentMetricsPoint[];
+  top_errors: Array<{ message: string; count: number }>;
+  turns_per_conversation_p50: number | null;
+  turns_per_conversation_p95: number | null;
+}
+
+export interface VoiceLatencyBlock {
+  p50_ms: number | null;
+  p95_ms: number | null;
+  p99_ms: number | null;
+  series: Array<{
+    t: number;
+    p50: number | null;
+    p95: number | null;
+    p99: number | null;
+  }>;
+}
+
+export interface ProjectVoiceMetricsResponse {
+  project_id: string;
+  period: string | null;
+  range_start: string;
+  range_end: string;
+  available: boolean;
+  range_too_long: boolean;
+  stt: VoiceLatencyBlock;
+  tts: VoiceLatencyBlock;
+  turn_response: VoiceLatencyBlock;
+  final_to_audio: VoiceLatencyBlock;
+  finalize_delay: VoiceLatencyBlock;
+  tts_first_audio: VoiceLatencyBlock;
+}
+
 export type AgentLogLevel = "debug" | "info" | "warn" | "error";
 
 export interface AgentLogEntry {
@@ -618,6 +732,10 @@ export interface ListAgentLogsQuery {
   level?: AgentLogLevel;
   fieldPath?: string;
   fieldValue?: string;
+  /** ISO 8601 lower bound. */
+  from?: string;
+  /** ISO 8601 upper bound. */
+  to?: string;
 }
 
 export interface ProjectLogsResponse {
@@ -848,7 +966,25 @@ function buildAgentLogsSearchParams(
   if (query.fieldValue?.trim()) {
     params.set("fieldValue", query.fieldValue.trim());
   }
+  if (query.from?.trim()) {
+    params.set("from", query.from.trim());
+  }
+  if (query.to?.trim()) {
+    params.set("to", query.to.trim());
+  }
   return params;
+}
+
+function buildMetricsRangeSearch(range: MetricsRange): string {
+  const params = new URLSearchParams();
+  if ("start" in range) {
+    params.set("start", range.start);
+    params.set("end", range.end);
+  } else if (range.period) {
+    params.set("period", range.period);
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
 }
 
 export type VoicethereApiOptions = {
@@ -1292,7 +1428,7 @@ export class VoicethereApi {
 
   async listProjectSessions(
     projectId: string,
-    options?: { start?: number; end?: number },
+    options?: { start?: number; end?: number } & ProjectSessionListFilter,
   ): Promise<ProjectSessionListResponse> {
     const params = new URLSearchParams();
     if (options?.start != null) {
@@ -1301,9 +1437,61 @@ export class VoicethereApi {
     if (options?.end != null) {
       params.set("end", String(options.end));
     }
+    if (options?.outcome) {
+      params.set("outcome", options.outcome);
+    }
+    if (options?.reason) {
+      params.set("reason", options.reason);
+    }
+    if (options?.from) {
+      params.set("from", options.from);
+    }
+    if (options?.to) {
+      params.set("to", options.to);
+    }
     const query = params.toString();
     const path = `/projects/${projectId}/sessions${query ? `?${query}` : ""}`;
     return this.request<ProjectSessionListResponse>("GET", path);
+  }
+
+  async getProjectMetrics(
+    projectId: string,
+    range: MetricsRange = {},
+  ): Promise<ProjectMetricsResponse> {
+    return this.request<ProjectMetricsResponse>(
+      "GET",
+      `/projects/${projectId}/metrics${buildMetricsRangeSearch(range)}`,
+    );
+  }
+
+  async getProjectSessionMetrics(
+    projectId: string,
+    range: MetricsRange = {},
+  ): Promise<ProjectSessionMetricsResponse> {
+    return this.request<ProjectSessionMetricsResponse>(
+      "GET",
+      `/projects/${projectId}/metrics/sessions${buildMetricsRangeSearch(range)}`,
+    );
+  }
+
+  async getProjectAgentMetrics(
+    projectId: string,
+    range: MetricsRange = {},
+  ): Promise<ProjectAgentMetricsResponse> {
+    return this.request<ProjectAgentMetricsResponse>(
+      "GET",
+      `/projects/${projectId}/metrics/agent${buildMetricsRangeSearch(range)}`,
+    );
+  }
+
+  async getProjectVoiceMetrics(
+    projectId: string,
+    range: MetricsRange = {},
+  ): Promise<ProjectVoiceMetricsResponse> {
+    return this.request<ProjectVoiceMetricsResponse>(
+      "GET",
+      `/projects/${projectId}/voice-metrics${buildMetricsRangeSearch(range)}`,
+    );
   }
 
   async getProjectSession(

@@ -180,6 +180,30 @@ describe("runProjectsLogsList", () => {
     );
   });
 
+  it("passes --from and --to to the API", async () => {
+    listProjectLogs.mockResolvedValue({ project_id: "proj-1", logs: [] });
+
+    await runProjectsLogsList({
+      level: "error",
+      from: "2026-10-01T00:00:00Z",
+      to: "2026-10-02T00:00:00Z",
+    });
+
+    expect(listProjectLogs).toHaveBeenCalledWith("proj-1", {
+      limit: 20,
+      level: "error",
+      from: "2026-10-01T00:00:00Z",
+      to: "2026-10-02T00:00:00Z",
+    });
+  });
+
+  it("rejects a non-ISO --to before any HTTP call", async () => {
+    await expect(runProjectsLogsList({ to: "tomorrow" })).rejects.toThrow(
+      /--to/,
+    );
+    expect(listProjectLogs).not.toHaveBeenCalled();
+  });
+
   it("uses explicit project id over linked config", async () => {
     listProjectLogs.mockResolvedValue({
       project_id: "proj-2",
