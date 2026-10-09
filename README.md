@@ -323,7 +323,8 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `projects widget show`                                                                           | Embed widget draft, publish status, and CDN config URL                                      |
 | `projects widget set`                                                                            | Update widget draft (preset, position, mode, theme, labels)                                 |
 | `projects widget deploy [--wait]`                                                                | Publish widget config to CDN                                                                |
-| `projects logs list [--session] [--level\|--severity] [--q] [--json]`                            | Searchable agent logs; use `--severity error` for session failures (dual-written)           |
+| `projects logs list [--session] [--level\|--severity] [--q] [--from] [--to] [--json]`            | Searchable agent logs; use `--severity error` for session failures (dual-written)           |
+| `projects metrics overview\|sessions\|agent\|voice [--period] [--start --end] [--json]`          | Project metrics: totals, failures by reason, top agent errors, voice latency percentiles    |
 | `projects voice catalog`                                                                         | show STT/TTS vendors and models                                                             |
 | `build list`                                                                                     | Builds for the active project                                                               |
 | `build validate [file]`                                                                          | Sandbox verify (default bundle from config)                                                 |
@@ -479,6 +480,19 @@ List recent voice sessions (orchestrator session id, status, billable seconds):
 voicethere sessions list "$PROJECT_ID" --start 0 --end 50
 # or with .voicethere/config.json:
 voicethere sessions list --start 0 --end 50
+```
+
+Filter failures with `--failed`, `--reason <key>` (implies `--failed`), `--from <ISO>` and `--to <ISO>`; `--json` prints the raw page:
+
+```bash
+voicethere sessions list --failed --reason AGENT_HANDLER_FAILED --from 2026-10-01T00:00:00Z --json
+```
+
+Project metrics (presets `1h|6h|24h|7d|30d|mtd`, voice `1h|6h|24h|7d`, or an explicit `--start`/`--end` window):
+
+```bash
+voicethere projects metrics sessions --period 7d
+voicethere projects metrics voice --period 6h --json
 ```
 
 The API returns `{ sessions, start, end, count }` (max 50 rows per page). The CLI prints a `Showing X–Y of Z sessions` footer.

@@ -1021,3 +1021,85 @@ describe("VoicethereApi", () => {
     expect(init.body).toBe(JSON.stringify({ subscription_id: null }));
   });
 });
+
+describe("VoicethereApi metrics and filters", () => {
+  const apiBase = "https://app.voicethere.dev/api/v1";
+
+  function stubFetch() {
+    return vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(
+        async () => new Response(JSON.stringify({}), { status: 200 }),
+      );
+  }
+
+  function lastUrl(fetchMock: ReturnType<typeof stubFetch>): string {
+    return String((fetchMock.mock.calls[0] as [URL])[0]);
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    ["getProjectMetrics", "metrics"],
+    ["getProjectSessionMetrics", "metrics/sessions"],
+    ["getProjectAgentMetrics", "metrics/agent"],
+    ["getProjectVoiceMetrics", "voice-metrics"],
+  ] as const)("%s builds the path and period query", async (method, path) => {
+    const fetchMock = stubFetch();
+    const api = new VoicethereApi("vth_test", apiBase);
+    await api[method]("proj-1", { period: "7d" });
+    expect(lastUrl(fetchMock)).toBe(
+      `${apiBase}/projects/proj-1/${path}?period=7d`,
+    );
+  });
+
+  it("sends start and end for a custom range and nothing for the default", async () => {
+    const fetchMock = stubFetch();
+    const api = new VoicethereApi("vth_test", apiBase);
+    await api.getProjectMetrics("proj-1", {
+      start: "2026-10-01T00:00:00Z",
+      end: "2026-10-02T00:00:00Z",
+    });
+    expect(lastUrl(fetchMock)).toBe(
+      `${apiBase}/projects/proj-1/metrics?start=2026-10-01T00%3A00%3A00Z&end=2026-10-02T00%3A00%3A00Z`,
+    );
+
+    fetchMock.mockClear();
+    await api.getProjectMetrics("proj-1");
+    expect(lastUrl(fetchMock)).toBe(`${apiBase}/projects/proj-1/metrics`);
+  });
+
+  it("listProjectSessions adds outcome, reason, from and to", async () => {
+    const fetchMock = stubFetch();
+    const api = new VoicethereApi("vth_test", apiBase);
+    await api.listProjectSessions("proj-1", {
+      start: 0,
+      outcome: "failed",
+      reason: "AGENT_HANDLER_FAILED",
+      from: "2026-10-01T00:00:00Z",
+      to: "2026-10-02T00:00:00Z",
+    });
+    const url = new URL(lastUrl(fetchMock));
+    expect(url.pathname).toBe("/api/v1/projects/proj-1/sessions");
+    expect(url.searchParams.get("outcome")).toBe("failed");
+    expect(url.searchParams.get("reason")).toBe("AGENT_HANDLER_FAILED");
+    expect(url.searchParams.get("from")).toBe("2026-10-01T00:00:00Z");
+    expect(url.searchParams.get("to")).toBe("2026-10-02T00:00:00Z");
+  });
+
+  it("listProjectLogs adds from and to", async () => {
+    const fetchMock = stubFetch();
+    const api = new VoicethereApi("vth_test", apiBase);
+    await api.listProjectLogs("proj-1", {
+      level: "error",
+      from: "2026-10-01T00:00:00Z",
+      to: "2026-10-02T00:00:00Z",
+    });
+    const url = new URL(lastUrl(fetchMock));
+    expect(url.searchParams.get("level")).toBe("error");
+    expect(url.searchParams.get("from")).toBe("2026-10-01T00:00:00Z");
+    expect(url.searchParams.get("to")).toBe("2026-10-02T00:00:00Z");
+  });
+});

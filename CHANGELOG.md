@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-09
+
+### Added
+
+- **`projects metrics overview|sessions|agent|voice`** — read the project metrics from the terminal. Each takes `--project`, `--period` (`1h|6h|24h|7d|30d|mtd`; `voice` accepts `1h|6h|24h|7d`) or `--start <ISO> --end <ISO>`, and `--json` for the raw response. `sessions` prints totals and a "Failures by reason" table, `agent` the top errors, `voice` p50/p95/p99 per latency block.
+- **`sessions list`** — `--failed`, `--reason <key>` (implies `--failed`), `--from <ISO>`, `--to <ISO>` and `--json`.
+- **`projects logs list`** — `--from <ISO>` and `--to <ISO>`.
+
 ## [0.15.3] - 2026-10-08
 
 ### Added — `connection.reconnectWindowSec` (15–30 s) for `projects voice-advanced`.

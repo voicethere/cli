@@ -34,6 +34,10 @@ import { runProjectsSessionSettingsSet } from "./commands/projects/session-setti
 import { runProjectsBillingSettingsList } from "./commands/projects/billing-settings/list.js";
 import { runProjectsBillingSettingsSet } from "./commands/projects/billing-settings/set.js";
 import { runProjectsLogsList } from "./commands/projects/logs/list.js";
+import { runProjectsMetricsAgent } from "./commands/projects/metrics/agent.js";
+import { runProjectsMetricsOverview } from "./commands/projects/metrics/overview.js";
+import { runProjectsMetricsSessions } from "./commands/projects/metrics/sessions.js";
+import { runProjectsMetricsVoice } from "./commands/projects/metrics/voice.js";
 import {
   runProjectsConversationExport,
   runProjectsConversationGet,
@@ -645,6 +649,8 @@ async function main(): Promise<void> {
       "--severity <level>",
       "Filter by severity (debug|info|warn|error); alias for --level",
     )
+    .option("--from <ISO>", "Only logs created at or after this ISO 8601 time")
+    .option("--to <ISO>", "Only logs created at or before this ISO 8601 time")
     .option("--json", "Output JSON")
     .action(
       async (options: {
@@ -654,6 +660,8 @@ async function main(): Promise<void> {
         q?: string;
         level?: string;
         severity?: string;
+        from?: string;
+        to?: string;
         json?: boolean;
       }) => {
         await runProjectsLogsList({
@@ -665,10 +673,71 @@ async function main(): Promise<void> {
             "debug" | "info" | "warn" | "error" | undefined,
           severity: options.severity as
             "debug" | "info" | "warn" | "error" | undefined,
+          from: options.from,
+          to: options.to,
           json: options.json,
         });
       },
     );
+
+  const metrics = projects
+    .command("metrics")
+    .description("Project metrics: overview, sessions, agent, voice");
+
+  const metricsRangeOptions = (
+    cmd: ReturnType<typeof metrics.command>,
+    periods: string,
+  ) =>
+    cmd
+      .option("--project <id>", "Project UUID")
+      .option("--period <period>", `Preset window (${periods}; default 24h)`)
+      .option("--start <ISO>", "Custom window start (ISO 8601; needs --end)")
+      .option("--end <ISO>", "Custom window end (ISO 8601; needs --start)")
+      .option("--json", "Print the raw API response as JSON");
+
+  type MetricsCliOptions = {
+    project?: string;
+    period?: string;
+    start?: string;
+    end?: string;
+    json?: boolean;
+  };
+
+  metricsRangeOptions(
+    metrics
+      .command("overview")
+      .description("Session totals, error rate and billable seconds"),
+    "1h|6h|24h|7d|30d|mtd",
+  ).action(async (options: MetricsCliOptions) => {
+    await runProjectsMetricsOverview({ ...options, projectId: options.project });
+  });
+
+  metricsRangeOptions(
+    metrics
+      .command("sessions")
+      .description("Session totals, durations and failures by reason"),
+    "1h|6h|24h|7d|30d|mtd",
+  ).action(async (options: MetricsCliOptions) => {
+    await runProjectsMetricsSessions({ ...options, projectId: options.project });
+  });
+
+  metricsRangeOptions(
+    metrics
+      .command("agent")
+      .description("Agent log counts, crashes and top errors"),
+    "1h|6h|24h|7d|30d|mtd",
+  ).action(async (options: MetricsCliOptions) => {
+    await runProjectsMetricsAgent({ ...options, projectId: options.project });
+  });
+
+  metricsRangeOptions(
+    metrics
+      .command("voice")
+      .description("Speech latency percentiles (kept for 14 days)"),
+    "1h|6h|24h|7d",
+  ).action(async (options: MetricsCliOptions) => {
+    await runProjectsMetricsVoice({ ...options, projectId: options.project });
+  });
 
   const conversation = projects
     .command("conversation")
@@ -1155,6 +1224,14 @@ async function main(): Promise<void> {
       "Exclusive end index (default: start + 50 when omitted)",
       (value) => Number.parseInt(value, 10),
     )
+    .option("--failed", "Only failed sessions")
+    .option(
+      "--reason <key>",
+      "Only sessions that failed with this reason key (implies --failed)",
+    )
+    .option("--from <ISO>", "Only sessions created at or after this ISO 8601 time")
+    .option("--to <ISO>", "Only sessions created at or before this ISO 8601 time")
+    .option("--json", "Print the raw page JSON")
     .action(
       async (
         projectIdArg: string | undefined,
@@ -1162,12 +1239,22 @@ async function main(): Promise<void> {
           project?: string;
           start: number;
           end?: number;
+          failed?: boolean;
+          reason?: string;
+          from?: string;
+          to?: string;
+          json?: boolean;
         },
       ) => {
         await runSessionsList({
           projectId: options.project ?? projectIdArg,
           start: options.start,
           end: options.end,
+          failed: options.failed,
+          reason: options.reason,
+          from: options.from,
+          to: options.to,
+          json: options.json,
         });
       },
     );
