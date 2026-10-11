@@ -248,7 +248,6 @@ export interface ProjectSettingsResponse {
     data_only?: boolean;
     shared_child_per_session?: boolean;
     agent_crash_policy?: "disconnect_all" | "restart_child";
-    agent_child_ipc_debug?: boolean;
   };
   defaults?: {
     mode?: "voice" | "data" | "voice+data";
@@ -259,7 +258,6 @@ export interface ProjectSettingsResponse {
     data_only?: boolean;
     shared_child_per_session?: boolean;
     agent_crash_policy?: "disconnect_all" | "restart_child";
-    agent_child_ipc_debug?: boolean;
   };
 }
 
@@ -490,8 +488,7 @@ export type ProjectSettingKey =
   | "idle_scale_down_seconds"
   | "data_only"
   | "shared_child_per_session"
-  | "agent_crash_policy"
-  | "agent_child_ipc_debug";
+  | "agent_crash_policy";
 
 export type ProjectSubscriptionTier = "free" | "ultimate";
 export type OrgSubscriptionStatus = "active" | "canceled";

@@ -66,6 +66,11 @@ export async function runProjectsSettingsSet(
   if (!name) {
     throw new Error("setting name is required");
   }
+  if (name === "agent_child_ipc_debug") {
+    throw new Error(
+      "agent_child_ipc_debug is not a project setting (it is no longer customer-configurable)",
+    );
+  }
   if (!(PROJECT_SETTING_KEYS as readonly string[]).includes(name)) {
     throw new Error(
       `Unknown setting ${name}; allowed: ${PROJECT_SETTING_KEYS.join(", ")}`,

@@ -68,6 +68,22 @@ describe("projects settings commands", () => {
       );
     });
 
+    it("does not list agent_child_ipc_debug", async () => {
+      listProjectSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { mode: "voice" },
+      });
+
+      await runProjectsSettingsList({});
+
+      expect(PROJECT_SETTING_KEYS as readonly string[]).not.toContain(
+        "agent_child_ipc_debug",
+      );
+      expect(console.log).not.toHaveBeenCalledWith(
+        expect.stringMatching(/^agent_child_ipc_debug=/),
+      );
+    });
+
     it("uses explicit project id over linked config", async () => {
       listProjectSettings.mockResolvedValue({
         project_id: "proj-2",
@@ -136,6 +152,16 @@ describe("projects settings commands", () => {
       await expect(
         runProjectsSettingsSet({ name: "unknown", value: "1" }),
       ).rejects.toThrow(/Unknown setting/);
+      expect(setProjectSetting).not.toHaveBeenCalled();
+    });
+
+    it("rejects agent_child_ipc_debug as not a project setting", async () => {
+      await expect(
+        runProjectsSettingsSet({
+          name: "agent_child_ipc_debug",
+          value: "true",
+        }),
+      ).rejects.toThrow(/not a project setting/);
       expect(setProjectSetting).not.toHaveBeenCalled();
     });
 

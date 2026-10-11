@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Removed
+
+- Removed `agent_child_ipc_debug` from project settings (no longer customer-configurable).
+
 ## [0.16.0] - 2026-10-09
 
 ### Added
