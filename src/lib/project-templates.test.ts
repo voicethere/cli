@@ -89,4 +89,22 @@ describe("project templates", () => {
     expect(help).toContain("E2e-only");
     expect(help).toContain("echo-smoke");
   });
+
+  it("init help shows each product template's title and summary", () => {
+    const help = formatInitTemplateHelp();
+    expect(help).toContain("language-switch");
+    expect(help).toContain("Language switch");
+    for (const template of listTemplates({ kind: "product" })) {
+      expect(help).toContain(`${template.title} — ${template.summary}`);
+      if (template.description !== template.summary) {
+        expect(help).not.toContain(template.description);
+      }
+    }
+  });
+
+  it("init rejects a template id the installed agent no longer ships", () => {
+    expect(() => assertPlatformCreateTemplateId("old-retired-template")).toThrow(
+      /Unknown template "old-retired-template".*language-switch/,
+    );
+  });
 });

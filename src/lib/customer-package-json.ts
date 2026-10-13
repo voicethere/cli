@@ -1,7 +1,7 @@
 import { templateNpmDependencies } from "./project-templates.js";
 
 /** Customer workspace pin — may differ from the CLI runtime `@voicethere/agent` dependency. */
-export const CUSTOMER_AGENT_VERSION = "0.9.7";
+export const CUSTOMER_AGENT_VERSION = "0.9.8";
 
 export interface BuildCustomerPackageJsonOptions {
   templateId: string;

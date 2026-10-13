@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-10-13
+
+### Changed
+
+- Dependency: `@voicethere/agent` **0.9.8**. `voicethere init` workspaces pin `^0.9.8`.
+- `voicethere init --help` lists each template with its name and a one-line summary (from the template registry in `@voicethere/agent` 0.9.8).
+
 ## [0.16.1] - 2026-10-13
 
 ### Changed
