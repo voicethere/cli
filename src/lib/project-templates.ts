@@ -102,7 +102,7 @@ export function formatInitTemplateHelp(): string {
     `  ${BLANK_TEMPLATE_ID.padEnd(idWidth)}  Minimal stub (agent.ts) — CLI only`,
     ...product.map(
       (template) =>
-        `  ${template.id.padEnd(idWidth)}  ${template.description}`,
+        `  ${template.id.padEnd(idWidth)}  ${template.title} — ${template.summary}`,
     ),
     "",
     `E2e-only (not accepted by init): ${e2e.map((template) => template.id).join(", ")}`,

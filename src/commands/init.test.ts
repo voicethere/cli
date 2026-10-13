@@ -108,7 +108,7 @@ describe("runInit", () => {
       dependencies: Record<string, string>;
       scripts: Record<string, string>;
     };
-    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.9.7");
+    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.9.8");
     expect(packageJson.scripts.verify).toContain("echo/agent.ts");
     expect(packageJson.scripts.upload).toBe("voicethere build upload");
     expect(packageJson.scripts["source:push"]).toBe("voicethere source push");
@@ -147,7 +147,7 @@ describe("runInit", () => {
     const packageJson = JSON.parse(
       await readFile(join(target, "package.json"), "utf8"),
     ) as { dependencies: Record<string, string>; scripts: Record<string, string> };
-    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.9.7");
+    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.9.8");
     expect(packageJson.scripts.build).toContain("world-sync/agent.ts");
     await expect(
       access(join(target, "world-sync", "agent.ts")),
@@ -166,7 +166,7 @@ describe("runInit", () => {
     const packageJson = JSON.parse(
       await readFile(join(target, "package.json"), "utf8"),
     ) as { dependencies: Record<string, string> };
-    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.9.7");
+    expect(packageJson.dependencies["@voicethere/agent"]).toBe("^0.9.8");
     const agent = await readFile(
       join(target, "language-switch", "agent.ts"),
       "utf8",

@@ -130,6 +130,8 @@ npm run verify
 
 `init --template` follows the product registry in `@voicethere/agent` (plus CLI-only `blank`). When the CLI bumps its agent dependency, new product templates become available without a hardcoded allow-list.
 
+`voicethere init --help` lists each template with its name and a one-line summary from the installed `@voicethere/agent`. If a later `@voicethere/agent` release drops a template, projects created from it keep building and deploying; `init` only offers the current list.
+
 Sources: [github.com/voicethere/agent/tree/main/templates](https://github.com/voicethere/agent/tree/main/templates)
 
 | Id | Summary |
