@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-10-13
+
+### Changed
+
+- Dependency: `@voicethere/agent` **0.9.7**. Workspaces created by `voicethere init` now pin `^0.9.7`, and `init --template language-switch` writes the updated template. When the new language's speech models are not ready, the agent tells the caller it is switching, tries once more after 20 seconds, and if that also fails says the language isn't available and carries on in the current one.
+
 ### Removed
 
 - Removed `agent_child_ipc_debug` from project settings (no longer customer-configurable).
