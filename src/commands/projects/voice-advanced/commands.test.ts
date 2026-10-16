@@ -59,7 +59,7 @@ describe("projects voice-advanced commands", () => {
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain(
       "connection.reconnectWindowSec",
     );
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(41);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(42);
     expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
       "voice.expectedLanguages",
     );
