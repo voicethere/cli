@@ -6,11 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
-## [0.16.3] - 2026-10-16
+## [0.16.4] - 2026-10-16
 
 ### Added
 
 - `projects voice-advanced` — `debug.ttsTextTrace` (on/off). While on, each agent reply's text and the text the voice engine received are written to your agent logs; it switches off 24 hours after you turn it on. Applies on the next deploy.
+
+## [0.16.3] - 2026-10-16
+
+### Added
+
 - `projects voice-advanced` — `tts.sentenceCase` (`auto` default, `off`). With `auto`, the first letter after a period, `!` or `?` is uppercased in the text the voice engine receives, so the period becomes a sentence break; your text is unchanged everywhere else. Applies on the next deploy.
 
 ## [0.16.2] - 2026-10-13
