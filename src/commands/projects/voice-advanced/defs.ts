@@ -38,6 +38,7 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "tts.speed",
   "tts.postUtteranceSilenceMs",
   "tts.phraseCache",
+  "tts.sentenceCase",
   "connection.reconnectWindowSec",
   "noiseSuppression.enabled",
   "languageId.enabled",
@@ -206,6 +207,13 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     description:
       "Runner TTS phrase cache: repeated replies are served from memory on the runner instead of being synthesised again. On by default.",
   },
+  "tts.sentenceCase": {
+    type: "string",
+    default: "auto",
+    enum: ["auto", "off"],
+    description:
+      "Uppercase the first letter after . ! ? in the text sent to the voice engine so periods become sentence breaks (pause, earlier first audio). Your text is not changed anywhere else. auto (default) or off.",
+  },
   "connection.reconnectWindowSec": {
     type: "number",
     default: 15,
@@ -373,6 +381,7 @@ export function formatVoiceAdvancedSettingsGroupHelp(): string {
     "  $ voicethere projects voice-advanced set vad.bargeIn.requireSttPartial false",
   );
   lines.push("  $ voicethere projects voice-advanced set tts.speed 0.9");
+  lines.push("  $ voicethere projects voice-advanced set tts.sentenceCase off");
   lines.push(
     '  $ voicethere projects voice-advanced set voice.profilesByLanguage \'{"de":{"stt":"de","tts":"de-thorsten-high"}}\'',
   );

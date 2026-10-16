@@ -190,6 +190,53 @@ describe("projects voice-advanced commands", () => {
     ).rejects.toThrow(/Invalid boolean/);
   });
 
+  describe("tts.sentenceCase", () => {
+    it("is a string enum auto|off that defaults to auto", () => {
+      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("tts.sentenceCase");
+      expect(VOICE_ADVANCED_SETTING_DEFS["tts.sentenceCase"]).toMatchObject({
+        type: "string",
+        enum: ["auto", "off"],
+        default: "auto",
+      });
+    });
+
+    it("appears in the list output with default auto", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { tts: { sentenceCase: "auto" } },
+      });
+
+      await runProjectsVoiceAdvancedList({});
+
+      expect(console.log).toHaveBeenCalledWith("tts.sentenceCase=auto");
+    });
+
+    it.each(["off", "auto"])("sets %s", async (value) => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+
+      await runProjectsVoiceAdvancedSet({ name: "tts.sentenceCase", value });
+
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        "tts.sentenceCase",
+        value,
+      );
+      expect(console.log).toHaveBeenCalledWith(`tts.sentenceCase=${value}`);
+    });
+
+    it("rejects bogus", async () => {
+      await expect(
+        runProjectsVoiceAdvancedSet({
+          name: "tts.sentenceCase",
+          value: "bogus",
+        }),
+      ).rejects.toThrow(/tts\.sentenceCase must be one of: auto, off/);
+    });
+  });
+
   describe("connection.reconnectWindowSec", () => {
     it("is a number 15-30 that defaults to 15", () => {
       expect(
