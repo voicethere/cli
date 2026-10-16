@@ -80,7 +80,7 @@ import { runBuildDownload } from "./commands/build/download.js";
 import { runBuildList } from "./commands/build/list.js";
 import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
-import { runDeploy } from "./commands/deploy.js";
+import { parseDeployMode, runDeploy } from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
 import { runInit } from "./commands/init.js";
 import { formatInitTemplateHelp } from "./lib/project-templates.js";
@@ -1435,7 +1435,11 @@ async function main(): Promise<void> {
       "--build-id <id>",
       "Build UUID (default: active or newest passed build)",
     )
-    .option("--mode <mode>", "Rollout mode: drain or force", "drain")
+    .option(
+      "--mode <mode>",
+      "Rollout mode: drain (calls in progress finish on the previous version, up to 9 min) or force (ends calls in progress right away)",
+      "drain",
+    )
     .option("--wait", "Poll until deployment completes or fails")
     .action(
       async (options: {
@@ -1444,7 +1448,7 @@ async function main(): Promise<void> {
         mode?: string;
         wait?: boolean;
       }) => {
-        const mode = options.mode === "force" ? "force" : "drain";
+        const mode = parseDeployMode(options.mode);
         await runDeploy({
           projectId: options.project,
           buildId: options.buildId,

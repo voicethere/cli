@@ -5,10 +5,19 @@ import { createApiFromCredentials } from "../lib/control-plane-auth.js";
 import { pollWithBackoff } from "../lib/poll-backoff.js";
 import { resolveProjectId } from "../lib/project-config.js";
 
+export type DeployMode = "drain" | "force";
+
+export function parseDeployMode(raw: string | undefined): DeployMode {
+  const value = raw?.trim() ?? "";
+  if (value === "" || value === "drain") return "drain";
+  if (value === "force") return "force";
+  throw new Error(`Invalid --mode "${raw}". Use drain or force.`);
+}
+
 export interface DeployOptions {
   projectId?: string;
   buildId?: string;
-  mode?: "drain" | "force";
+  mode?: DeployMode;
   wait?: boolean;
   pollIntervalMs?: number;
   timeoutMs?: number;
@@ -82,6 +91,9 @@ export async function runDeploy(options: DeployOptions = {}): Promise<void> {
   console.log(`Deployment completed: ${final.id}`);
   console.log(`  build: ${final.build_id}`);
   console.log(`  status: ${final.status}`);
+  if (final.mode) {
+    console.log(`  mode: ${final.mode}`);
+  }
 }
 
 /** @deprecated use runDeploy */

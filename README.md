@@ -282,6 +282,8 @@ BUILD_ID=$(voicethere build upload -m "v0.2 — shorter silence timeout" --print
 voicethere deploy --wait --build-id "$BUILD_ID"
 ```
 
+`deploy --mode force` ends calls in progress right away (use for urgent fixes); `--mode` now rejects values other than `drain` and `force`. The default, `drain`, lets calls in progress finish on the previous version (up to 9 min).
+
 Use **`build promote`** alone when you only need to update the control plane (e.g. smoke tests); use **`deploy --wait`** for anything that must run on staging runners.
 
 ## Repo config (version control)
@@ -332,7 +334,7 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `build validate [file]`                                                                          | Sandbox verify (default bundle from config)                                                 |
 | `build upload [file] [-m <msg>] [--skip-validate] [--print-id]`                                  | Upload to active project; `--print-id` prints only the build UUID                       |
 | `build promote [buildId]`                                                                        | Promote on active project (picker when omitted in TTY)                                      |
-| `deploy [--wait] [--build-id]`                                                                   | Promote (if needed) + cloud rollout; `--wait` blocks                                        |
+| `deploy [--wait] [--build-id] [--mode drain\|force]`                                             | Promote (if needed) + cloud rollout; `--wait` blocks                                        |
 
 ## Logging
 

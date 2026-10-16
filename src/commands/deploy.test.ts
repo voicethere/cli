@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runDeploy } from "./deploy.js";
+import { parseDeployMode, runDeploy } from "./deploy.js";
 
 const createDeployment = vi.fn();
 const getDeployment = vi.fn();
@@ -180,6 +180,92 @@ describe("runDeploy", () => {
     expect(resolveProjectId).not.toHaveBeenCalled();
     expect(createDeployment).toHaveBeenCalledWith({
       project_id: "proj-2",
+      build_id: undefined,
+      mode: "drain",
+    });
+  });
+});
+
+describe("parseDeployMode", () => {
+  it("defaults to drain", () => {
+    expect(parseDeployMode(undefined)).toBe("drain");
+    expect(parseDeployMode("")).toBe("drain");
+    expect(parseDeployMode("drain")).toBe("drain");
+  });
+
+  it("accepts force, trimming surrounding spaces", () => {
+    expect(parseDeployMode("force")).toBe("force");
+    expect(parseDeployMode(" force ")).toBe("force");
+  });
+
+  it("rejects anything else", () => {
+    expect(() => parseDeployMode("Force")).toThrow(
+      'Invalid --mode "Force". Use drain or force.',
+    );
+    expect(() => parseDeployMode("bogus")).toThrow(
+      'Invalid --mode "bogus". Use drain or force.',
+    );
+  });
+});
+
+describe("runDeploy mode", () => {
+  beforeEach(() => {
+    createDeployment.mockReset();
+    getDeployment.mockReset();
+    requireCredentials.mockReset();
+    resolveProjectId.mockReset();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    requireCredentials.mockResolvedValue({
+      api_key: "vth_test",
+      api_base: "https://app.voicethere.dev/api/v1",
+    });
+    resolveProjectId.mockResolvedValue({
+      projectId: "proj-1",
+      source: "config",
+      configPath: "/repo/.voicethere/config.json",
+    });
+  });
+
+  function job(status: string, mode: string) {
+    return {
+      id: "dep-1",
+      org_id: "org-1",
+      project_id: "proj-1",
+      build_id: "build-1",
+      status,
+      mode,
+      bullmq_job_id: "job-1",
+      error: null,
+      created_at: "2026-01-01T00:00:00Z",
+      completed_at: status === "completed" ? "2026-01-01T00:01:00Z" : null,
+    };
+  }
+
+  it("sends mode force and polls to completed", async () => {
+    createDeployment.mockResolvedValue(job("queued", "force"));
+    getDeployment
+      .mockResolvedValueOnce(job("active", "force"))
+      .mockResolvedValueOnce(job("completed", "force"));
+
+    await runDeploy({ mode: "force", wait: true, pollIntervalMs: 1 });
+
+    expect(createDeployment).toHaveBeenCalledWith({
+      project_id: "proj-1",
+      build_id: undefined,
+      mode: "force",
+    });
+    expect(getDeployment).toHaveBeenCalledWith("dep-1");
+    expect(console.log).toHaveBeenCalledWith("Deployment completed: dep-1");
+    expect(console.log).toHaveBeenCalledWith("  mode: force");
+  });
+
+  it("sends mode drain when no mode is given", async () => {
+    createDeployment.mockResolvedValue(job("queued", "drain"));
+
+    await runDeploy({});
+
+    expect(createDeployment).toHaveBeenCalledWith({
+      project_id: "proj-1",
       build_id: undefined,
       mode: "drain",
     });
