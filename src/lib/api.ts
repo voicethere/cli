@@ -345,6 +345,7 @@ export type VoiceAdvancedSettingKey =
   | "tts.postUtteranceSilenceMs"
   | "tts.phraseCache"
   | "tts.sentenceCase"
+  | "debug.ttsTextTrace"
   | "connection.reconnectWindowSec"
   | "events.mode"
   | "noiseSuppression.enabled"

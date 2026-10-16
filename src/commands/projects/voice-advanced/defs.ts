@@ -39,6 +39,7 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "tts.postUtteranceSilenceMs",
   "tts.phraseCache",
   "tts.sentenceCase",
+  "debug.ttsTextTrace",
   "connection.reconnectWindowSec",
   "noiseSuppression.enabled",
   "languageId.enabled",
@@ -214,6 +215,12 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     description:
       "Uppercase the first letter after . ! ? in the text sent to the voice engine so periods become sentence breaks (pause, earlier first audio). Your text is not changed anywhere else. auto (default) or off.",
   },
+  "debug.ttsTextTrace": {
+    type: "boolean",
+    default: false,
+    description:
+      "Write the text sent to the voice engine into your agent logs, one line per reply. Switches off automatically 24 hours after you turn it on; applies on the next deploy.",
+  },
   "connection.reconnectWindowSec": {
     type: "number",
     default: 15,
@@ -359,7 +366,7 @@ export function formatVoiceAdvancedSettingsGroupHelp(): string {
   const lines = [
     "",
     "Advanced voice pipeline settings apply on the next deploy.",
-    "Boolean values: true|false|1|0|yes|no.",
+    "Boolean values: true|false|1|0|yes|no|on|off.",
     "",
     "Keys (default in parentheses):",
   ];
@@ -382,6 +389,9 @@ export function formatVoiceAdvancedSettingsGroupHelp(): string {
   );
   lines.push("  $ voicethere projects voice-advanced set tts.speed 0.9");
   lines.push("  $ voicethere projects voice-advanced set tts.sentenceCase off");
+  lines.push(
+    "  $ voicethere projects voice-advanced set debug.ttsTextTrace on",
+  );
   lines.push(
     '  $ voicethere projects voice-advanced set voice.profilesByLanguage \'{"de":{"stt":"de","tts":"de-thorsten-high"}}\'',
   );
@@ -487,10 +497,20 @@ export function parseVoiceAdvancedSettingValue(
 
   if (def.type === "boolean") {
     const normalized = raw.trim().toLowerCase();
-    if (normalized === "true" || normalized === "1" || normalized === "yes") {
+    if (
+      normalized === "true" ||
+      normalized === "1" ||
+      normalized === "yes" ||
+      normalized === "on"
+    ) {
       return true;
     }
-    if (normalized === "false" || normalized === "0" || normalized === "no") {
+    if (
+      normalized === "false" ||
+      normalized === "0" ||
+      normalized === "no" ||
+      normalized === "off"
+    ) {
       return false;
     }
     throw new Error(`Invalid boolean for ${key}: use true or false`);
@@ -548,9 +568,11 @@ const RESOLVED_PATH_OVERRIDES: Partial<
 
 function getNestedValue(
   settings: Record<string, unknown>,
-  key: VoiceAdvancedSettingKey,
+  key: VoiceAdvancedSettingKey | "debug.ttsTextTraceUntil",
 ): unknown {
-  const parts = RESOLVED_PATH_OVERRIDES[key] ?? key.split(".");
+  const parts =
+    (RESOLVED_PATH_OVERRIDES as Record<string, string[] | undefined>)[key] ??
+    key.split(".");
   let current: unknown = settings;
   for (const part of parts) {
     if (!current || typeof current !== "object") {
@@ -568,6 +590,12 @@ export function formatVoiceAdvancedSettingLine(
   const value = getNestedValue(settings, key);
   if (value === undefined) {
     return null;
+  }
+  if (key === "debug.ttsTextTrace" && value === true) {
+    const until = getNestedValue(settings, "debug.ttsTextTraceUntil");
+    if (typeof until === "string" && until.length > 0) {
+      return `${key}=${String(value)} (on until ${until})`;
+    }
   }
   return `${key}=${String(value)}`;
 }

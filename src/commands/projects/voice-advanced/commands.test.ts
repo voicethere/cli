@@ -59,7 +59,7 @@ describe("projects voice-advanced commands", () => {
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain(
       "connection.reconnectWindowSec",
     );
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(42);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(43);
     expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
       "voice.expectedLanguages",
     );
@@ -170,7 +170,10 @@ describe("projects voice-advanced commands", () => {
       settings: {},
     });
 
-    await runProjectsVoiceAdvancedSet({ name: "tts.phraseCache", value: "false" });
+    await runProjectsVoiceAdvancedSet({
+      name: "tts.phraseCache",
+      value: "false",
+    });
     expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
       "proj-1",
       "tts.phraseCache",
@@ -178,7 +181,10 @@ describe("projects voice-advanced commands", () => {
     );
     expect(console.log).toHaveBeenCalledWith("tts.phraseCache=false");
 
-    await runProjectsVoiceAdvancedSet({ name: "tts.phraseCache", value: "true" });
+    await runProjectsVoiceAdvancedSet({
+      name: "tts.phraseCache",
+      value: "true",
+    });
     expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
       "proj-1",
       "tts.phraseCache",
@@ -234,6 +240,80 @@ describe("projects voice-advanced commands", () => {
           value: "bogus",
         }),
       ).rejects.toThrow(/tts\.sentenceCase must be one of: auto, off/);
+    });
+  });
+
+  describe("debug.ttsTextTrace", () => {
+    it("is a boolean that defaults to off", () => {
+      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("debug.ttsTextTrace");
+      expect(VOICE_ADVANCED_SETTING_DEFS["debug.ttsTextTrace"]).toMatchObject({
+        type: "boolean",
+        default: false,
+      });
+    });
+
+    it.each([
+      ["on", true],
+      ["true", true],
+      ["off", false],
+      ["false", false],
+    ])("set %s sends %s", async (value, expected) => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+
+      await runProjectsVoiceAdvancedSet({
+        name: "debug.ttsTextTrace",
+        value,
+      });
+
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        "debug.ttsTextTrace",
+        expected,
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        `debug.ttsTextTrace=${String(expected)}`,
+      );
+    });
+
+    it("rejects an invalid value", async () => {
+      await expect(
+        runProjectsVoiceAdvancedSet({
+          name: "debug.ttsTextTrace",
+          value: "maybe",
+        }),
+      ).rejects.toThrow(/Invalid boolean/);
+    });
+
+    it("list shows on until when the API returns an end time", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {
+          debug: {
+            ttsTextTrace: true,
+            ttsTextTraceUntil: "2026-10-17T08:00:00.000Z",
+          },
+        },
+      });
+
+      await runProjectsVoiceAdvancedList({});
+
+      expect(console.log).toHaveBeenCalledWith(
+        "debug.ttsTextTrace=true (on until 2026-10-17T08:00:00.000Z)",
+      );
+    });
+
+    it("list shows plain off when the trace is off", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { debug: { ttsTextTrace: false, ttsTextTraceUntil: null } },
+      });
+
+      await runProjectsVoiceAdvancedList({});
+
+      expect(console.log).toHaveBeenCalledWith("debug.ttsTextTrace=false");
     });
   });
 
