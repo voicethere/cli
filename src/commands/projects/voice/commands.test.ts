@@ -45,6 +45,18 @@ describe("projects voice set", () => {
     expect(customerSttProviderIds()).not.toContain("mock");
     expect(customerTtsProviderIds()).not.toContain("mock");
   });
+
+  it("accepts the fishaudio vendor for STT and TTS and rejects a misspelling", () => {
+    expect(customerSttProviderIds()).toContain("fishaudio");
+    expect(customerTtsProviderIds()).toContain("fishaudio");
+    expect(() => assertVoiceProviders("fishaudio", "fishaudio")).not.toThrow();
+    expect(() => assertVoiceProviders("fishy", "fishaudio")).toThrow(
+      /Unknown STT provider: fishy/,
+    );
+    expect(() => assertVoiceProviders("fishaudio", "fishy")).toThrow(
+      /Unknown TTS provider: fishy/,
+    );
+  });
 });
 
 describe("projects voice catalog helpers", () => {
