@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Changed
+
+- `deploy --mode force` ends calls in progress right away (use for urgent fixes); `--mode` now rejects values other than `drain` and `force`.
+
 ## [0.16.4] - 2026-10-16
 
 ### Added
