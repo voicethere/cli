@@ -82,6 +82,8 @@ import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
 import { parseDeployMode, runDeploy } from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
+import { runDeploymentsList } from "./commands/deployments/list.js";
+import { runDeploymentsShow } from "./commands/deployments/show.js";
 import { runInit } from "./commands/init.js";
 import { formatInitTemplateHelp } from "./lib/project-templates.js";
 import {
@@ -1469,6 +1471,55 @@ async function main(): Promise<void> {
         wait: options.wait,
       });
     });
+
+  const deployments = program
+    .command("deployments")
+    .description("Deployment history for the active project");
+
+  deployments
+    .command("list")
+    .description(
+      "List recent deployments with status and duration (newest first)",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--limit <n>", "Max rows, 1 to 50", "20")
+    .option(
+      "--before <ISO>",
+      "Only deployments started before this ISO 8601 time (use the printed next: value to page)",
+    )
+    .option("--json", "Output JSON")
+    .action(
+      async (options: {
+        project?: string;
+        limit?: string;
+        before?: string;
+        json?: boolean;
+      }) => {
+        await runDeploymentsList({
+          projectId: options.project,
+          limit: options.limit ? Number(options.limit) : undefined,
+          before: options.before,
+          json: options.json,
+        });
+      },
+    );
+
+  deployments
+    .command("show <deploymentId>")
+    .description("Show the timeline of one deployment, with UTC timestamps")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--json", "Output JSON")
+    .action(
+      async (
+        deploymentId: string,
+        options: { project?: string; json?: boolean },
+      ) => {
+        await runDeploymentsShow(deploymentId, {
+          projectId: options.project,
+          json: options.json,
+        });
+      },
+    );
 
   await program.parseAsync(process.argv);
 }

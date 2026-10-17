@@ -335,6 +335,8 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `build upload [file] [-m <msg>] [--skip-validate] [--print-id]`                                  | Upload to active project; `--print-id` prints only the build UUID                       |
 | `build promote [buildId]`                                                                        | Promote on active project (picker when omitted in TTY)                                      |
 | `deploy [--wait] [--build-id] [--mode drain\|force]`                                             | Promote (if needed) + cloud rollout; `--wait` blocks                                        |
+| `deployments list [--project <id>] [--limit <n>] [--before <iso>] [--json]`                      | Recent deployments with status and duration, newest first; prints `next: --before …` for more |
+| `deployments show <deploymentId> [--project <id>] [--json]`                                      | Timeline of one deployment with UTC timestamps                                              |
 
 ## Logging
 
@@ -448,6 +450,49 @@ voicethere projects billing-settings set metered_overage_enabled true
 voicethere projects billing-settings set budget_cap_amount 50
 voicethere projects billing-settings set budget_cap_amount null
 ```
+
+## Deployment history
+
+Every deploy keeps a timeline: when it was requested, when the new version took over new calls, when the previous version finished its calls, and how it ended. The timelines are kept for 90 days.
+
+```bash
+voicethere deployments list
+voicethere deployments list --limit 50 --json
+voicethere deployments show 11111111-aaaa-4bbb-8ccc-000000000001
+```
+
+`list` shows the project's deploys, newest first (up to 50 per page). When more exist it ends with a `next: --before <time>` line; pass that value to `--before` to read the next page. Both commands use the project from `.voicethere/config.json`, or `--project <id>`.
+
+```text
+Started (UTC)        Build     Mode   Status     Duration  Last event (UTC)
+2026-10-17 12:00:00  a1b2c3d4  drain  completed  2:05      2026-10-17 12:09:30
+2026-10-17 10:30:00  e5f6a7b8  force  completed  0:42      2026-10-17 10:30:42
+next: --before 2026-10-17T10:30:00.000Z
+```
+
+`show` prints one line per step: the time in UTC, the time since the deploy was requested, and what happened. A drain deploy keeps going after it finishes, because the previous version stays up until its last call ends; its "Previous version stopped" line can arrive minutes later.
+
+```text
+11111111-aaaa-4bbb-8ccc-000000000001  build a1b2c3d4  drain  completed  started 2026-10-17 12:00:00 UTC
+12:00:00 UTC  +0:00  Deploy requested                      mode=drain
+12:00:02 UTC  +0:02  Rollout started                       mode=drain
+12:01:40 UTC  +1:40  New version ready                     runners=2
+12:01:41 UTC  +1:41  New calls go to the new version       versions=1
+12:01:42 UTC  +1:42  Previous version finishing its calls  runners=2
+12:02:05 UTC  +2:05  Deploy finished
+12:09:30 UTC  +9:30  Previous version stopped              drained in 7:48
+```
+
+A deploy that was refused shows why, in plain words:
+
+```text
+09:00:00 UTC  +0:00  Deploy requested  mode=drain
+09:00:01 UTC  +0:01  Deploy refused    The previous version is still finishing its calls. Try again when it stops, or deploy with Force.
+```
+
+Deploys from before the history was recorded have no stored steps. For those, `show` lists the request and the result and ends with `(start and end only)`.
+
+`--json` prints the API response unchanged.
 
 ## Conversation history
 
