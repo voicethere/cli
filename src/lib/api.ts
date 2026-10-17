@@ -188,6 +188,45 @@ export interface DeploymentJob {
   retry_after_ms?: number | null;
 }
 
+/** One row of the project deployment history (`GET /projects/{id}/deployments`). */
+export interface DeploymentSummary {
+  id: string;
+  build_id: string;
+  mode: DeploymentMode;
+  status: DeploymentStatus;
+  error: string | null;
+  created_at: string;
+  completed_at: string | null;
+  last_event_at: string | null;
+  event_count: number;
+}
+
+export interface DeploymentEvent {
+  id: string;
+  type: string;
+  occurred_at: string;
+  details: Record<string, unknown>;
+}
+
+export interface ListProjectDeploymentsQuery {
+  /** 1–50; the API default is 20. */
+  limit?: number;
+  /** Exclusive `created_at` cursor (ISO 8601). */
+  before?: string;
+}
+
+export interface ListProjectDeploymentsResponse {
+  deployments: DeploymentSummary[];
+  next_before: string | null;
+}
+
+export interface DeploymentEventsResponse {
+  deployment: DeploymentSummary;
+  events: DeploymentEvent[];
+  /** True when the events were derived from the job row (start and end only). */
+  derived: boolean;
+}
+
 export type ProjectDeletionJobStatus =
   "queued" | "running" | "completed" | "failed";
 
@@ -1122,6 +1161,34 @@ export class VoicethereApi {
 
   async getDeployment(jobId: string): Promise<DeploymentJob> {
     return this.request<DeploymentJob>("GET", `/deployments/${jobId}`);
+  }
+
+  async listProjectDeployments(
+    projectId: string,
+    query: ListProjectDeploymentsQuery = {},
+  ): Promise<ListProjectDeploymentsResponse> {
+    const params = new URLSearchParams();
+    if (query.limit != null) {
+      params.set("limit", String(query.limit));
+    }
+    if (query.before) {
+      params.set("before", query.before);
+    }
+    const suffix = params.toString();
+    return this.request<ListProjectDeploymentsResponse>(
+      "GET",
+      `/projects/${projectId}/deployments${suffix ? `?${suffix}` : ""}`,
+    );
+  }
+
+  async getDeploymentEvents(
+    projectId: string,
+    deploymentId: string,
+  ): Promise<DeploymentEventsResponse> {
+    return this.request<DeploymentEventsResponse>(
+      "GET",
+      `/projects/${projectId}/deployments/${encodeURIComponent(deploymentId)}/events`,
+    );
   }
 
   async rollback(projectId: string, buildId?: string): Promise<PromoteResult> {
