@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.16.6] - 2026-10-17
+
 ### Added
 
 - `deployments list` and `deployments show`: the history of a project's deploys, with a UTC timeline for each: when it was requested, when new calls moved to the new version, when the previous version finished its calls, and how it ended.
