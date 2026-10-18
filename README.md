@@ -466,7 +466,7 @@ voicethere deployments show 11111111-aaaa-4bbb-8ccc-000000000001
 ```text
 Started (UTC)        Build     Mode   Status     By                 Duration  Last event (UTC)
 2026-10-17 12:00:00  a1b2c3d4  drain  completed  alice@example.com  2:05      2026-10-17 12:09:30
-2026-10-17 10:30:00  e5f6a7b8  force  completed  Key: ci-deploy     0:42      2026-10-17 10:30:42
+2026-10-17 10:30:00  e5f6a7b8  force  completed  ci-deploy          0:42      2026-10-17 10:30:42
 next: --before 2026-10-17T10:30:00.000Z
 ```
 
