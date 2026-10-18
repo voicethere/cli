@@ -76,13 +76,44 @@ describe("formatDeploymentList", () => {
         "2026-10-17T09:00:00.000Z",
       ),
     ).toEqual([
-      "Started (UTC)        Build     Mode   Status     Duration  Last event (UTC)",
-      "2026-10-17 12:00:00  a1b2c3d4  drain  completed  2:05      2026-10-17 12:09:30",
-      "2026-10-17 10:30:00  e5f6a7b8  force  completed  0:42      2026-10-17 10:30:42",
-      "2026-10-17 09:00:00  c9d0e1f2  drain  failed     0:01      2026-10-17 09:00:01",
-      "2026-10-17 12:00:00  a1b2c3d4  drain  active     -         -",
+      "Started (UTC)        Build     Mode   Status     By  Duration  Last event (UTC)",
+      "2026-10-17 12:00:00  a1b2c3d4  drain  completed  -   2:05      2026-10-17 12:09:30",
+      "2026-10-17 10:30:00  e5f6a7b8  force  completed  -   0:42      2026-10-17 10:30:42",
+      "2026-10-17 09:00:00  c9d0e1f2  drain  failed     -   0:01      2026-10-17 09:00:01",
+      "2026-10-17 12:00:00  a1b2c3d4  drain  active     -   -         -",
       "next: --before 2026-10-17T09:00:00.000Z",
     ]);
+  });
+
+  it("list shows the requester in a By column", () => {
+    const byKey: DeploymentSummary = {
+      ...drainJob,
+      requested_by: { kind: "personal_api_key", label: "Key: ci-deploy" },
+    };
+    const byUnknown: DeploymentSummary = {
+      ...forceJob,
+      requested_by: { kind: "unknown", label: null },
+    };
+    const lines = formatDeploymentList([byKey, byUnknown], null);
+    expect(lines).toEqual([
+      "Started (UTC)        Build     Mode   Status     By              Duration  Last event (UTC)",
+      "2026-10-17 12:00:00  a1b2c3d4  drain  completed  Key: ci-deploy  2:05      2026-10-17 12:09:30",
+      "2026-10-17 10:30:00  e5f6a7b8  force  completed  -               0:42      2026-10-17 10:30:42",
+    ]);
+    const [header, row1, row2] = lines as [string, string, string];
+    expect(header).toContain("By");
+    expect(row1).toContain("Key: ci-deploy");
+    const durationOffset = header.indexOf("Duration");
+    expect(row1.slice(durationOffset)).toMatch(/^2:05 /);
+    expect(row2.slice(durationOffset)).toMatch(/^0:42 /);
+    expect(row2.slice(header.indexOf("By"))).toMatch(/^- {15}0:42/);
+  });
+
+  it("list without requested_by from an older server shows -", () => {
+    const lines = formatDeploymentList([forceJob], null);
+    expect(forceJob.requested_by).toBeUndefined();
+    expect(lines[0]).toContain("By");
+    expect(lines[1]).toContain("completed  -   0:42");
   });
 
   it("omits the cursor on the last page", () => {
@@ -181,6 +212,39 @@ describe("formatDeploymentTimeline", () => {
       "09:00:00 UTC  +0:00  Deploy requested  mode=drain",
       "09:00:01 UTC  +0:01  Deploy refused    The previous version is still finishing its calls. Try again when it stops, or deploy with Force.  runners retiring=2",
     ]);
+  });
+
+  it("show prints Requested by under the header", () => {
+    const lines = formatDeploymentTimeline(
+      {
+        ...forceJob,
+        requested_by: { kind: "user", label: "alice@example.com" },
+      },
+      [event("requested", "2026-10-17T10:30:00.000Z")],
+      false,
+    );
+    expect(lines[0]).toContain("started 2026-10-17 10:30:00 UTC");
+    expect(lines[1]).toBe("Requested by: alice@example.com");
+    expect(lines[2]).toBe("10:30:00 UTC  +0:00  Deploy requested");
+  });
+
+  it("show prints Requested by: - when the requester is unknown", () => {
+    const lines = formatDeploymentTimeline(
+      { ...forceJob, requested_by: { kind: "unknown", label: null } },
+      [event("requested", "2026-10-17T10:30:00.000Z")],
+      false,
+    );
+    expect(lines[1]).toBe("Requested by: -");
+  });
+
+  it("show omits the Requested by line when the server does not send requested_by", () => {
+    const lines = formatDeploymentTimeline(
+      forceJob,
+      [event("requested", "2026-10-17T10:30:00.000Z")],
+      false,
+    );
+    expect(lines.join("\n")).not.toContain("Requested by");
+    expect(lines[1]).toBe("10:30:00 UTC  +0:00  Deploy requested");
   });
 
   it("marks a derived timeline", () => {

@@ -461,12 +461,12 @@ voicethere deployments list --limit 50 --json
 voicethere deployments show 11111111-aaaa-4bbb-8ccc-000000000001
 ```
 
-`list` shows the project's deploys, newest first (up to 50 per page). When more exist it ends with a `next: --before <time>` line; pass that value to `--before` to read the next page. Both commands use the project from `.voicethere/config.json`, or `--project <id>`.
+`list` shows the project's deploys, newest first (up to 50 per page). When more exist it ends with a `next: --before <time>` line; pass that value to `--before` to read the next page. Both commands use the project from `.voicethere/config.json`, or `--project <id>`. The By column shows who started the deploy: a user's email or the name of the API key; it shows `-` when the server does not know.
 
 ```text
-Started (UTC)        Build     Mode   Status     Duration  Last event (UTC)
-2026-10-17 12:00:00  a1b2c3d4  drain  completed  2:05      2026-10-17 12:09:30
-2026-10-17 10:30:00  e5f6a7b8  force  completed  0:42      2026-10-17 10:30:42
+Started (UTC)        Build     Mode   Status     By                 Duration  Last event (UTC)
+2026-10-17 12:00:00  a1b2c3d4  drain  completed  alice@example.com  2:05      2026-10-17 12:09:30
+2026-10-17 10:30:00  e5f6a7b8  force  completed  ci-deploy          0:42      2026-10-17 10:30:42
 next: --before 2026-10-17T10:30:00.000Z
 ```
 
@@ -474,6 +474,7 @@ next: --before 2026-10-17T10:30:00.000Z
 
 ```text
 11111111-aaaa-4bbb-8ccc-000000000001  build a1b2c3d4  drain  completed  started 2026-10-17 12:00:00 UTC
+Requested by: alice@example.com
 12:00:00 UTC  +0:00  Deploy requested                      mode=drain
 12:00:02 UTC  +0:02  Rollout started                       mode=drain
 12:01:40 UTC  +1:40  New version ready                     runners=2
@@ -482,6 +483,8 @@ next: --before 2026-10-17T10:30:00.000Z
 12:02:05 UTC  +2:05  Deploy finished
 12:09:30 UTC  +9:30  Previous version stopped              drained in 7:48
 ```
+
+The line under the header, `Requested by: <who>`, names whoever started the deploy.
 
 A deploy that was refused shows why, in plain words:
 
