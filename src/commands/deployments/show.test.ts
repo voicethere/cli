@@ -142,6 +142,33 @@ describe("runDeploymentsShow", () => {
     expect(printed[1]).toBe("Requested by: alice@example.com");
   });
 
+  it("prints the Failure line right after the header when the deploy has a failure", async () => {
+    getDeploymentEvents.mockResolvedValue({
+      deployment: {
+        ...deployment,
+        status: "failed",
+        failure: {
+          class: "platform",
+          code: "CLUSTER_CAPACITY",
+          message: "We don't have enough capacity right now.",
+          retrying: false,
+          attempt: null,
+          max_attempts: null,
+          support_email: "support@voicethere.io",
+        },
+      },
+      events,
+      derived: false,
+    });
+
+    await runDeploymentsShow(deployment.id);
+
+    const printed = vi.mocked(console.log).mock.calls.map((call) => call[0]);
+    expect(printed[1]).toBe(
+      "Failure: on our side CLUSTER_CAPACITY: We don't have enough capacity right now.",
+    );
+  });
+
   it("requires a deployment id", async () => {
     await expect(runDeploymentsShow("  ")).rejects.toThrow(
       /deploymentId is required/,

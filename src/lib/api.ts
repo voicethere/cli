@@ -174,6 +174,20 @@ export type DeploymentStatus = "queued" | "active" | "completed" | "failed";
 
 export type DeploymentMode = "drain" | "force" | "undeploy";
 
+export type DeploymentFailureClass = "customer" | "platform" | "transient";
+
+/** Why a deploy failed, and who has to act. Absent on older API versions. */
+export interface DeploymentFailure {
+  class: DeploymentFailureClass;
+  code: string;
+  message: string;
+  retrying: boolean;
+  attempt: number | null;
+  max_attempts: number | null;
+  /** Set only for class "platform". */
+  support_email: string | null;
+}
+
 export interface DeploymentJob {
   id: string;
   org_id: string;
@@ -186,6 +200,10 @@ export interface DeploymentJob {
   created_at: string;
   completed_at: string | null;
   retry_after_ms?: number | null;
+  /** The next three fields are absent on API versions before failure classification. */
+  failure?: DeploymentFailure | null;
+  trace_id?: string | null;
+  started_at?: string | null;
 }
 
 export type DeploymentRequesterKind =
@@ -213,6 +231,10 @@ export interface DeploymentSummary {
   event_count: number;
   /** Absent on API versions before deployment requester support. */
   requested_by?: DeploymentRequestedBy;
+  /** Absent on API versions before failure classification. */
+  failure?: DeploymentFailure | null;
+  trace_id?: string | null;
+  started_at?: string | null;
 }
 
 export interface DeploymentEvent {

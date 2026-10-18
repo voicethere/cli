@@ -50,3 +50,16 @@ export function deploymentEventLabel(type: string): string {
 export function deploymentBlockedCodeText(code: string): string | undefined {
   return DEPLOYMENT_BLOCKED_CODE_TEXT[code];
 }
+
+const REFUSED_FAILURE_CODES = new Set([
+  "PREVIOUS_VERSION_DRAINING",
+  "FORCED_ROLLOUT_SHUTTING_DOWN",
+]);
+
+/** A customer-class failure that is a refusal at the door: nothing in the agent to fix. */
+export function isRefusedFailure(failure: {
+  class: string;
+  code: string;
+}): boolean {
+  return failure.class === "customer" && REFUSED_FAILURE_CODES.has(failure.code);
+}

@@ -247,6 +247,102 @@ describe("formatDeploymentTimeline", () => {
     expect(lines[1]).toBe("10:30:00 UTC  +0:00  Deploy requested");
   });
 
+  it.each([
+    ["customer", "fix needed in your agent", "AGENT_START_FAILED"],
+    ["platform", "on our side", "CLUSTER_CAPACITY"],
+    ["transient", "retrying", "READY_TIMEOUT"],
+  ] as const)(
+    "show prints a Failure line for a %s failure",
+    (failureClass, label, code) => {
+      const lines = formatDeploymentTimeline(
+        {
+          ...blockedJob,
+          requested_by: { kind: "user", label: "alice@example.com" },
+          failure: {
+            class: failureClass,
+            code,
+            message: "Something happened.",
+            retrying: failureClass === "transient",
+            attempt: null,
+            max_attempts: null,
+            support_email: null,
+          },
+        },
+        [event("requested", "2026-10-17T09:00:00.000Z")],
+        false,
+      );
+      expect(lines[1]).toBe("Requested by: alice@example.com");
+      expect(lines[2]).toBe(`Failure: ${label} ${code}: Something happened.`);
+      expect(lines[3]).toBe("09:00:00 UTC  +0:00  Deploy requested");
+    },
+  );
+
+  it.each(["PREVIOUS_VERSION_DRAINING", "FORCED_ROLLOUT_SHUTTING_DOWN"])(
+    "show labels the %s failure as refused",
+    (code) => {
+      const lines = formatDeploymentTimeline(
+        {
+          ...blockedJob,
+          failure: {
+            class: "customer",
+            code,
+            message: "Try again later.",
+            retrying: false,
+            attempt: null,
+            max_attempts: null,
+            support_email: null,
+          },
+        },
+        [event("requested", "2026-10-17T09:00:00.000Z")],
+        false,
+      );
+      expect(lines[1]).toBe(`Failure: refused ${code}: Try again later.`);
+    },
+  );
+
+  it("show without a failure prints no Failure line", () => {
+    const lines = formatDeploymentTimeline(
+      blockedJob,
+      [event("requested", "2026-10-17T09:00:00.000Z")],
+      false,
+    );
+    expect(lines.join("\n")).not.toContain("Failure:");
+  });
+
+  it("a failed event shows no error chip when the deploy has a failure", () => {
+    const failed = event("failed", "2026-10-17T09:00:05.000Z", {
+      error: "AGENT_START_FAILED",
+    });
+    const withFailure = formatDeploymentTimeline(
+      {
+        ...blockedJob,
+        failure: {
+          class: "customer",
+          code: "AGENT_START_FAILED",
+          message: "Your agent threw an error while it was loading.",
+          retrying: false,
+          attempt: null,
+          max_attempts: null,
+          support_email: null,
+        },
+      },
+      [failed],
+      false,
+    );
+    expect(withFailure[withFailure.length - 1]).toBe(
+      "09:00:05 UTC  +0:05  Deploy failed",
+    );
+
+    const withoutFailure = formatDeploymentTimeline(
+      blockedJob,
+      [failed],
+      false,
+    );
+    expect(withoutFailure[withoutFailure.length - 1]).toBe(
+      "09:00:05 UTC  +0:05  Deploy failed  error: AGENT_START_FAILED",
+    );
+  });
+
   it("marks a derived timeline", () => {
     expect(
       formatDeploymentTimeline(

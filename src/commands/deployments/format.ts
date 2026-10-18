@@ -1,11 +1,13 @@
 import type {
   DeploymentEvent,
+  DeploymentFailureClass,
   DeploymentRequestedBy,
   DeploymentSummary,
 } from "../../lib/api.js";
 import {
   deploymentBlockedCodeText,
   deploymentEventLabel,
+  isRefusedFailure,
 } from "../../lib/deployment-labels.js";
 
 /** `YYYY-MM-DD HH:MM:SS` in UTC. */
@@ -95,12 +97,21 @@ export function formatDeploymentList(
   return lines;
 }
 
+const FAILURE_CLASS_LABEL: Record<DeploymentFailureClass, string> = {
+  customer: "fix needed in your agent",
+  platform: "on our side",
+  transient: "retrying",
+};
+
 function countChip(name: string, value: unknown): string | undefined {
   return typeof value === "number" ? `${name}=${value}` : undefined;
 }
 
 /** Customer-safe chips for the details of one event. Unknown keys stay in `--json`. */
-export function eventDetailChips(event: DeploymentEvent): string[] {
+export function eventDetailChips(
+  event: DeploymentEvent,
+  deploymentHasFailure = false,
+): string[] {
   const details = event.details ?? {};
   const chips: (string | undefined)[] = [];
 
@@ -119,7 +130,12 @@ export function eventDetailChips(event: DeploymentEvent): string[] {
   if (typeof details.drain_duration_ms === "number") {
     chips.push(`drained in ${formatMinSec(details.drain_duration_ms)}`);
   }
-  if (typeof details.error === "string" && details.error.length > 0) {
+  const failureShownAbove = event.type === "failed" && deploymentHasFailure;
+  if (
+    typeof details.error === "string" &&
+    details.error.length > 0 &&
+    !failureShownAbove
+  ) {
     chips.push(`error: ${details.error}`);
   }
   return chips.filter((chip): chip is string => chip !== undefined);
@@ -142,12 +158,19 @@ export function formatDeploymentTimeline(
   if (deployment.requested_by) {
     lines.push(`Requested by: ${requestedByText(deployment.requested_by)}`);
   }
+  if (deployment.failure) {
+    const { class: failureClass, code, message } = deployment.failure;
+    const label = isRefusedFailure(deployment.failure)
+      ? "refused"
+      : (FAILURE_CLASS_LABEL[failureClass] ?? failureClass);
+    lines.push(`Failure: ${label} ${code}: ${message}`);
+  }
   const labelWidth = Math.max(
     0,
     ...events.map((event) => deploymentEventLabel(event.type).length),
   );
   for (const event of events) {
-    const chips = eventDetailChips(event);
+    const chips = eventDetailChips(event, Boolean(deployment.failure));
     const label = deploymentEventLabel(event.type);
     const parts = [
       `${formatUtcTime(event.occurred_at)} UTC`,
