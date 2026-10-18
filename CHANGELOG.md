@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.16.7] - 2026-10-18
+
 ### Added
 
 - `projects voice set` accepts `fishaudio` (Fish Audio) as an STT and TTS provider.
