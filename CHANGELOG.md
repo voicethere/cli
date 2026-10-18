@@ -6,10 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.16.8] - 2026-10-18
+
 ### Added
 
 - `deploy --wait` says whether a failed deploy needs a fix in your agent or a ticket to support. A failure in your agent prints the reason and the command that lists your agent logs. A failure on our side prints the support address with the deployment, project, build, code, trace id and time to send. While a deploy is retried automatically, it prints one line for each attempt.
 - `deployments show` prints a `Failure:` line under the header, and no longer repeats the raw error code on the "Deploy failed" step when the API gives the failure details.
+
+### Changed
+
+- `@node-webrtc-rust/voice-catalog` 0.11.5 (complete documented TTS voice lists per vendor).
 
 ## [0.16.7] - 2026-10-18
 
