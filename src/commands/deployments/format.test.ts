@@ -277,6 +277,29 @@ describe("formatDeploymentTimeline", () => {
     },
   );
 
+  it.each(["PREVIOUS_VERSION_DRAINING", "FORCED_ROLLOUT_SHUTTING_DOWN"])(
+    "show labels the %s failure as refused",
+    (code) => {
+      const lines = formatDeploymentTimeline(
+        {
+          ...blockedJob,
+          failure: {
+            class: "customer",
+            code,
+            message: "Try again later.",
+            retrying: false,
+            attempt: null,
+            max_attempts: null,
+            support_email: null,
+          },
+        },
+        [event("requested", "2026-10-17T09:00:00.000Z")],
+        false,
+      );
+      expect(lines[1]).toBe(`Failure: refused ${code}: Try again later.`);
+    },
+  );
+
   it("show without a failure prints no Failure line", () => {
     const lines = formatDeploymentTimeline(
       blockedJob,

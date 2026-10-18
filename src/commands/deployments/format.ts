@@ -7,6 +7,7 @@ import type {
 import {
   deploymentBlockedCodeText,
   deploymentEventLabel,
+  isRefusedFailure,
 } from "../../lib/deployment-labels.js";
 
 /** `YYYY-MM-DD HH:MM:SS` in UTC. */
@@ -159,9 +160,10 @@ export function formatDeploymentTimeline(
   }
   if (deployment.failure) {
     const { class: failureClass, code, message } = deployment.failure;
-    lines.push(
-      `Failure: ${FAILURE_CLASS_LABEL[failureClass] ?? failureClass} ${code}: ${message}`,
-    );
+    const label = isRefusedFailure(deployment.failure)
+      ? "refused"
+      : (FAILURE_CLASS_LABEL[failureClass] ?? failureClass);
+    lines.push(`Failure: ${label} ${code}: ${message}`);
   }
   const labelWidth = Math.max(
     0,

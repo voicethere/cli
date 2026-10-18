@@ -308,9 +308,11 @@ voicethere deploy --wait --build-id "$BUILD_ID"
     Failed at (UTC): 2026-10-17T12:00:41.000Z
   ```
 
+- **A refused deploy.** If the previous version is still finishing its calls, the deploy is turned away before anything changes. The CLI prints `Deploy refused:` and the reason. Try again later, or deploy with `--mode force` when the message says so.
+
 Some failures are retried automatically before they count as failed. While that happens, `deploy --wait` prints one line for each attempt, for example `Retrying automatically (attempt 2 of 3): <reason>`, and keeps waiting.
 
-In both cases the command exits with code 1. `deployments show <id>` prints a `Failure:` line under the header, so you can look up the reason later. Against an older API version that sends no failure details, `deploy --wait` prints the error text it receives, as before.
+In every case the command exits with code 1. `deployments show <id>` prints a `Failure:` line under the header, so you can look up the reason later. Against an older API version that sends no failure details, `deploy --wait` prints the error text it receives, as before.
 
 Use **`build promote`** alone when you only need to update the control plane (e.g. smoke tests); use **`deploy --wait`** for anything that must run on staging runners.
 

@@ -370,6 +370,33 @@ describe("runDeploy failure output", () => {
     expect((error as Error).message).not.toContain("runner-abc");
   });
 
+  it.each([
+    [
+      "PREVIOUS_VERSION_DRAINING",
+      "The previous version is still finishing its calls. Try again when it stops, or deploy with Force.",
+    ],
+    [
+      "FORCED_ROLLOUT_SHUTTING_DOWN",
+      "A forced deploy is still ending calls on the previous version. Try again in a few seconds.",
+    ],
+  ])(
+    "refused deploy prints Deploy refused and no agent logs pointer (%s)",
+    async (code, message) => {
+      getDeployment.mockResolvedValue(
+        failedJob({
+          error: code,
+          failure: { ...customerFailure, code, message },
+        }),
+      );
+
+      await expect(
+        runDeploy({ wait: true, pollIntervalMs: 1, timeoutMs: 5_000 }),
+      ).rejects.toBeInstanceOf(DeployFailureReported);
+
+      expect(stderrLines()).toEqual([`Deploy refused: ${message}`]);
+    },
+  );
+
   it("platform failure prints the support email and the id block", async () => {
     getDeployment.mockResolvedValue(failedJob({ failure: platformFailure }));
 

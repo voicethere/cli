@@ -3,6 +3,7 @@ import {
   type DeploymentFailure,
   type DeploymentJob,
 } from "../lib/api.js";
+import { isRefusedFailure } from "../lib/deployment-labels.js";
 import { logStep, logVerbose } from "../lib/command-log.js";
 import { requireCredentials } from "../lib/config.js";
 import { createApiFromCredentials } from "../lib/control-plane-auth.js";
@@ -58,6 +59,9 @@ function failedAtText(completedAt: string | null): string {
 export function formatDeployFailure(job: DeploymentJob): string[] | null {
   const failure = job.failure;
   if (!failure) return null;
+  if (isRefusedFailure(failure)) {
+    return [`Deploy refused: ${failure.message}`];
+  }
   if (failure.class === "customer") {
     return [
       `Deploy failed: ${failure.message}`,
