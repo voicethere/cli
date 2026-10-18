@@ -66,7 +66,7 @@ describe("runDeploymentsList", () => {
       limit: 20,
     });
     expect(console.log).toHaveBeenCalledWith(
-      "2026-10-17 12:00:00  a1b2c3d4  drain  completed  2:05      2026-10-17 12:09:30",
+      "2026-10-17 12:00:00  a1b2c3d4  drain  completed  -   2:05      2026-10-17 12:09:30",
     );
     expect(console.log).toHaveBeenCalledWith(
       "next: --before 2026-10-17T12:00:00.000Z",
@@ -109,5 +109,43 @@ describe("runDeploymentsList", () => {
 
     expect(console.log).toHaveBeenCalledTimes(1);
     expect(console.log).toHaveBeenCalledWith(JSON.stringify(response, null, 2));
+  });
+
+  it("keeps requested_by in the --json output", async () => {
+    const withRequester = {
+      ...summary,
+      requested_by: { kind: "personal_api_key", label: "Key: ci-deploy" },
+    };
+    listProjectDeployments.mockResolvedValue({
+      deployments: [withRequester],
+      next_before: null,
+    });
+
+    await runDeploymentsList({ json: true });
+
+    const printed = JSON.parse(
+      String(vi.mocked(console.log).mock.calls[0]?.[0]),
+    );
+    expect(printed.deployments[0].requested_by).toEqual({
+      kind: "personal_api_key",
+      label: "Key: ci-deploy",
+    });
+  });
+
+  it("prints the requester in the By column", async () => {
+    listProjectDeployments.mockResolvedValue({
+      deployments: [
+        {
+          ...summary,
+          requested_by: { kind: "user", label: "alice@example.com" },
+        },
+      ],
+      next_before: null,
+    });
+
+    await runDeploymentsList({});
+
+    const printed = vi.mocked(console.log).mock.calls.map((call) => call[0]);
+    expect(printed[1]).toContain("alice@example.com  2:05");
   });
 });

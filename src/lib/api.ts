@@ -188,6 +188,18 @@ export interface DeploymentJob {
   retry_after_ms?: number | null;
 }
 
+export type DeploymentRequesterKind =
+  | "user"
+  | "api_key"
+  | "personal_api_key"
+  | "system"
+  | "unknown";
+
+export interface DeploymentRequestedBy {
+  kind: DeploymentRequesterKind;
+  label: string | null;
+}
+
 /** One row of the project deployment history (`GET /projects/{id}/deployments`). */
 export interface DeploymentSummary {
   id: string;
@@ -199,6 +211,8 @@ export interface DeploymentSummary {
   completed_at: string | null;
   last_event_at: string | null;
   event_count: number;
+  /** Absent on API versions before deployment requester support. */
+  requested_by?: DeploymentRequestedBy;
 }
 
 export interface DeploymentEvent {

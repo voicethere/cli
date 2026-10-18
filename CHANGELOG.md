@@ -9,6 +9,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 ### Added
 
 - `projects voice set` accepts `fishaudio` (Fish Audio) as an STT and TTS provider.
+- `deployments list` shows who started each deployment (By column); `deployments show` prints a Requested by line.
 
 ## [0.16.6] - 2026-10-17
 

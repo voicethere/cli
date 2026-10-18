@@ -1,5 +1,6 @@
 import type {
   DeploymentEvent,
+  DeploymentRequestedBy,
   DeploymentSummary,
 } from "../../lib/api.js";
 import {
@@ -33,6 +34,12 @@ function shortBuild(buildId: string | null | undefined): string {
   return buildId ? buildId.slice(0, 8) : "-";
 }
 
+export function requestedByText(
+  requestedBy: DeploymentRequestedBy | undefined,
+): string {
+  return requestedBy?.label ?? "-";
+}
+
 function padEnd(value: string, width: number): string {
   return value.length >= width ? value : value + " ".repeat(width - value.length);
 }
@@ -64,13 +71,22 @@ export function formatDeploymentList(
     shortBuild(deployment.build_id),
     deployment.mode,
     deployment.status,
+    requestedByText(deployment.requested_by),
     deployment.completed_at
       ? formatMinSec(elapsedMs(deployment.created_at, deployment.completed_at))
       : "-",
     deployment.last_event_at ? formatUtcDateTime(deployment.last_event_at) : "-",
   ]);
   const lines = renderTable(
-    ["Started (UTC)", "Build", "Mode", "Status", "Duration", "Last event (UTC)"],
+    [
+      "Started (UTC)",
+      "Build",
+      "Mode",
+      "Status",
+      "By",
+      "Duration",
+      "Last event (UTC)",
+    ],
     rows,
   );
   if (nextBefore) {
@@ -123,6 +139,9 @@ export function formatDeploymentTimeline(
       `started ${formatUtcDateTime(deployment.created_at)} UTC`,
     ].join("  "),
   ];
+  if (deployment.requested_by) {
+    lines.push(`Requested by: ${requestedByText(deployment.requested_by)}`);
+  }
   const labelWidth = Math.max(
     0,
     ...events.map((event) => deploymentEventLabel(event.type).length),

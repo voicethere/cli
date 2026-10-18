@@ -104,6 +104,44 @@ describe("runDeploymentsShow", () => {
     expect(console.log).toHaveBeenCalledWith(JSON.stringify(response, null, 2));
   });
 
+  it("keeps requested_by in the --json output", async () => {
+    const response = {
+      deployment: {
+        ...deployment,
+        requested_by: { kind: "user", label: "alice@example.com" },
+      },
+      events,
+      derived: false,
+    };
+    getDeploymentEvents.mockResolvedValue(response);
+
+    await runDeploymentsShow(deployment.id, { json: true });
+
+    const printed = JSON.parse(
+      String(vi.mocked(console.log).mock.calls[0]?.[0]),
+    );
+    expect(printed.deployment.requested_by).toEqual({
+      kind: "user",
+      label: "alice@example.com",
+    });
+  });
+
+  it("prints Requested by as line 2 when the server sends it", async () => {
+    getDeploymentEvents.mockResolvedValue({
+      deployment: {
+        ...deployment,
+        requested_by: { kind: "user", label: "alice@example.com" },
+      },
+      events,
+      derived: false,
+    });
+
+    await runDeploymentsShow(deployment.id);
+
+    const printed = vi.mocked(console.log).mock.calls.map((call) => call[0]);
+    expect(printed[1]).toBe("Requested by: alice@example.com");
+  });
+
   it("requires a deployment id", async () => {
     await expect(runDeploymentsShow("  ")).rejects.toThrow(
       /deploymentId is required/,
