@@ -284,6 +284,34 @@ voicethere deploy --wait --build-id "$BUILD_ID"
 
 `deploy --mode force` ends calls in progress right away (use for urgent fixes); `--mode` now rejects values other than `drain` and `force`. The default, `drain`, lets calls in progress finish on the previous version (up to 9 min).
 
+### When a deploy fails
+
+`deploy --wait` tells you whether the failure needs a fix from you or a ticket to us.
+
+- **A fix in your agent.** The new version could not start because your agent threw an error while it was loading. The previous version keeps serving calls. The CLI prints the reason and the command that lists your agent logs:
+
+  ```text
+  Deploy failed: Your agent threw an error while it was loading, so the new version never started. The previous version is still serving calls. Open the agent logs to see the error, fix it, and deploy again.
+  Fix your agent and deploy again. Agent logs: voicethere projects logs list --project 550e8400-e29b-41d4-a716-446655440000
+  ```
+
+- **A problem on our side.** Nothing in your agent caused it. The CLI prints the support address and the details to send with it:
+
+  ```text
+  Deploy failed: We don't have enough capacity to start your new version right now.
+  This one is on our side. Email support@voicethere.io with these details:
+    Deployment: 11111111-aaaa-4bbb-8ccc-000000000001
+    Project: 550e8400-e29b-41d4-a716-446655440000
+    Build: a1b2c3d4-0000-4000-8000-000000000000
+    Code: CLUSTER_CAPACITY
+    Trace id: 4bf92f3577b34da6a3ce929d0e0e4736
+    Failed at (UTC): 2026-10-17T12:00:41.000Z
+  ```
+
+Some failures are retried automatically before they count as failed. While that happens, `deploy --wait` prints one line for each attempt, for example `Retrying automatically (attempt 2 of 3): <reason>`, and keeps waiting.
+
+In both cases the command exits with code 1. `deployments show <id>` prints a `Failure:` line under the header, so you can look up the reason later. Against an older API version that sends no failure details, `deploy --wait` prints the error text it receives, as before.
+
 Use **`build promote`** alone when you only need to update the control plane (e.g. smoke tests); use **`deploy --wait`** for anything that must run on staging runners.
 
 ## Repo config (version control)

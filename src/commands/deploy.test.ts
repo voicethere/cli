@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { parseDeployMode, runDeploy } from "./deploy.js";
+import { DeployFailureReported, parseDeployMode, runDeploy } from "./deploy.js";
 
 const createDeployment = vi.fn();
 const getDeployment = vi.fn();
@@ -269,5 +269,229 @@ describe("runDeploy mode", () => {
       build_id: undefined,
       mode: "drain",
     });
+  });
+});
+
+describe("runDeploy failure output", () => {
+  const RAW_ERROR = "permanent error: AGENT_START_FAILED: runner-abc pod";
+
+  function failedJob(overrides: Record<string, unknown> = {}) {
+    return {
+      id: "dep-1",
+      org_id: "org-1",
+      project_id: "proj-1",
+      build_id: "build-1",
+      status: "failed",
+      mode: "drain",
+      bullmq_job_id: "job-1",
+      error: RAW_ERROR,
+      created_at: "2026-01-01T00:00:00Z",
+      completed_at: "2026-01-01T00:01:00Z",
+      trace_id: "trace-123",
+      ...overrides,
+    };
+  }
+
+  function activeJob(failure: unknown) {
+    return {
+      ...failedJob({ status: "active", error: null, completed_at: null }),
+      failure,
+    };
+  }
+
+  const customerFailure = {
+    class: "customer",
+    code: "AGENT_START_FAILED",
+    message: "Your agent threw an error while it was loading.",
+    retrying: false,
+    attempt: null,
+    max_attempts: null,
+    support_email: null,
+  };
+
+  const platformFailure = {
+    class: "platform",
+    code: "CLUSTER_CAPACITY",
+    message:
+      "We don't have enough capacity to start your new version right now.",
+    retrying: false,
+    attempt: null,
+    max_attempts: null,
+    support_email: "support@voicethere.io",
+  };
+
+  function stderrLines(): string[] {
+    // Skip the "[voicethere] ..." progress lines the command logs on stderr.
+    return vi
+      .mocked(console.error)
+      .mock.calls.map((call) => String(call[0]))
+      .filter((line) => !line.startsWith("[voicethere"));
+  }
+
+  beforeEach(() => {
+    createDeployment.mockReset();
+    getDeployment.mockReset();
+    requireCredentials.mockReset();
+    resolveProjectId.mockReset();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    requireCredentials.mockResolvedValue({
+      api_key: "vth_test",
+      api_base: "https://app.voicethere.dev/api/v1",
+    });
+    resolveProjectId.mockResolvedValue({
+      projectId: "proj-1",
+      source: "config",
+      configPath: "/repo/.voicethere/config.json",
+    });
+    createDeployment.mockResolvedValue({
+      ...failedJob({ status: "queued", error: null, completed_at: null }),
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("customer failure prints the message and the logs command, then fails quietly", async () => {
+    getDeployment.mockResolvedValue(failedJob({ failure: customerFailure }));
+
+    const error = await runDeploy({
+      wait: true,
+      pollIntervalMs: 1,
+      timeoutMs: 5_000,
+    }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(DeployFailureReported);
+    expect(stderrLines()).toEqual([
+      "Deploy failed: Your agent threw an error while it was loading.",
+      "Fix your agent and deploy again. Agent logs: voicethere projects logs list --project proj-1",
+    ]);
+    expect((error as Error).message).not.toContain("runner-abc");
+  });
+
+  it("platform failure prints the support email and the id block", async () => {
+    getDeployment.mockResolvedValue(failedJob({ failure: platformFailure }));
+
+    await expect(
+      runDeploy({ wait: true, pollIntervalMs: 1, timeoutMs: 5_000 }),
+    ).rejects.toBeInstanceOf(DeployFailureReported);
+
+    expect(stderrLines()).toEqual([
+      "Deploy failed: We don't have enough capacity to start your new version right now.",
+      "This one is on our side. Email support@voicethere.io with these details:",
+      "  Deployment: dep-1",
+      "  Project: proj-1",
+      "  Build: build-1",
+      "  Code: CLUSTER_CAPACITY",
+      "  Trace id: trace-123",
+      "  Failed at (UTC): 2026-01-01T00:01:00.000Z",
+    ]);
+  });
+
+  it("platform failure without a support email asks to contact support", async () => {
+    getDeployment.mockResolvedValue(
+      failedJob({
+        failure: { ...platformFailure, support_email: null },
+        trace_id: null,
+        completed_at: null,
+        build_id: "",
+      }),
+    );
+
+    await expect(
+      runDeploy({ wait: true, pollIntervalMs: 1, timeoutMs: 5_000 }),
+    ).rejects.toBeInstanceOf(DeployFailureReported);
+
+    expect(stderrLines()).toEqual([
+      "Deploy failed: We don't have enough capacity to start your new version right now.",
+      "This one is on our side. Contact support with these details:",
+      "  Deployment: dep-1",
+      "  Project: proj-1",
+      "  Build: none",
+      "  Code: CLUSTER_CAPACITY",
+      "  Trace id: none",
+      "  Failed at (UTC): unknown",
+    ]);
+  });
+
+  it("never prints the raw server error when a failure is present", async () => {
+    getDeployment.mockResolvedValue(failedJob({ failure: customerFailure }));
+    await runDeploy({ wait: true, pollIntervalMs: 1, timeoutMs: 5_000 }).catch(
+      () => {},
+    );
+    getDeployment.mockResolvedValue(failedJob({ failure: platformFailure }));
+    await runDeploy({ wait: true, pollIntervalMs: 1, timeoutMs: 5_000 }).catch(
+      () => {},
+    );
+
+    const everything = [
+      ...stderrLines(),
+      ...vi.mocked(console.log).mock.calls.map((call) => String(call[0])),
+    ].join("\n");
+    expect(everything).not.toContain("runner-abc");
+    expect(everything).not.toContain("permanent error");
+  });
+
+  it("prints a retry line once per attempt while the server retries", async () => {
+    const retrying = (attempt: number) =>
+      activeJob({
+        class: "transient",
+        code: "CLUSTER_CAPACITY",
+        message: "Retrying automatically.",
+        retrying: true,
+        attempt,
+        max_attempts: 3,
+        support_email: null,
+      });
+    getDeployment
+      .mockResolvedValueOnce(retrying(2))
+      .mockResolvedValueOnce(retrying(2))
+      .mockResolvedValueOnce(retrying(3))
+      .mockResolvedValueOnce({
+        ...failedJob({ error: null }),
+        status: "completed",
+      });
+
+    await runDeploy({ wait: true, pollIntervalMs: 1, timeoutMs: 5_000 });
+
+    expect(stderrLines()).toEqual([
+      "Retrying automatically (attempt 2 of 3): Retrying automatically.",
+      "Retrying automatically (attempt 3 of 3): Retrying automatically.",
+    ]);
+  });
+
+  it("omits the attempt part when the attempt is not known", async () => {
+    getDeployment
+      .mockResolvedValueOnce(
+        activeJob({
+          class: "transient",
+          code: "READY_TIMEOUT",
+          message: "Your new version didn't become ready in time.",
+          retrying: true,
+          attempt: null,
+          max_attempts: null,
+          support_email: null,
+        }),
+      )
+      .mockResolvedValueOnce({
+        ...failedJob({ error: null }),
+        status: "completed",
+      });
+
+    await runDeploy({ wait: true, pollIntervalMs: 1, timeoutMs: 5_000 });
+
+    expect(stderrLines()).toEqual([
+      "Retrying automatically: Your new version didn't become ready in time.",
+    ]);
+  });
+
+  it("keeps the old behaviour when an older server sends no failure", async () => {
+    getDeployment.mockResolvedValue(failedJob({ error: "rollout crashed" }));
+
+    await expect(
+      runDeploy({ wait: true, pollIntervalMs: 1, timeoutMs: 5_000 }),
+    ).rejects.toThrow("rollout crashed");
+    expect(stderrLines()).toEqual([]);
   });
 });

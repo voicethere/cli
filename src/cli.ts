@@ -80,7 +80,11 @@ import { runBuildDownload } from "./commands/build/download.js";
 import { runBuildList } from "./commands/build/list.js";
 import { runBuildUpload } from "./commands/build/upload.js";
 import { runBuildValidate } from "./commands/build/validate.js";
-import { parseDeployMode, runDeploy } from "./commands/deploy.js";
+import {
+  DeployFailureReported,
+  parseDeployMode,
+  runDeploy,
+} from "./commands/deploy.js";
 import { runUndeploy } from "./commands/undeploy.js";
 import { runDeploymentsList } from "./commands/deployments/list.js";
 import { runDeploymentsShow } from "./commands/deployments/show.js";
@@ -1525,6 +1529,11 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
+  if (error instanceof DeployFailureReported) {
+    // The failure was already printed in full.
+    process.exitCode = 1;
+    return;
+  }
   console.error(formatCliError(error));
   process.exitCode = 1;
 });
