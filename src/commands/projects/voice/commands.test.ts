@@ -101,3 +101,24 @@ describe("projects voice catalog helpers", () => {
     expect(label).toContain("vits-piper-en_US-lessac-high");
   });
 });
+
+describe("projects voice set provider spellings", () => {
+  it("accepts voicethere when the catalog lists local-sherpa and the reverse", () => {
+    expect(() =>
+      assertVoiceProviders(
+        "voicethere",
+        "voicethere",
+        new Set(["local-sherpa"]),
+        new Set(["local-sherpa"]),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      assertVoiceProviders(
+        "local-sherpa",
+        "local-sherpa",
+        new Set(["voicethere"]),
+        new Set(["voicethere"]),
+      ),
+    ).not.toThrow();
+  });
+});

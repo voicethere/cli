@@ -119,12 +119,12 @@ npm install   # skipped when you pass --no-install on init
 npm run verify
 ```
 
-| Flag              | Behavior                                                                                                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flag              | Behavior                                                                                                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--template <id>` | Product template from the installed `@voicethere/agent` package (default: `echo`), or `blank` for a minimal stub. Run `voicethere init --help` for the live list. |
-| `--local-only`    | Write files on disk only — no login, cloud project, or source upload                                                                                 |
-| `--no-install`    | Skip `npm install` after scaffolding                                                                                                                 |
-| `--force`         | Overwrite when `package.json` already exists                                                                                                         |
+| `--local-only`    | Write files on disk only — no login, cloud project, or source upload                                                                                              |
+| `--no-install`    | Skip `npm install` after scaffolding                                                                                                                              |
+| `--force`         | Overwrite when `package.json` already exists                                                                                                                      |
 
 #### Templates
 
@@ -134,21 +134,21 @@ npm run verify
 
 Sources: [github.com/voicethere/agent/tree/main/templates](https://github.com/voicethere/agent/tree/main/templates)
 
-| Id | Summary |
-| -- | ------- |
-| `blank` | Minimal stub (`agent.ts`) — CLI only, not in the agent package |
-| `echo` | Voice + chat echo with TTS playback |
-| `echo-dc` | Data-channel echo, no TTS |
-| `voice-starter` | Every speech event — customize `onUserSpeechFinal` for your LLM |
-| `world-sync` | JSON pose broadcast, one in-memory agent, no Redis |
-| `world-sync-binary` | Binary pose `ArrayBuffer` via `onDataChannelBinary`, no Redis |
-| `game-sync` | Authoritative sim with binary snapshots; Redis when `AGENT_REDIS_URL` is set |
-| `voice-showcase` | Conversational landing demo |
-| `recording-consent` | Recording consent flow |
-| `positional-tts` | Orbiting TTS with per-client `setTtsPose` |
-| `spatial-showcase` | Orbit / soundboard / proximity via DataChannel commands |
-| `webhooks` | Inbound HMAC webhook handler, then DataChannel + speak fan-out |
-| `webhooks-redis` | Webhooks plus a Redis atomic counter |
+| Id                  | Summary                                                                      |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `blank`             | Minimal stub (`agent.ts`) — CLI only, not in the agent package               |
+| `echo`              | Voice + chat echo with TTS playback                                          |
+| `echo-dc`           | Data-channel echo, no TTS                                                    |
+| `voice-starter`     | Every speech event — customize `onUserSpeechFinal` for your LLM              |
+| `world-sync`        | JSON pose broadcast, one in-memory agent, no Redis                           |
+| `world-sync-binary` | Binary pose `ArrayBuffer` via `onDataChannelBinary`, no Redis                |
+| `game-sync`         | Authoritative sim with binary snapshots; Redis when `AGENT_REDIS_URL` is set |
+| `voice-showcase`    | Conversational landing demo                                                  |
+| `recording-consent` | Recording consent flow                                                       |
+| `positional-tts`    | Orbiting TTS with per-client `setTtsPose`                                    |
+| `spatial-showcase`  | Orbit / soundboard / proximity via DataChannel commands                      |
+| `webhooks`          | Inbound HMAC webhook handler, then DataChannel + speak fan-out               |
+| `webhooks-redis`    | Webhooks plus a Redis atomic counter                                         |
 
 E2e-only templates live in the same folder (`echo-smoke`, `crash`, `game-sync-smoke`, `redis-sync`, `mix-smoke`) and are **not** accepted by `init`.
 
@@ -332,41 +332,41 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 
 ## Commands
 
-| Command                                                                                          | Description                                                                                 |
-| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `login [--force] [--no-open] [--api-base <url>]`                                                 | Browser device login (default); skip if credentials still work                              |
-| `login --api-key <key> [--user-api-key <vthu>] [--api-base <url>] [--dashboard-cookie <cookie>]` | Manual key login (CI / automation); optional personal key                                   |
-| `orgs list`                                                                                      | List organizations (`*` = active); requires user API key or legacy cookie                   |
-| `orgs use <orgId>`                                                                               | Set active organization (persists `active_org_id` for user keys)                            |
-| `org transfer-ownership <userId>`                                                                | Transfer org ownership (owner only)                                                         |
-| `account deletion preview`                                                                       | JSON preview of owned orgs + deletion job                                                   |
-| `account deletion request-code`                                                                  | Email 6-digit deletion verification code                                                    |
-| `account deletion confirm <code> [--wait]`                                                       | Queue account deletion; `--wait` blocks until teardown completes                            |
-| `projects list`                                                                                  | List org projects                                                                           |
-| `projects create <name> [--slug <slug>]`                                                         | Create project; uses it (writes config)                                                     |
-| `projects use [projectId]`                                                                       | Use project (picker or existing config when omitted)                                        |
-| `api-keys create --name <name> [--kind client] [--project-id <uuid>]`                            | Create an API key. Client keys use the linked project unless `--project-id` overrides it   |
-| `projects show`                                                                                  | Print `.voicethere/config.json`                                                             |
-| `projects delete [projectId] [--force] [--wait]`                                                 | Delete project + builds (type name to confirm, or `--force`; `--wait` polls async deletion) |
-| `projects settings list`                                                                         | set Runner pool settings (warm pool, scale-down)                                            |
-| `projects session-settings list`                                                                 | set WebRTC idle timeout + crash error message (see below)                                   |
-| `projects billing-settings list`                                                                 | project billing toggles and spend cap (metered/storage overage, budget cap)                 |
-| `projects conversation list [--q] [--json]`                                                      | Stored voice transcripts; `--q` searches turn text or session id                            |
-| `projects conversation get <sessionId>`                                                          | Full turn timeline for one session                                                          |
-| `projects conversation search <query>`                                                           | Alias for `conversation list --q`                                                           |
-| `projects widget show`                                                                           | Embed widget draft, publish status, and CDN config URL                                      |
-| `projects widget set`                                                                            | Update widget draft (preset, position, mode, theme, labels)                                 |
-| `projects widget deploy [--wait]`                                                                | Publish widget config to CDN                                                                |
-| `projects logs list [--session] [--level\|--severity] [--q] [--from] [--to] [--json]`            | Searchable agent logs; use `--severity error` for session failures (dual-written)           |
-| `projects metrics overview\|sessions\|agent\|voice [--period] [--start --end] [--json]`          | Project metrics: totals, failures by reason, top agent errors, voice latency percentiles    |
-| `projects voice catalog`                                                                         | show STT/TTS vendors and models                                                             |
-| `build list`                                                                                     | Builds for the active project                                                               |
-| `build validate [file]`                                                                          | Sandbox verify (default bundle from config)                                                 |
-| `build upload [file] [-m <msg>] [--skip-validate] [--print-id]`                                  | Upload to active project; `--print-id` prints only the build UUID                       |
-| `build promote [buildId]`                                                                        | Promote on active project (picker when omitted in TTY)                                      |
-| `deploy [--wait] [--build-id] [--mode drain\|force]`                                             | Promote (if needed) + cloud rollout; `--wait` blocks                                        |
+| Command                                                                                          | Description                                                                                   |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `login [--force] [--no-open] [--api-base <url>]`                                                 | Browser device login (default); skip if credentials still work                                |
+| `login --api-key <key> [--user-api-key <vthu>] [--api-base <url>] [--dashboard-cookie <cookie>]` | Manual key login (CI / automation); optional personal key                                     |
+| `orgs list`                                                                                      | List organizations (`*` = active); requires user API key or legacy cookie                     |
+| `orgs use <orgId>`                                                                               | Set active organization (persists `active_org_id` for user keys)                              |
+| `org transfer-ownership <userId>`                                                                | Transfer org ownership (owner only)                                                           |
+| `account deletion preview`                                                                       | JSON preview of owned orgs + deletion job                                                     |
+| `account deletion request-code`                                                                  | Email 6-digit deletion verification code                                                      |
+| `account deletion confirm <code> [--wait]`                                                       | Queue account deletion; `--wait` blocks until teardown completes                              |
+| `projects list`                                                                                  | List org projects                                                                             |
+| `projects create <name> [--slug <slug>]`                                                         | Create project; uses it (writes config)                                                       |
+| `projects use [projectId]`                                                                       | Use project (picker or existing config when omitted)                                          |
+| `api-keys create --name <name> [--kind client] [--project-id <uuid>]`                            | Create an API key. Client keys use the linked project unless `--project-id` overrides it      |
+| `projects show`                                                                                  | Print `.voicethere/config.json`                                                               |
+| `projects delete [projectId] [--force] [--wait]`                                                 | Delete project + builds (type name to confirm, or `--force`; `--wait` polls async deletion)   |
+| `projects settings list`                                                                         | set Runner pool settings (warm pool, scale-down)                                              |
+| `projects session-settings list`                                                                 | set WebRTC idle timeout + crash error message (see below)                                     |
+| `projects billing-settings list`                                                                 | project billing toggles and spend cap (metered/storage overage, budget cap)                   |
+| `projects conversation list [--q] [--json]`                                                      | Stored voice transcripts; `--q` searches turn text or session id                              |
+| `projects conversation get <sessionId>`                                                          | Full turn timeline for one session                                                            |
+| `projects conversation search <query>`                                                           | Alias for `conversation list --q`                                                             |
+| `projects widget show`                                                                           | Embed widget draft, publish status, and CDN config URL                                        |
+| `projects widget set`                                                                            | Update widget draft (preset, position, mode, theme, labels)                                   |
+| `projects widget deploy [--wait]`                                                                | Publish widget config to CDN                                                                  |
+| `projects logs list [--session] [--level\|--severity] [--q] [--from] [--to] [--json]`            | Searchable agent logs; use `--severity error` for session failures (dual-written)             |
+| `projects metrics overview\|sessions\|agent\|voice [--period] [--start --end] [--json]`          | Project metrics: totals, failures by reason, top agent errors, voice latency percentiles      |
+| `projects voice catalog`                                                                         | show STT/TTS vendors and models                                                               |
+| `build list`                                                                                     | Builds for the active project                                                                 |
+| `build validate [file]`                                                                          | Sandbox verify (default bundle from config)                                                   |
+| `build upload [file] [-m <msg>] [--skip-validate] [--print-id]`                                  | Upload to active project; `--print-id` prints only the build UUID                             |
+| `build promote [buildId]`                                                                        | Promote on active project (picker when omitted in TTY)                                        |
+| `deploy [--wait] [--build-id] [--mode drain\|force]`                                             | Promote (if needed) + cloud rollout; `--wait` blocks                                          |
 | `deployments list [--project <id>] [--limit <n>] [--before <iso>] [--json]`                      | Recent deployments with status and duration, newest first; prints `next: --before …` for more |
-| `deployments show <deploymentId> [--project <id>] [--json]`                                      | Timeline of one deployment with UTC timestamps                                              |
+| `deployments show <deploymentId> [--project <id>] [--json]`                                      | Timeline of one deployment with UTC timestamps                                                |
 
 ## Logging
 
@@ -452,7 +452,7 @@ voicethere projects voice-advanced set voice.profilesByLanguage '{"de":{"stt":"d
 
 | Key                                               | Values                                         | Default            |
 | ------------------------------------------------- | ---------------------------------------------- | ------------------ |
-| `languageId.timing`                               | `early`, `end_of_utterance`, `continuous`     | `early`            |
+| `languageId.timing`                               | `early`, `end_of_utterance`, `continuous`      | `early`            |
 | `languageId.autoSwitch.waitAudio`                 | `buffer_replay`, `first_utterance`             | `buffer_replay`    |
 | `languageId.autoSwitch.waitMessage.mode`          | `end_of_utterance`, `immediate`, `off`         | `end_of_utterance` |
 | `languageId.autoSwitch.waitMessage.skipWhenReady` | bool                                           | `true`             |
@@ -465,7 +465,7 @@ When a switch took at least `readyMessage.minSwitchMs` and no wait message was p
 
 `languageId.autoSwitch.waitMessage.mode` decides whether the switch may interrupt the caller: `end_of_utterance` (default) waits until the caller stops, `immediate` speaks at once and cannot be interrupted, `off` plays no wait message.
 
-Language auto-switch (`languageId.autoSwitch.enabled`) requires VoiceThere (`local-sherpa`) for both speech-to-text and text-to-speech. If a project uses another vendor, the API answers `400` with `auto_switch_requires_voicethere_speech` and the CLI prints that message and exits non-zero.
+Language auto-switch (`languageId.autoSwitch.enabled`) requires VoiceThere (`voicethere`) for both speech-to-text and text-to-speech. If a project uses another vendor, the API answers `400` with `auto_switch_requires_voicethere_speech` and the CLI prints that message and exits non-zero. The built-in provider id is `voicethere`; `local-sherpa` still works as an alias in `--stt-provider` and `--tts-provider`.
 
 `voice.expectedLanguages` no longer exists. Only the boot STT/TTS pools start warm.
 

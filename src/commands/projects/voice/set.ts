@@ -9,6 +9,12 @@ import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 import { isInteractive, promptChoice } from "../../../lib/prompt.js";
 import {
+  LEGACY_VOICETHERE_PROVIDER_ID,
+  VOICETHERE_PROVIDER_ID,
+  isVoiceThereProvider,
+  normalizeProviderInput,
+} from "../../../lib/voice-provider-id.js";
+import {
   assertSherpaModelId,
   formatSherpaModelChoiceLabel,
 } from "./catalog.js";
@@ -19,18 +25,46 @@ export function assertVoiceProviders(
   allowedStt?: ReadonlySet<string>,
   allowedTts?: ReadonlySet<string>,
 ): void {
-  const sttOk = allowedStt
-    ? allowedStt.has(sttProvider)
-    : DEFAULT_STT_PROVIDERS.has(sttProvider);
-  const ttsOk = allowedTts
-    ? allowedTts.has(ttsProvider)
-    : DEFAULT_TTS_PROVIDERS.has(ttsProvider);
+  const sttOk = withBuiltInSpellings(allowedStt ?? DEFAULT_STT_PROVIDERS).has(
+    sttProvider,
+  );
+  const ttsOk = withBuiltInSpellings(allowedTts ?? DEFAULT_TTS_PROVIDERS).has(
+    ttsProvider,
+  );
   if (!sttOk) {
     throw new Error(`Unknown STT provider: ${sttProvider}`);
   }
   if (!ttsOk) {
     throw new Error(`Unknown TTS provider: ${ttsProvider}`);
   }
+}
+
+/**
+ * A catalog that lists the built-in provider under either id accepts every
+ * spelling, so input works against current and older platforms.
+ */
+function withBuiltInSpellings(ids: ReadonlySet<string>): Set<string> {
+  const out = new Set(ids);
+  if (
+    ids.has(VOICETHERE_PROVIDER_ID) ||
+    ids.has(LEGACY_VOICETHERE_PROVIDER_ID)
+  ) {
+    out.add(VOICETHERE_PROVIDER_ID);
+    out.add(LEGACY_VOICETHERE_PROVIDER_ID);
+    out.add("cluster-sherpa");
+  }
+  return out;
+}
+
+/** Id to send for a built-in provider: what the catalog lists. */
+function wireProviderId(
+  provider: string,
+  catalogIds: ReadonlySet<string>,
+): string {
+  if (!isVoiceThereProvider(provider)) return provider;
+  return catalogIds.has(VOICETHERE_PROVIDER_ID)
+    ? VOICETHERE_PROVIDER_ID
+    : LEGACY_VOICETHERE_PROVIDER_ID;
 }
 
 /** Fallback when catalog fetch is unavailable (tests / offline). */
@@ -66,10 +100,12 @@ export async function runProjectsVoiceSet(
   const allowedStt = new Set(voiceCatalog.stt_providers.map((p) => p.id));
   const allowedTts = new Set(voiceCatalog.tts_providers.map((p) => p.id));
 
-  let stt_provider = (options.sttProvider?.trim() ||
-    current.stt_provider) as VoiceProviderId;
-  let tts_provider = (options.ttsProvider?.trim() ||
-    current.tts_provider) as VoiceProviderId;
+  let stt_provider = normalizeProviderInput(
+    options.sttProvider?.trim() || current.stt_provider,
+  ) as VoiceProviderId;
+  let tts_provider = normalizeProviderInput(
+    options.ttsProvider?.trim() || current.tts_provider,
+  ) as VoiceProviderId;
 
   const wantInteractive = options.interactive === true;
 
@@ -95,13 +131,15 @@ export async function runProjectsVoiceSet(
     )) as VoiceProviderId;
   }
 
+  stt_provider = normalizeProviderInput(stt_provider) as VoiceProviderId;
+  tts_provider = normalizeProviderInput(tts_provider) as VoiceProviderId;
   assertVoiceProviders(stt_provider, tts_provider, allowedStt, allowedTts);
 
   let stt_model_id = options.sttModelId?.trim() || current.stt_model_id;
   let tts_model_id = options.ttsModelId?.trim() || current.tts_model_id;
 
   if (wantInteractive) {
-    if (stt_provider === "local-sherpa") {
+    if (isVoiceThereProvider(stt_provider)) {
       stt_model_id = await promptChoice(
         "VoiceThere STT model",
         sherpa.stt_models.map((m) => ({
@@ -110,7 +148,7 @@ export async function runProjectsVoiceSet(
         })),
       );
     }
-    if (tts_provider === "local-sherpa") {
+    if (isVoiceThereProvider(tts_provider)) {
       tts_model_id = await promptChoice(
         "VoiceThere TTS model",
         sherpa.tts_models.map((m) => ({
@@ -121,12 +159,15 @@ export async function runProjectsVoiceSet(
     }
   }
 
-  if (stt_provider === "local-sherpa") {
+  if (isVoiceThereProvider(stt_provider)) {
     assertSherpaModelId("STT", stt_model_id, sherpa);
   }
-  if (tts_provider === "local-sherpa") {
+  if (isVoiceThereProvider(tts_provider)) {
     assertSherpaModelId("TTS", tts_model_id, sherpa);
   }
+
+  stt_provider = wireProviderId(stt_provider, allowedStt) as VoiceProviderId;
+  tts_provider = wireProviderId(tts_provider, allowedTts) as VoiceProviderId;
 
   logVerbose(
     `voice set stt=${stt_provider}/${stt_model_id} tts=${tts_provider}/${tts_model_id}`,
@@ -146,10 +187,10 @@ export async function runProjectsVoiceSet(
   if (wantInteractive) {
     console.log(`stt_provider=${stt_provider}`);
     console.log(`tts_provider=${tts_provider}`);
-    if (stt_provider === "local-sherpa") {
+    if (isVoiceThereProvider(stt_provider)) {
       console.log(`stt_model_id=${stt_model_id}`);
     }
-    if (tts_provider === "local-sherpa") {
+    if (isVoiceThereProvider(tts_provider)) {
       console.log(`tts_model_id=${tts_model_id}`);
     }
     return;
