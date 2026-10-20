@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.16.9] - 2026-10-20
+
+### Changed
+
+- The built-in speech provider is now `voicethere`. `voice set --stt-provider` and `--tts-provider` accept it, and help and output show it. `local-sherpa` is still accepted and works against platforms that have not switched yet.
+
 ## [0.16.8] - 2026-10-18
 
 ### Added

@@ -260,7 +260,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     type: "boolean",
     default: false,
     description:
-      "Auto-switch STT/TTS when LID disagrees with session language (default off; requires languageId.enabled). Requires VoiceThere (local-sherpa) for both speech-to-text and text-to-speech.",
+      "Auto-switch STT/TTS when LID disagrees with session language (default off; requires languageId.enabled). Requires VoiceThere (voicethere) for both speech-to-text and text-to-speech.",
   },
   "languageId.autoSwitch.replayLastUtterance": {
     type: "boolean",

@@ -715,7 +715,10 @@ async function main(): Promise<void> {
       .description("Session totals, error rate and billable seconds"),
     "1h|6h|24h|7d|30d|mtd",
   ).action(async (options: MetricsCliOptions) => {
-    await runProjectsMetricsOverview({ ...options, projectId: options.project });
+    await runProjectsMetricsOverview({
+      ...options,
+      projectId: options.project,
+    });
   });
 
   metricsRangeOptions(
@@ -724,7 +727,10 @@ async function main(): Promise<void> {
       .description("Session totals, durations and failures by reason"),
     "1h|6h|24h|7d|30d|mtd",
   ).action(async (options: MetricsCliOptions) => {
-    await runProjectsMetricsSessions({ ...options, projectId: options.project });
+    await runProjectsMetricsSessions({
+      ...options,
+      projectId: options.project,
+    });
   });
 
   metricsRangeOptions(
@@ -1014,15 +1020,21 @@ async function main(): Promise<void> {
       "Update voice settings (requires redeploy). Use --interactive to pick models from the VoiceThere model catalog",
     )
     .option("--project <id>", "Project UUID")
-    .option("--stt-provider <id>", "STT provider id")
-    .option("--tts-provider <id>", "TTS provider id")
+    .option(
+      "--stt-provider <id>",
+      "STT provider id (voicethere for the built-in vendor; local-sherpa is still accepted)",
+    )
+    .option(
+      "--tts-provider <id>",
+      "TTS provider id (voicethere for the built-in vendor; local-sherpa is still accepted)",
+    )
     .option(
       "--stt-model-id <id>",
-      "VoiceThere STT catalog id (when the STT vendor is VoiceThere, id local-sherpa); list via voice catalog",
+      "VoiceThere STT catalog id (when the STT vendor is VoiceThere, id voicethere); list via voice catalog",
     )
     .option(
       "--tts-model-id <id>",
-      "VoiceThere TTS catalog id (when the TTS vendor is VoiceThere, id local-sherpa); list via voice catalog",
+      "VoiceThere TTS catalog id (when the TTS vendor is VoiceThere, id voicethere); list via voice catalog",
     )
     .option("--stt-model <name>", "Cloud STT model name")
     .option("--stt-language <code>", "Cloud STT language code")
@@ -1235,8 +1247,14 @@ async function main(): Promise<void> {
       "--reason <key>",
       "Only sessions that failed with this reason key (implies --failed)",
     )
-    .option("--from <ISO>", "Only sessions created at or after this ISO 8601 time")
-    .option("--to <ISO>", "Only sessions created at or before this ISO 8601 time")
+    .option(
+      "--from <ISO>",
+      "Only sessions created at or after this ISO 8601 time",
+    )
+    .option(
+      "--to <ISO>",
+      "Only sessions created at or before this ISO 8601 time",
+    )
     .option("--json", "Print the raw page JSON")
     .action(
       async (
