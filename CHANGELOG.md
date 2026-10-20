@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.16.10] - 2026-10-21
+
 ### Fixed
 
 - When the API or a proxy in front of it answers with a page that is not JSON (an HTML gateway or timeout page), commands no longer print `Unexpected token '<', "<!DOCTYPE "... is not valid JSON`. They print the method, path, HTTP status and the page title, for example `Unexpected non-JSON response from GET /api/v1/deployments/<id> (HTTP 524): ... 524: A timeout occurred`.
