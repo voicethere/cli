@@ -26,8 +26,58 @@ function errorName(error: unknown): string | undefined {
   return typeof name === "string" ? name : undefined;
 }
 
+/** Errno codes that mean the request never left this machine, so a write is safe to resend. */
+const NOT_SENT_ERRNO_CODES = new Set(["ECONNREFUSED", "ENOTFOUND"]);
+
 export function isRetryableHttpStatus(status: number): boolean {
   return status === 502 || status === 503 || status === 504;
+}
+
+/** GET/HEAD/OPTIONS can be resent; writes cannot (one retry layer, never for writes). */
+export function isIdempotentHttpMethod(method: string): boolean {
+  const upper = method.toUpperCase();
+  return upper === "GET" || upper === "HEAD" || upper === "OPTIONS";
+}
+
+/** True when a non-empty body is not JSON (gateway or edge error page, HTML). */
+export function isNonJsonBody(text: string): boolean {
+  if (text.trim().length === 0) {
+    return false;
+  }
+  try {
+    JSON.parse(text);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Whether a non-2xx response should be retried by {@link withHttpRetries}.
+ * Only idempotent methods retry: on 502/503/504, or on any 5xx whose body is not
+ * JSON (an edge or proxy error page such as a Cloudflare 52x, never our API).
+ */
+export function shouldRetryHttpResponse(
+  method: string,
+  status: number,
+  text: string,
+): boolean {
+  if (!isIdempotentHttpMethod(method)) {
+    return false;
+  }
+  if (isRetryableHttpStatus(status)) {
+    return true;
+  }
+  return status >= 500 && status <= 599 && isNonJsonBody(text);
+}
+
+/** Network failures where the request provably never reached the server. */
+export function isRequestNotSentError(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+  const causeCode = errnoCode(err.cause);
+  return causeCode !== undefined && NOT_SENT_ERRNO_CODES.has(causeCode);
 }
 
 export function isRetryableNetworkError(err: unknown): boolean {
@@ -72,9 +122,7 @@ export class RetryableHttpStatusError extends Error {
 }
 
 function isRetryableHttpError(err: unknown): boolean {
-  return (
-    err instanceof RetryableHttpStatusError && isRetryableHttpStatus(err.status)
-  );
+  return err instanceof RetryableHttpStatusError;
 }
 
 function defaultSleep(ms: number): Promise<void> {
@@ -84,6 +132,11 @@ function defaultSleep(ms: number): Promise<void> {
 export async function withHttpRetries<T>(
   fn: () => Promise<T>,
   options?: {
+    /**
+     * When false (POST/PUT/PATCH/DELETE), only failures where the request was never
+     * sent are retried. HTTP statuses are never retried for writes. Default true.
+     */
+    idempotent?: boolean;
     sleep?: (ms: number) => Promise<void>;
     onRetry?: (info: {
       attempt: number;
@@ -96,13 +149,15 @@ export async function withHttpRetries<T>(
   const delays = API_HTTP_RETRY_DELAYS_MS;
   const maxAttempts = delays.length + 1;
   const sleep = options?.sleep ?? defaultSleep;
+  const idempotent = options?.idempotent ?? true;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       return await fn();
     } catch (error: unknown) {
-      const retryable =
-        isRetryableNetworkError(error) || isRetryableHttpError(error);
+      const retryable = idempotent
+        ? isRetryableNetworkError(error) || isRetryableHttpError(error)
+        : isRequestNotSentError(error);
       if (!retryable || attempt >= maxAttempts - 1) {
         throw error;
       }

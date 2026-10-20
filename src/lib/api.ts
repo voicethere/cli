@@ -4,8 +4,9 @@ import { basename } from "node:path";
 import { USER_ORG_ID_HEADER, isUserApiKeyToken } from "./auth-headers.js";
 import { logApiBase, logVerbose } from "./command-log.js";
 import {
-  isRetryableHttpStatus,
+  isIdempotentHttpMethod,
   RetryableHttpStatusError,
+  shouldRetryHttpResponse,
   withHttpRetries,
 } from "./http-retry.js";
 import {
@@ -35,6 +36,60 @@ export class ApiError extends Error {
     this.code = body?.error?.code;
     this.requestId = body?.error?.request_id;
     this.errorId = body?.error?.error_id;
+  }
+}
+
+export const NON_JSON_RESPONSE_CODE = "NON_JSON_RESPONSE";
+
+const BODY_EXCERPT_MAX_CHARS = 160;
+
+/** Short, single-line description of a non-JSON body: the HTML `<title>` when present, else the first characters. */
+export function nonJsonBodyExcerpt(text: string): string {
+  const title = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(text)?.[1];
+  const source = title && title.trim().length > 0 ? title : text;
+  const collapsed = source.replace(/\s+/g, " ").trim();
+  return collapsed.length > BODY_EXCERPT_MAX_CHARS
+    ? `${collapsed.slice(0, BODY_EXCERPT_MAX_CHARS)}…`
+    : collapsed;
+}
+
+/**
+ * The API answered with a body that is not JSON (an edge or proxy error page, HTML).
+ * Carries the HTTP status and a short excerpt instead of a raw JSON parse error.
+ */
+export class NonJsonResponseError extends ApiError {
+  readonly method: string;
+  readonly pathname: string;
+  readonly excerpt: string;
+
+  constructor(method: string, pathname: string, status: number, text: string) {
+    const excerpt = nonJsonBodyExcerpt(text);
+    super(
+      status,
+      `Unexpected non-JSON response from ${method} ${pathname} (HTTP ${status}): ${excerpt}`,
+      { error: { code: NON_JSON_RESPONSE_CODE } },
+    );
+    this.name = "NonJsonResponseError";
+    this.method = method;
+    this.pathname = pathname;
+    this.excerpt = excerpt;
+  }
+}
+
+/** Parse a JSON response body; a non-JSON body throws {@link NonJsonResponseError}. */
+export function parseJsonResponseBody<T>(
+  method: string,
+  pathname: string,
+  status: number,
+  text: string,
+): T | null {
+  if (text.trim().length === 0) {
+    return null;
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new NonJsonResponseError(method, pathname, status, text);
   }
 }
 
@@ -109,7 +164,12 @@ export function throwApiErrorFromResponse(
   status: number,
   text: string,
 ): void {
-  const payload = text.length > 0 ? (JSON.parse(text) as ApiErrorBody) : null;
+  const payload = parseJsonResponseBody<ApiErrorBody>(
+    method,
+    pathname,
+    status,
+    text,
+  );
   const errorBody =
     payload && typeof payload === "object" && "error" in payload
       ? payload
@@ -207,11 +267,7 @@ export interface DeploymentJob {
 }
 
 export type DeploymentRequesterKind =
-  | "user"
-  | "api_key"
-  | "personal_api_key"
-  | "system"
-  | "unknown";
+  "user" | "api_key" | "personal_api_key" | "system" | "unknown";
 
 export interface DeploymentRequestedBy {
   kind: DeploymentRequesterKind;
@@ -684,9 +740,7 @@ export interface ProjectSessionListFilter {
 }
 
 /** Metrics window: a preset or an explicit ISO 8601 `start` + `end`. */
-export type MetricsRange =
-  | { period?: string }
-  | { start: string; end: string };
+export type MetricsRange = { period?: string } | { start: string; end: string };
 
 export interface ProjectMetricsResponse {
   project_id: string;
@@ -1748,13 +1802,11 @@ export class VoicethereApi {
           `response: ${response.status} (${Math.round(performance.now() - started)}ms)`,
         );
 
-        if (!response.ok && isRetryableHttpStatus(response.status)) {
-          const text = await response.text();
-          throw new RetryableHttpStatusError(response.status, text);
-        }
-
         if (!response.ok) {
           const text = await response.text();
+          if (shouldRetryHttpResponse(method, response.status, text)) {
+            throw new RetryableHttpStatusError(response.status, text);
+          }
           throwApiErrorFromResponse(
             method,
             url.pathname,
@@ -1770,6 +1822,7 @@ export class VoicethereApi {
         return { bytes: Buffer.from(arrayBuffer), filename };
       },
       {
+        idempotent: isIdempotentHttpMethod(method),
         onRetry: ({ attempt, maxAttempts, delayMs, error }) => {
           logVerbose(
             `retrying after ${delayMs}ms (attempt ${attempt}/${maxAttempts}): ${formatHttpRetryLog(error)}`,
@@ -1834,12 +1887,12 @@ export class VoicethereApi {
         );
         const text = await response.text();
 
-        if (!response.ok && isRetryableHttpStatus(response.status)) {
+        if (
+          !response.ok &&
+          shouldRetryHttpResponse(method, response.status, text)
+        ) {
           throw new RetryableHttpStatusError(response.status, text);
         }
-
-        const payload =
-          text.length > 0 ? (JSON.parse(text) as T | ApiErrorBody) : null;
 
         if (!response.ok) {
           throwApiErrorFromResponse(
@@ -1850,9 +1903,16 @@ export class VoicethereApi {
           );
         }
 
+        const payload = parseJsonResponseBody<T>(
+          method,
+          url.pathname,
+          response.status,
+          text,
+        );
         return (payload ?? ({} as T)) as T;
       },
       {
+        idempotent: isIdempotentHttpMethod(method),
         onRetry: ({ attempt, maxAttempts, delayMs, error }) => {
           logVerbose(
             `retrying after ${delayMs}ms (attempt ${attempt}/${maxAttempts}): ${formatHttpRetryLog(error)}`,

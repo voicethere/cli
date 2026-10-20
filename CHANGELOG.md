@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Fixed
+
+- When the API or a proxy in front of it answers with a page that is not JSON (an HTML gateway or timeout page), commands no longer print `Unexpected token '<', "<!DOCTYPE "... is not valid JSON`. They print the method, path, HTTP status and the page title, for example `Unexpected non-JSON response from GET /api/v1/deployments/<id> (HTTP 524): ... 524: A timeout occurred`.
+- Reads (`GET`), including the `deploy --wait` and `undeploy --wait` polls, retry such a 5xx page with the same bounded backoff as a 502/503/504. Writes (`POST`, `PUT`, `PATCH`, `DELETE`) are no longer resent after a 5xx or after a connection drop once the request was sent, so a deploy is never queued twice. A write is retried only when the connection was refused before anything was sent.
+
 ## [0.16.9] - 2026-10-20
 
 ### Changed
