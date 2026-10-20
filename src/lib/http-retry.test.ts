@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   API_HTTP_RETRY_DELAYS_MS,
+  isIdempotentHttpMethod,
+  isNonJsonBody,
+  isRequestNotSentError,
   isRetryableHttpStatus,
+  shouldRetryHttpResponse,
   isRetryableNetworkError,
   RetryableHttpStatusError,
   withHttpRetries,
@@ -129,5 +133,84 @@ describe("withHttpRetries", () => {
       delayMs: 500,
       error: err,
     });
+  });
+});
+
+describe("shouldRetryHttpResponse", () => {
+  const html = "<!DOCTYPE html><html><title>524</title></html>";
+  const json = JSON.stringify({ error: { code: "INTERNAL", message: "x" } });
+
+  it("retries idempotent gateway statuses and non-JSON 5xx pages", () => {
+    expect(shouldRetryHttpResponse("GET", 503, json)).toBe(true);
+    expect(shouldRetryHttpResponse("GET", 524, html)).toBe(true);
+    expect(shouldRetryHttpResponse("HEAD", 520, html)).toBe(true);
+  });
+
+  it("does not retry a JSON 500 from the API (it carries an error_id)", () => {
+    expect(shouldRetryHttpResponse("GET", 500, json)).toBe(false);
+  });
+
+  it("never retries writes", () => {
+    for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+      expect(shouldRetryHttpResponse(method, 502, html)).toBe(false);
+      expect(shouldRetryHttpResponse(method, 503, json)).toBe(false);
+    }
+  });
+
+  it("does not retry 4xx", () => {
+    expect(shouldRetryHttpResponse("GET", 404, html)).toBe(false);
+  });
+});
+
+describe("helpers", () => {
+  it("classifies idempotent methods", () => {
+    expect(isIdempotentHttpMethod("get")).toBe(true);
+    expect(isIdempotentHttpMethod("POST")).toBe(false);
+  });
+
+  it("detects non-JSON bodies", () => {
+    expect(isNonJsonBody("<!DOCTYPE html>")).toBe(true);
+    expect(isNonJsonBody("{}")).toBe(false);
+    expect(isNonJsonBody("   ")).toBe(false);
+  });
+
+  it("treats only refused/unresolved connections as not sent", () => {
+    const refused = new TypeError("fetch failed", {
+      cause: { code: "ECONNREFUSED" },
+    });
+    const reset = new TypeError("fetch failed", {
+      cause: { code: "ECONNRESET" },
+    });
+    expect(isRequestNotSentError(refused)).toBe(true);
+    expect(isRequestNotSentError(reset)).toBe(false);
+    expect(isRequestNotSentError(new TypeError("fetch failed"))).toBe(false);
+  });
+});
+
+describe("withHttpRetries for writes", () => {
+  it("does not retry an HTTP status error or a sent-request failure", async () => {
+    const sleep = vi.fn(async () => {});
+    const fn = vi
+      .fn()
+      .mockRejectedValue(new RetryableHttpStatusError(502, "<html>"));
+    await expect(
+      withHttpRetries(fn, { sleep, idempotent: false }),
+    ).rejects.toBeInstanceOf(RetryableHttpStatusError);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it("retries a refused connection", async () => {
+    const sleep = vi.fn(async () => {});
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new TypeError("fetch failed", { cause: { code: "ECONNREFUSED" } }),
+      )
+      .mockResolvedValue("ok");
+    await expect(
+      withHttpRetries(fn, { sleep, idempotent: false }),
+    ).resolves.toBe("ok");
+    expect(fn).toHaveBeenCalledTimes(2);
   });
 });

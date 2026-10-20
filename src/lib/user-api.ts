@@ -1,7 +1,8 @@
-import { type ApiErrorBody, throwApiErrorFromResponse } from "./api.js";
+import { parseJsonResponseBody, throwApiErrorFromResponse } from "./api.js";
 import {
-  isRetryableHttpStatus,
+  isIdempotentHttpMethod,
   RetryableHttpStatusError,
+  shouldRetryHttpResponse,
   withHttpRetries,
 } from "./http-retry.js";
 import { USER_ORG_ID_HEADER } from "./auth-headers.js";
@@ -171,12 +172,12 @@ export class UserApi {
         );
         const text = await response.text();
 
-        if (!response.ok && isRetryableHttpStatus(response.status)) {
+        if (
+          !response.ok &&
+          shouldRetryHttpResponse(method, response.status, text)
+        ) {
           throw new RetryableHttpStatusError(response.status, text);
         }
-
-        const payload =
-          text.length > 0 ? (JSON.parse(text) as T | ApiErrorBody) : null;
 
         if (!response.ok) {
           throwApiErrorFromResponse(
@@ -187,9 +188,16 @@ export class UserApi {
           );
         }
 
+        const payload = parseJsonResponseBody<T>(
+          method,
+          url.pathname,
+          response.status,
+          text,
+        );
         return (payload ?? ({} as T)) as T;
       },
       {
+        idempotent: isIdempotentHttpMethod(method),
         onRetry: ({ attempt, maxAttempts, delayMs, error }) => {
           const detail =
             error instanceof RetryableHttpStatusError
