@@ -28,9 +28,7 @@ export async function promptChoice(
 
   try {
     while (true) {
-      const answer = await rl.question(
-        `${prompt} [1-${choices.length}]: `,
-      );
+      const answer = await rl.question(`${prompt} [1-${choices.length}]: `);
       const index = Number.parseInt(answer.trim(), 10);
       if (index >= 1 && index <= choices.length) {
         return choices[index - 1]!.value;
@@ -58,8 +56,24 @@ export async function promptConfirmText(
       if (answer.trim() === expected) {
         return;
       }
-      console.error("Confirmation did not match — try again or Ctrl+C to cancel.");
+      console.error(
+        "Confirmation did not match — try again or Ctrl+C to cancel.",
+      );
     }
+  } finally {
+    rl.close();
+  }
+}
+
+/** Ask a yes/no question on stderr; only "y" or "yes" confirms. */
+export async function promptYesNo(prompt: string): Promise<boolean> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stderr,
+  });
+  try {
+    const answer = await rl.question(`${prompt} [y/N]: `);
+    return /^y(es)?$/i.test(answer.trim());
   } finally {
     rl.close();
   }

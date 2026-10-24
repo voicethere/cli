@@ -72,3 +72,53 @@ describe("deployment history requests", () => {
     expect((err as ApiError).status).toBe(404);
   });
 });
+
+describe("canary requests", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function call(fetchMock: ReturnType<typeof mockFetch>) {
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    return { url: url.toString(), init };
+  }
+
+  it("PATCH /projects/{id}/canary sends the snake_case body", async () => {
+    const fetchMock = mockFetch(200, { canary: {} });
+    await new VoicethereApi(apiKey, apiBase).patchCanary("proj-1", {
+      canary_pods: 2,
+      routing_mode: "customer_context",
+      routing_context_field: "tier",
+    });
+    const { url, init } = call(fetchMock);
+    expect(url).toBe(`${apiBase}/projects/proj-1/canary`);
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(String(init.body))).toEqual({
+      canary_pods: 2,
+      routing_mode: "customer_context",
+      routing_context_field: "tier",
+    });
+  });
+
+  it("promote and abort POST to their paths", async () => {
+    const promote = mockFetch(200, { promoted: true });
+    await new VoicethereApi(apiKey, apiBase).promoteCanary("proj-1");
+    expect(call(promote).url).toBe(`${apiBase}/projects/proj-1/canary/promote`);
+    expect(call(promote).init.method).toBe("POST");
+    vi.restoreAllMocks();
+    const abort = mockFetch(200, { aborted: true });
+    await new VoicethereApi(apiKey, apiBase).abortCanary("proj-1");
+    expect(call(abort).url).toBe(`${apiBase}/projects/proj-1/canary/abort`);
+  });
+
+  it("GET deployments/metrics passes from and to", async () => {
+    const fetchMock = mockFetch(200, { deployments: [] });
+    await new VoicethereApi(apiKey, apiBase).getDeploymentMetrics("proj-1", {
+      from: "2026-10-23T00:00:00.000Z",
+      to: "2026-10-24T00:00:00.000Z",
+    });
+    expect(call(fetchMock).url).toBe(
+      `${apiBase}/projects/proj-1/deployments/metrics?from=2026-10-23T00%3A00%3A00.000Z&to=2026-10-24T00%3A00%3A00.000Z`,
+    );
+  });
+});

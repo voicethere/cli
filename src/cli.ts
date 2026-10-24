@@ -88,6 +88,14 @@ import {
 import { runUndeploy } from "./commands/undeploy.js";
 import { runDeploymentsList } from "./commands/deployments/list.js";
 import { runDeploymentsShow } from "./commands/deployments/show.js";
+import { runDeploymentsMetrics } from "./commands/deployments/metrics.js";
+import {
+  runCanaryAbort,
+  runCanaryAutoAbort,
+  runCanaryPromote,
+  runCanarySet,
+  runCanaryStatus,
+} from "./commands/canary/commands.js";
 import { runInit } from "./commands/init.js";
 import { formatInitTemplateHelp } from "./lib/project-templates.js";
 import {
@@ -1465,12 +1473,39 @@ async function main(): Promise<void> {
       "drain",
     )
     .option("--wait", "Poll until deployment completes or fails")
+    .option(
+      "--canary-pods <n>",
+      "Deploy --build-id as a canary on n pods (Advanced and Ultimate plans); the rest of the pods stay on the stable build",
+    )
+    .option(
+      "--routing <mode>",
+      "Canary routing: round-robin or customer-context",
+    )
+    .option(
+      "--context-field <name>",
+      "Customer context field that picks the build (required with --routing customer-context)",
+    )
+    .option(
+      "--auto-abort-rate <pct>",
+      "Abort the canary when its failure rate passes this percent",
+    )
+    .option(
+      "--auto-abort-min-sessions <n>",
+      "Ended sessions needed before auto-abort can trigger",
+    )
+    .option("--no-auto-abort", "Never abort the canary automatically")
     .action(
       async (options: {
         project?: string;
         buildId?: string;
         mode?: string;
         wait?: boolean;
+        canaryPods?: string;
+        routing?: string;
+        contextField?: string;
+        autoAbortRate?: string;
+        autoAbortMinSessions?: string;
+        autoAbort?: boolean;
       }) => {
         const mode = parseDeployMode(options.mode);
         await runDeploy({
@@ -1478,6 +1513,12 @@ async function main(): Promise<void> {
           buildId: options.buildId,
           mode,
           wait: options.wait,
+          canaryPods: options.canaryPods,
+          routing: options.routing,
+          contextField: options.contextField,
+          autoAbortRate: options.autoAbortRate,
+          autoAbortMinSessions: options.autoAbortMinSessions,
+          autoAbort: options.autoAbort,
         });
       },
     );
@@ -1542,6 +1583,103 @@ async function main(): Promise<void> {
         });
       },
     );
+
+  deployments
+    .command("metrics")
+    .description(
+      "Sessions, failures and failure rate per deployed build (default: last 24 hours)",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--since <window>", "Window length such as 30m, 24h or 7d", "24h")
+    .option("--json", "Output JSON")
+    .action(
+      async (options: { project?: string; since?: string; json?: boolean }) => {
+        await runDeploymentsMetrics({
+          projectId: options.project,
+          since: options.since,
+          json: options.json,
+        });
+      },
+    );
+
+  const canary = program
+    .command("canary")
+    .description(
+      "Run a new build on part of your traffic (Advanced and Ultimate plans). Start one with: voicethere deploy --build-id <id> --canary-pods <n>",
+    );
+
+  canary
+    .command("status")
+    .description("Show the canary: builds, pods, traffic share, routing, auto-abort")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--json", "Output JSON")
+    .action(async (options: { project?: string; json?: boolean }) => {
+      await runCanaryStatus({ projectId: options.project, json: options.json });
+    });
+
+  canary
+    .command("set")
+    .description("Change the running canary's pods or routing")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--pods <n>", "Number of pods for the canary")
+    .option("--routing <mode>", "round-robin or customer-context")
+    .option("--context-field <name>", "Required with --routing customer-context")
+    .action(
+      async (options: {
+        project?: string;
+        pods?: string;
+        routing?: string;
+        contextField?: string;
+      }) => {
+        await runCanarySet({
+          projectId: options.project,
+          pods: options.pods,
+          routing: options.routing,
+          contextField: options.contextField,
+        });
+      },
+    );
+
+  canary
+    .command("auto-abort")
+    .description("Set when the canary aborts itself, or turn that off")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--rate <pct>", "Failure rate percent that triggers an abort")
+    .option("--min-sessions <n>", "Ended sessions needed before it can trigger")
+    .option("--off", "Turn auto-abort off")
+    .action(
+      async (options: {
+        project?: string;
+        rate?: string;
+        minSessions?: string;
+        off?: boolean;
+      }) => {
+        await runCanaryAutoAbort({
+          projectId: options.project,
+          rate: options.rate,
+          minSessions: options.minSessions,
+          off: options.off,
+        });
+      },
+    );
+
+  canary
+    .command("promote")
+    .description("Make the canary build the stable build for all new sessions")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("-y, --yes", "Skip the confirmation prompt")
+    .action(async (options: { project?: string; yes?: boolean }) => {
+      await runCanaryPromote({ projectId: options.project, yes: options.yes });
+    });
+
+  canary
+    .command("abort")
+    .description("Stop the canary; new sessions go to the stable build")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("-y, --yes", "Skip the confirmation prompt")
+    .action(async (options: { project?: string; yes?: boolean }) => {
+      await runCanaryAbort({ projectId: options.project, yes: options.yes });
+    });
 
   await program.parseAsync(process.argv);
 }

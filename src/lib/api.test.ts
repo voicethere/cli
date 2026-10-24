@@ -1103,3 +1103,26 @@ describe("VoicethereApi metrics and filters", () => {
     expect(url.searchParams.get("to")).toBe("2026-10-02T00:00:00Z");
   });
 });
+
+describe("canary error messages", () => {
+  const cases: Array<[string, RegExp]> = [
+    ["plan_feature_unavailable", /^Error: Canary deployments need the Advanced or Ultimate plan\.$/],
+    ["canary_active", /canary is running/i],
+    ["canary_already_active", /already running/],
+    ["canary_not_active", /No canary is running/],
+    ["canary_build_mismatch", /different build/],
+    ["invalid_canary_pods", /^Error: Invalid canary setting: raw text$/],
+    ["invalid_failure_rate", /Invalid canary setting/],
+    ["invalid_min_sessions", /Invalid canary setting/],
+    ["invalid_routing_context_field", /Invalid canary setting/],
+  ];
+  it.each(cases)("%s maps to one clear line", (code, pattern) => {
+    const error = new ApiError(409, "raw text", { error: { code } });
+    expect(formatCliError(error)).toMatch(pattern);
+  });
+
+  it("leaves other codes alone", () => {
+    const error = new ApiError(400, "raw text", { error: { code: "invalid_request" } });
+    expect(formatCliError(error)).toBe("Error: raw text");
+  });
+});

@@ -367,6 +367,9 @@ Example: [`.voicethere/config.json.example`](./.voicethere/config.json.example)
 | `deploy [--wait] [--build-id] [--mode drain\|force]`                                             | Promote (if needed) + cloud rollout; `--wait` blocks                                          |
 | `deployments list [--project <id>] [--limit <n>] [--before <iso>] [--json]`                      | Recent deployments with status and duration, newest first; prints `next: --before …` for more |
 | `deployments show <deploymentId> [--project <id>] [--json]`                                      | Timeline of one deployment with UTC timestamps                                                |
+| `deployments metrics [--project <id>] [--since 24h\|7d] [--json]`                                | Sessions, failures and failure rate per deployed build                                        |
+| `deploy --build-id <id> --canary-pods <n> [--routing ...] [--context-field ...]`                 | Run a build on part of the traffic (Advanced and Ultimate plans)                              |
+| `canary status\|set\|auto-abort\|promote\|abort`                                                  | Inspect and manage the running canary                                                         |
 
 ## Logging
 
@@ -526,6 +529,35 @@ A deploy that was refused shows why, in plain words:
 Deploys from before the history was recorded have no stored steps. For those, `show` lists the request and the result and ends with `(start and end only)`.
 
 `--json` prints the API response unchanged.
+
+## Canary deployments
+
+Advanced and Ultimate projects can run a new build next to the stable one. The canary gets a whole number of your plan's pods and the same share of new sessions. Calls in progress are never moved.
+
+```bash
+# Run build <id> on 1 pod; new sessions are split by pod share
+voicethere deploy --build-id 11111111-aaaa-4bbb-8ccc-000000000001 --canary-pods 1 --wait
+
+# Send sessions to the canary by a customer context field instead of by share
+voicethere deploy --build-id 11111111-aaaa-4bbb-8ccc-000000000001 --canary-pods 1 \
+  --routing customer-context --context-field tier
+
+# Abort on its own above 15% failed sessions, once 30 sessions have ended
+voicethere deploy --build-id 11111111-aaaa-4bbb-8ccc-000000000001 --canary-pods 1 \
+  --auto-abort-rate 15 --auto-abort-min-sessions 30
+
+voicethere canary status
+voicethere canary set --pods 2
+voicethere canary auto-abort --rate 10 --min-sessions 50
+voicethere canary auto-abort --off
+voicethere canary promote        # the canary becomes the stable build
+voicethere canary abort          # new sessions go back to the stable build
+voicethere deployments metrics --since 7d
+```
+
+Auto-abort is on by default. `--no-auto-abort` turns it off for a deploy. `--context-field` goes with `--routing customer-context` and is rejected otherwise. A canary deploy needs `--build-id` and the default `drain` mode. `canary promote` and `canary abort` ask for confirmation; pass `--yes` to skip the prompt, which is also required when there is no terminal.
+
+`deployments metrics` lists, for each build that ran sessions in the window, the sessions, failed sessions, failure rate and the most common failure reasons. `--since` takes `30m`, `24h` or `7d`; the default is `24h`.
 
 ## Conversation history
 
