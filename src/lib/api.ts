@@ -93,9 +93,38 @@ export function parseJsonResponseBody<T>(
   }
 }
 
+const CANARY_ERROR_MESSAGES: Record<string, string> = {
+  plan_feature_unavailable:
+    "Canary deployments need the Advanced or Ultimate plan.",
+  canary_active:
+    "A canary is running. Promote or abort it before a normal deploy.",
+  canary_already_active:
+    "A canary is already running. Promote or abort it first.",
+  canary_not_active: "No canary is running for this project.",
+  canary_build_mismatch:
+    "The running canary is a different build than the one requested.",
+};
+
+const CANARY_INVALID_CODES = new Set([
+  "invalid_canary_pods",
+  "invalid_failure_rate",
+  "invalid_min_sessions",
+  "invalid_routing_context_field",
+]);
+
+/** One-line message for a known canary error code, else null. */
+export function canaryErrorMessage(error: ApiError): string | null {
+  const mapped = error.code ? CANARY_ERROR_MESSAGES[error.code] : undefined;
+  if (mapped) return mapped;
+  if (error.code && CANARY_INVALID_CODES.has(error.code)) {
+    return `Invalid canary setting: ${error.message}`;
+  }
+  return null;
+}
+
 export function formatCliError(error: unknown): string {
   if (error instanceof ApiError) {
-    const lines = [`Error: ${error.message}`];
+    const lines = [`Error: ${canaryErrorMessage(error) ?? error.message}`];
     if (error.errorId) {
       lines.push(`error_id: ${error.errorId}`);
     }
@@ -361,11 +390,83 @@ export interface ProjectSecretListResponse {
   secrets: ProjectSecretEntry[];
 }
 
-export interface CreateDeploymentInput {
+export type CanaryRoutingMode = "round_robin" | "customer_context";
+
+/** Canary options shared by `POST /deployments` and `PATCH /projects/{id}/canary`. */
+export interface CanarySettingsInput {
+  auto_abort_enabled?: boolean;
+  max_failure_rate_pct?: number;
+  min_sessions?: number;
+  routing_mode?: CanaryRoutingMode;
+  routing_context_field?: string | null;
+}
+
+export interface CreateDeploymentInput extends CanarySettingsInput {
   project_id: string;
   build_id?: string;
   mode?: "drain" | "force";
   trace_id?: string;
+  canary_pods?: number;
+}
+
+export interface PatchCanaryInput extends CanarySettingsInput {
+  canary_pods?: number;
+}
+
+export interface CanaryView {
+  id: string;
+  status: string;
+  stable_build_id: string;
+  canary_build_id: string;
+  canary_pods: number;
+  plan_max_pods: number;
+  traffic_share_pct: number;
+  auto_abort_enabled: boolean;
+  max_failure_rate_pct: number;
+  min_sessions: number;
+  routing_mode: CanaryRoutingMode;
+  routing_context_field: string | null;
+  started_at: string;
+  ended_at: string | null;
+  end_reason: string | null;
+}
+
+export interface CanaryResponse {
+  canary: CanaryView | null;
+  live: {
+    stable_build_id: string;
+    canary_build_id: string;
+    canary_pods: number;
+    plan_max_pods: number;
+    routing_mode: CanaryRoutingMode;
+    started_at: string;
+  } | null;
+  plan_max_pods: number;
+  pod_options: number[];
+}
+
+export interface CanaryActionResponse {
+  already_done: boolean;
+  canary: CanaryView;
+  promoted?: true;
+  aborted?: true;
+}
+
+export interface DeploymentMetricsRow {
+  build_id: string | null;
+  sessions: number;
+  failed: number;
+  /** Percent, 0 to 100. */
+  failure_rate: number;
+  top_failure_keys: Array<{ key: string; count: number }>;
+  build: { id: string; message: string | null; created_at: string } | null;
+}
+
+export interface DeploymentMetricsResponse {
+  project_id: string;
+  from: string;
+  to: string;
+  deployments: DeploymentMetricsRow[];
 }
 
 export interface ProjectSettingsResponse {
@@ -1240,6 +1341,49 @@ export class VoicethereApi {
     return this.request<DeploymentJob>("POST", "/deployments", {
       json: input,
     });
+  }
+
+  async getCanary(projectId: string): Promise<CanaryResponse> {
+    return this.request<CanaryResponse>("GET", `/projects/${projectId}/canary`);
+  }
+
+  async patchCanary(
+    projectId: string,
+    input: PatchCanaryInput,
+  ): Promise<{ canary: CanaryView }> {
+    return this.request<{ canary: CanaryView }>(
+      "PATCH",
+      `/projects/${projectId}/canary`,
+      { json: input },
+    );
+  }
+
+  async promoteCanary(projectId: string): Promise<CanaryActionResponse> {
+    return this.request<CanaryActionResponse>(
+      "POST",
+      `/projects/${projectId}/canary/promote`,
+    );
+  }
+
+  async abortCanary(projectId: string): Promise<CanaryActionResponse> {
+    return this.request<CanaryActionResponse>(
+      "POST",
+      `/projects/${projectId}/canary/abort`,
+    );
+  }
+
+  async getDeploymentMetrics(
+    projectId: string,
+    range: { from?: string; to?: string } = {},
+  ): Promise<DeploymentMetricsResponse> {
+    const params = new URLSearchParams();
+    if (range.from) params.set("from", range.from);
+    if (range.to) params.set("to", range.to);
+    const query = params.toString();
+    return this.request<DeploymentMetricsResponse>(
+      "GET",
+      `/projects/${projectId}/deployments/metrics${query ? `?${query}` : ""}`,
+    );
   }
 
   async undeployProject(projectId: string): Promise<DeploymentJob> {

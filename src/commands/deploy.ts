@@ -1,6 +1,8 @@
 import {
   createApi,
   type DeploymentFailure,
+  type CanarySettingsInput,
+  type CreateDeploymentInput,
   type DeploymentJob,
 } from "../lib/api.js";
 import { isRefusedFailure } from "../lib/deployment-labels.js";
@@ -9,6 +11,11 @@ import { requireCredentials } from "../lib/config.js";
 import { createApiFromCredentials } from "../lib/control-plane-auth.js";
 import { pollWithBackoff } from "../lib/poll-backoff.js";
 import { resolveProjectId } from "../lib/project-config.js";
+import {
+  buildCanarySettings,
+  parseCanaryPods,
+  type CanaryFlagInput,
+} from "../lib/canary-options.js";
 
 export type DeployMode = "drain" | "force";
 
@@ -19,7 +26,9 @@ export function parseDeployMode(raw: string | undefined): DeployMode {
   throw new Error(`Invalid --mode "${raw}". Use drain or force.`);
 }
 
-export interface DeployOptions {
+export interface DeployOptions extends CanaryFlagInput {
+  /** Raw `--canary-pods` value; starts a canary instead of a normal rollout. */
+  canaryPods?: string;
   projectId?: string;
   buildId?: string;
   mode?: DeployMode;
@@ -117,10 +126,39 @@ async function pollDeployment(
   });
 }
 
+/** Canary request fields for the deploy body; throws on invalid flag combinations. */
+export function buildCanaryDeployFields(
+  options: DeployOptions,
+): Pick<CreateDeploymentInput, "canary_pods"> & CanarySettingsInput {
+  const hasCanaryFlag =
+    options.routing !== undefined ||
+    options.contextField !== undefined ||
+    options.autoAbortRate !== undefined ||
+    options.autoAbortMinSessions !== undefined ||
+    options.autoAbort === false;
+  if (options.canaryPods === undefined) {
+    if (hasCanaryFlag) {
+      throw new Error(
+        "--routing, --context-field and the auto-abort flags need --canary-pods",
+      );
+    }
+    return {};
+  }
+  const canaryPods = parseCanaryPods(options.canaryPods);
+  if (!options.buildId) {
+    throw new Error("--canary-pods needs --build-id");
+  }
+  if (options.mode === "force") {
+    throw new Error("A canary deploy uses --mode drain");
+  }
+  return { canary_pods: canaryPods, ...buildCanarySettings(options) };
+}
+
 /**
  * Promote (if needed) and enqueue a deploy job; optionally poll until done.
  */
 export async function runDeploy(options: DeployOptions = {}): Promise<void> {
+  const canaryFields = buildCanaryDeployFields(options);
   logStep("Starting cloud deployment");
   const project =
     options.projectId !== undefined
@@ -135,6 +173,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<void> {
     project_id: project.projectId,
     build_id: options.buildId,
     mode: options.mode ?? "drain",
+    ...canaryFields,
   });
 
   console.log(`Deployment queued: ${created.id}`);
