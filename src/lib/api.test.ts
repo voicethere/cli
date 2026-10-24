@@ -1111,6 +1111,10 @@ describe("canary error messages", () => {
     ["canary_already_active", /already running/],
     ["canary_not_active", /No canary is running/],
     ["canary_build_mismatch", /different build/],
+    [
+      "previous_canary_draining",
+      /^Error: The previous version is still finishing its calls\. Run `voicethere canary status` and start the canary once it has stopped\.$/,
+    ],
     ["invalid_canary_pods", /^Error: Invalid canary setting: raw text$/],
     ["invalid_failure_rate", /Invalid canary setting/],
     ["invalid_min_sessions", /Invalid canary setting/],

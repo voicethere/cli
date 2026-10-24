@@ -103,6 +103,8 @@ const CANARY_ERROR_MESSAGES: Record<string, string> = {
   canary_not_active: "No canary is running for this project.",
   canary_build_mismatch:
     "The running canary is a different build than the one requested.",
+  previous_canary_draining:
+    "The previous version is still finishing its calls. Run `voicethere canary status` and start the canary once it has stopped.",
 };
 
 const CANARY_INVALID_CODES = new Set([
@@ -443,6 +445,8 @@ export interface CanaryResponse {
   } | null;
   plan_max_pods: number;
   pod_options: number[];
+  /** True while the previous version still finishes calls; absent or null when unknown. */
+  previous_version_draining?: boolean | null;
 }
 
 export interface CanaryActionResponse {
