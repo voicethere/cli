@@ -122,7 +122,62 @@ describe("canary status", () => {
     };
     api.getCanary.mockResolvedValue(response);
     await runCanaryStatus({ json: true });
-    expect(JSON.parse(out.join("\n"))).toEqual(response);
+    expect(JSON.parse(out.join("\n"))).toEqual({
+      ...response,
+      previous_version_draining: null,
+    });
+  });
+
+  it.each([
+    [true, "Previous version: finishing its calls"],
+    [false, "Previous version: stopped"],
+  ])("prints the previous version state %s", async (draining, line) => {
+    api.getCanary.mockResolvedValue({
+      canary: view,
+      live: null,
+      plan_max_pods: 3,
+      pod_options: [1],
+      previous_version_draining: draining,
+    });
+    await runCanaryStatus({});
+    expect(out.join("\n")).toContain(line);
+  });
+
+  it("prints the previous version state without a canary", async () => {
+    api.getCanary.mockResolvedValue({
+      canary: null,
+      live: null,
+      plan_max_pods: 3,
+      pod_options: [],
+      previous_version_draining: true,
+    });
+    await runCanaryStatus({});
+    const text = out.join("\n");
+    expect(text).toContain("No canary deployment");
+    expect(text).toContain("Previous version: finishing its calls");
+  });
+
+  it("omits the previous version line when the state is unknown", async () => {
+    api.getCanary.mockResolvedValue({
+      canary: view,
+      live: null,
+      plan_max_pods: 3,
+      pod_options: [1],
+    });
+    await runCanaryStatus({});
+    expect(out.join("\n")).not.toContain("Previous version");
+  });
+
+  it("--json includes previous_version_draining", async () => {
+    api.getCanary.mockResolvedValue({
+      canary: view,
+      live: null,
+      plan_max_pods: 3,
+      pod_options: [1],
+      previous_version_draining: true,
+    });
+    await runCanaryStatus({ json: true });
+    expect(JSON.parse(out.join("\n")).previous_version_draining).toBe(true);
   });
 
   it("says so when there is no canary", async () => {

@@ -59,16 +59,30 @@ export async function runCanaryStatus(
   logStep(`Reading canary for project ${projectId}`);
   const result = await api.getCanary(projectId);
   if (options.json) {
-    console.log(JSON.stringify(result, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          ...result,
+          previous_version_draining: result.previous_version_draining ?? null,
+        },
+        null,
+        2,
+      ),
+    );
     return;
   }
   if (!result.canary) {
     console.log("No canary deployment.");
     console.log(`  plan max pods: ${result.plan_max_pods}`);
-    return;
+  } else {
+    for (const line of formatCanaryView(result.canary)) {
+      console.log(line);
+    }
   }
-  for (const line of formatCanaryView(result.canary)) {
-    console.log(line);
+  if (typeof result.previous_version_draining === "boolean") {
+    console.log(
+      `Previous version: ${result.previous_version_draining ? "finishing its calls" : "stopped"}`,
+    );
   }
 }
 
