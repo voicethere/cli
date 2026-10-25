@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- `projects services list|show|set|delete|rotate-token` manage project services (your own container images). On update, flags you leave out keep their current value.
+- `projects registry-credentials list|set|delete` manage credentials for private registries. `set` reads the password from stdin only.
+- `services build <name> --push <repo:tag>` builds and pushes an image with local Docker buildx (linux/amd64 by default) and sets the service to the pushed digest. Only the image reference is sent to VoiceThere.
+
 ## [0.16.10] - 2026-10-21
 
 ### Fixed
