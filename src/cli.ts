@@ -23,6 +23,7 @@ import { runProjectsEnvironmentView } from "./commands/projects/environment/view
 import { runProjectsSecretsCreate } from "./commands/projects/secrets/create.js";
 import { runProjectsSecretsDelete } from "./commands/projects/secrets/delete.js";
 import { runProjectsSecretsList } from "./commands/projects/secrets/list.js";
+import { runServicesBuild } from "./commands/services/build.js";
 import {
   runProjectsServicesDelete,
   runProjectsServicesList,
@@ -1907,6 +1908,43 @@ async function main(): Promise<void> {
     .action(async (options: { project?: string; yes?: boolean }) => {
       await runCanaryAbort({ projectId: options.project, yes: options.yes });
     });
+
+  const topServices = program
+    .command("services")
+    .description("Build service images locally");
+
+  topServices
+    .command("build")
+    .description(
+      "Build a Docker image locally, push it, and set the service to the pushed digest",
+    )
+    .argument("<name>", "Service name")
+    .option("-f, --file <path>", "Dockerfile", "Dockerfile")
+    .option("--context <dir>", "Build context", ".")
+    .requiredOption("--push <repo:tag>", "Image reference to push")
+    .option("--platform <platform>", "Target platform", "linux/amd64")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (
+        name: string,
+        options: {
+          file: string;
+          context: string;
+          push: string;
+          platform: string;
+          project?: string;
+        },
+      ) => {
+        await runServicesBuild({
+          name,
+          file: options.file,
+          context: options.context,
+          push: options.push,
+          platform: options.platform,
+          projectId: options.project,
+        });
+      },
+    );
 
   await program.parseAsync(process.argv);
 }
