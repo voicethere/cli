@@ -23,6 +23,19 @@ import { runProjectsEnvironmentView } from "./commands/projects/environment/view
 import { runProjectsSecretsCreate } from "./commands/projects/secrets/create.js";
 import { runProjectsSecretsDelete } from "./commands/projects/secrets/delete.js";
 import { runProjectsSecretsList } from "./commands/projects/secrets/list.js";
+import { runServicesBuild } from "./commands/services/build.js";
+import {
+  runProjectsServicesDelete,
+  runProjectsServicesList,
+  runProjectsServicesRotateToken,
+  runProjectsServicesSet,
+  runProjectsServicesShow,
+} from "./commands/projects/services/commands.js";
+import {
+  runRegistryCredentialsDelete,
+  runRegistryCredentialsList,
+  runRegistryCredentialsSet,
+} from "./commands/projects/registry-credentials/commands.js";
 import { runProjectsSettingsList } from "./commands/projects/settings/list.js";
 import { runProjectsSettingsSet } from "./commands/projects/settings/set.js";
 import { runProjectsSubscriptionList } from "./commands/projects/subscription/list.js";
@@ -115,6 +128,10 @@ const require = createRequire(import.meta.url);
 const { version: CLI_VERSION } = require("../package.json") as {
   version: string;
 };
+
+function collect(value: string, previous: string[]): string[] {
+  return [...previous, value];
+}
 
 async function main(): Promise<void> {
   configureLogging();
@@ -434,6 +451,217 @@ async function main(): Promise<void> {
     .option("--project <id>", "Project UUID")
     .action(async (name: string, options: { project?: string }) => {
       await runProjectsSecretsDelete({ name, projectId: options.project });
+    });
+
+  const services = projects
+    .command("services")
+    .description(
+      "Manage project services: your own container images (for example an MCP server) that run next to the agent",
+    );
+
+  services
+    .command("list")
+    .description("List services of the project")
+    .option("--project <id>", "Project UUID")
+    .option("--json", "Output JSON")
+    .action(async (options: { project?: string; json?: boolean }) => {
+      await runProjectsServicesList({
+        projectId: options.project,
+        json: options.json,
+      });
+    });
+
+  services
+    .command("show")
+    .description("Show one service as JSON")
+    .argument("<name>", "Service name")
+    .option("--project <id>", "Project UUID")
+    .action(async (name: string, options: { project?: string }) => {
+      await runProjectsServicesShow({ name, projectId: options.project });
+    });
+
+  services
+    .command("set")
+    .description(
+      "Create or update a service. On update, flags you leave out keep their current value",
+    )
+    .argument("<name>", "Service name")
+    .option("--project <id>", "Project UUID")
+    .option("--image <ref>", "Image reference (required on create)")
+    .option(
+      "--registry-credential <name>",
+      "Registry credential for a private image",
+    )
+    .option(
+      "--port <name:port>",
+      "Port, for example mcp:8080 (repeatable)",
+      collect,
+      [],
+    )
+    .option(
+      "--health <check>",
+      "Health check: http:<path>:<port> or tcp:<port> (required on create)",
+    )
+    .option("--env <KEY=VALUE>", "Plain env var (repeatable)", collect, [])
+    .option(
+      "--env-from-project <mode>",
+      "Project env passed to the service: none, selected or all",
+    )
+    .option(
+      "--env-key <K>",
+      "Project env var to pass (repeatable)",
+      collect,
+      [],
+    )
+    .option(
+      "--secret-key <S>",
+      "Project secret to pass (repeatable)",
+      collect,
+      [],
+    )
+    .option("--cpu <millis>", "CPU in millicores")
+    .option("--memory <MiB>", "Memory in MiB")
+    .option("--run-mode <mode>", "on_demand or always_on")
+    .option("--idle-stop <minutes>", "Minutes idle before an on-demand stop")
+    .option("--start-timeout <seconds>", "Seconds to wait for the health check")
+    .option("--enabled <bool>", "true or false")
+    .option(
+      "--command <part>",
+      "Container command part (repeatable)",
+      collect,
+      [],
+    )
+    .option("--arg <value>", "Container argument (repeatable)", collect, [])
+    .action(
+      async (
+        name: string,
+        options: {
+          project?: string;
+          image?: string;
+          registryCredential?: string;
+          port: string[];
+          health?: string;
+          env: string[];
+          envFromProject?: string;
+          envKey: string[];
+          secretKey: string[];
+          cpu?: string;
+          memory?: string;
+          runMode?: string;
+          idleStop?: string;
+          startTimeout?: string;
+          enabled?: string;
+          command: string[];
+          arg: string[];
+        },
+      ) => {
+        await runProjectsServicesSet({
+          name,
+          projectId: options.project,
+          image: options.image,
+          registryCredential: options.registryCredential,
+          port: options.port,
+          health: options.health,
+          env: options.env,
+          envFromProject: options.envFromProject,
+          envKey: options.envKey,
+          secretKey: options.secretKey,
+          cpu: options.cpu,
+          memory: options.memory,
+          runMode: options.runMode,
+          idleStop: options.idleStop,
+          startTimeout: options.startTimeout,
+          enabled: options.enabled,
+          command: options.command,
+          arg: options.arg,
+        });
+      },
+    );
+
+  services
+    .command("delete")
+    .description("Delete a service")
+    .argument("<name>", "Service name")
+    .option("--project <id>", "Project UUID")
+    .option("-y, --yes", "Skip the confirmation prompt")
+    .action(
+      async (name: string, options: { project?: string; yes?: boolean }) => {
+        await runProjectsServicesDelete({
+          name,
+          projectId: options.project,
+          yes: options.yes,
+        });
+      },
+    );
+
+  services
+    .command("rotate-token")
+    .description(
+      "Rotate the service token; the previous one stays valid briefly",
+    )
+    .argument("<name>", "Service name")
+    .option("--project <id>", "Project UUID")
+    .action(async (name: string, options: { project?: string }) => {
+      await runProjectsServicesRotateToken({
+        name,
+        projectId: options.project,
+      });
+    });
+
+  const registryCredentials = projects
+    .command("registry-credentials")
+    .description("Manage container registry credentials for private images");
+
+  registryCredentials
+    .command("list")
+    .description("List registry credentials (no passwords)")
+    .option("--project <id>", "Project UUID")
+    .option("--json", "Output JSON")
+    .action(async (options: { project?: string; json?: boolean }) => {
+      await runRegistryCredentialsList({
+        projectId: options.project,
+        json: options.json,
+      });
+    });
+
+  registryCredentials
+    .command("set")
+    .description("Create or replace a registry credential")
+    .argument("<name>", "Credential name")
+    .requiredOption("--host <registry>", "Registry host, for example ghcr.io")
+    .requiredOption("--username <user>", "Registry username")
+    .option("--password-stdin", "Read the password from stdin (required)")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (
+        name: string,
+        options: {
+          host: string;
+          username: string;
+          passwordStdin?: boolean;
+          project?: string;
+        },
+      ) => {
+        await runRegistryCredentialsSet({
+          name,
+          host: options.host,
+          username: options.username,
+          passwordStdin: options.passwordStdin,
+          projectId: options.project,
+        });
+      },
+    );
+
+  registryCredentials
+    .command("delete")
+    .description("Delete a registry credential")
+    .argument("<name>", "Credential name")
+    .option("--project <id>", "Project UUID")
+    .action(async (name: string, options: { project?: string }) => {
+      await runRegistryCredentialsDelete({
+        name,
+        projectId: options.project,
+      });
     });
 
   const settings = projects
@@ -1680,6 +1908,43 @@ async function main(): Promise<void> {
     .action(async (options: { project?: string; yes?: boolean }) => {
       await runCanaryAbort({ projectId: options.project, yes: options.yes });
     });
+
+  const topServices = program
+    .command("services")
+    .description("Build service images locally");
+
+  topServices
+    .command("build")
+    .description(
+      "Build a Docker image locally, push it, and set the service to the pushed digest",
+    )
+    .argument("<name>", "Service name")
+    .option("-f, --file <path>", "Dockerfile", "Dockerfile")
+    .option("--context <dir>", "Build context", ".")
+    .requiredOption("--push <repo:tag>", "Image reference to push")
+    .option("--platform <platform>", "Target platform", "linux/amd64")
+    .option("--project <id>", "Project UUID")
+    .action(
+      async (
+        name: string,
+        options: {
+          file: string;
+          context: string;
+          push: string;
+          platform: string;
+          project?: string;
+        },
+      ) => {
+        await runServicesBuild({
+          name,
+          file: options.file,
+          context: options.context,
+          push: options.push,
+          platform: options.platform,
+          projectId: options.project,
+        });
+      },
+    );
 
   await program.parseAsync(process.argv);
 }

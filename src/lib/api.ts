@@ -392,6 +392,71 @@ export interface ProjectSecretListResponse {
   secrets: ProjectSecretEntry[];
 }
 
+export interface ProjectServicePort {
+  name: string;
+  port: number;
+}
+
+export type ProjectServiceHealth =
+  { type: "http"; path: string; port: number } | { type: "tcp"; port: number };
+
+export type ProjectServiceEnvFromProject = "none" | "selected" | "all";
+export type ProjectServiceRunMode = "on_demand" | "always_on";
+
+/** PUT body for `/projects/{id}/services/{name}`. */
+export interface ProjectServiceInput {
+  image: string;
+  registryCredential?: string;
+  ports: ProjectServicePort[];
+  command?: string[];
+  args?: string[];
+  envPlain?: Record<string, string>;
+  envFromProject?: ProjectServiceEnvFromProject;
+  envKeys?: string[];
+  secretKeys?: string[];
+  cpuMillis?: number;
+  memoryMib?: number;
+  runMode?: ProjectServiceRunMode;
+  idleStopMinutes?: number;
+  health: ProjectServiceHealth;
+  startTimeoutS?: number;
+  enabled?: boolean;
+}
+
+/** Service as returned by the API: the input fields plus server-owned ones. */
+export interface ProjectServiceView extends Partial<ProjectServiceInput> {
+  name: string;
+  [key: string]: unknown;
+}
+
+export interface ProjectServiceListResponse {
+  services: ProjectServiceView[];
+  maxServices: number;
+}
+
+export interface ProjectServiceSetResponse {
+  service: ProjectServiceView;
+  requiresRedeploy: boolean;
+}
+
+export interface ProjectServiceRotateTokenResponse {
+  tokenVersion: number;
+  previousValidUntil: string | null;
+}
+
+export interface RegistryCredentialEntry {
+  name: string;
+  registryHost: string;
+  username: string;
+  updatedAt: string;
+}
+
+export interface RegistryCredentialInput {
+  registryHost: string;
+  username: string;
+  password: string;
+}
+
 export type CanaryRoutingMode = "round_robin" | "customer_context";
 
 /** Canary options shared by `POST /deployments` and `PATCH /projects/{id}/canary`. */
@@ -1537,6 +1602,87 @@ export class VoicethereApi {
     await this.request<Record<string, never>>(
       "DELETE",
       `/projects/${projectId}/secrets/${encodeURIComponent(name)}`,
+    );
+  }
+
+  async listProjectServices(
+    projectId: string,
+  ): Promise<ProjectServiceListResponse> {
+    return this.request<ProjectServiceListResponse>(
+      "GET",
+      `/projects/${projectId}/services`,
+    );
+  }
+
+  async getProjectService(
+    projectId: string,
+    name: string,
+  ): Promise<ProjectServiceView> {
+    const response = await this.request<
+      ProjectServiceView | { service: ProjectServiceView }
+    >("GET", `/projects/${projectId}/services/${encodeURIComponent(name)}`);
+    return "service" in response
+      ? (response.service as ProjectServiceView)
+      : response;
+  }
+
+  async putProjectService(
+    projectId: string,
+    name: string,
+    input: ProjectServiceInput,
+  ): Promise<ProjectServiceSetResponse> {
+    return this.request<ProjectServiceSetResponse>(
+      "PUT",
+      `/projects/${projectId}/services/${encodeURIComponent(name)}`,
+      { json: input },
+    );
+  }
+
+  async deleteProjectService(projectId: string, name: string): Promise<void> {
+    await this.request<Record<string, never>>(
+      "DELETE",
+      `/projects/${projectId}/services/${encodeURIComponent(name)}`,
+    );
+  }
+
+  async rotateProjectServiceToken(
+    projectId: string,
+    name: string,
+  ): Promise<ProjectServiceRotateTokenResponse> {
+    return this.request<ProjectServiceRotateTokenResponse>(
+      "POST",
+      `/projects/${projectId}/services/${encodeURIComponent(name)}/rotate-token`,
+    );
+  }
+
+  async listRegistryCredentials(
+    projectId: string,
+  ): Promise<{ credentials: RegistryCredentialEntry[] }> {
+    return this.request<{ credentials: RegistryCredentialEntry[] }>(
+      "GET",
+      `/projects/${projectId}/registry-credentials`,
+    );
+  }
+
+  async putRegistryCredential(
+    projectId: string,
+    name: string,
+    input: RegistryCredentialInput,
+  ): Promise<unknown> {
+    return this.request<unknown>(
+      "PUT",
+      `/projects/${projectId}/registry-credentials/${encodeURIComponent(name)}`,
+      { json: input },
+    );
+  }
+
+  async deleteRegistryCredential(
+    projectId: string,
+    name: string,
+  ): Promise<void> {
+    await this.request<Record<string, never>>(
+      "DELETE",
+      `/projects/${projectId}/registry-credentials/${encodeURIComponent(name)}`,
     );
   }
 
