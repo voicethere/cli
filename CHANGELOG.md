@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-26
+
 ### Added
 
 - `projects services list|show|set|delete|rotate-token` manage project services (your own container images). On update, flags you leave out keep their current value.
