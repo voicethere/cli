@@ -174,6 +174,50 @@ describe("projects conversation commands", () => {
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining("hello"));
   });
 
+  it("prints tool turns and notes when toolCalls is set", async () => {
+    getSessionConversation.mockResolvedValue({
+      conversation: {
+        id: "conv-1",
+        orchestratorSessionId: "orch-session-abc123",
+        startedAt: null,
+        endedAt: null,
+        turnCount: 2,
+      },
+      turns: [
+        {
+          turnIndex: 0,
+          role: "tool",
+          eventType: "tool_call",
+          text: "",
+          occurredAt: "2026-07-30T00:00:11.000Z",
+          toolCall: { tool: "lookup", durationMs: 42, isError: true },
+        },
+      ],
+      toolCallsUnavailable: true,
+      toolCallsTruncated: true,
+    });
+
+    await runProjectsConversationGet({
+      sessionId: "orch-session-abc123",
+      toolCalls: true,
+    });
+
+    expect(getSessionConversation).toHaveBeenCalledWith(
+      "proj-1",
+      "orch-session-abc123",
+      { includeToolCalls: true },
+    );
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining("tool lookup (42 ms) error"),
+    );
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining("unavailable"),
+    );
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining("truncated"),
+    );
+  });
+
   it("outputs JSON when --json is set", async () => {
     listProjectConversations.mockResolvedValue({
       project_id: "proj-1",
@@ -227,7 +271,10 @@ describe("projects conversation commands", () => {
   it("creates an all-conversations filter export", async () => {
     createConversationExport.mockResolvedValue({ job_id: "export-job-3" });
 
-    await runProjectsConversationExport({ all: true, from: "2026-07-01T00:00:00.000Z" });
+    await runProjectsConversationExport({
+      all: true,
+      from: "2026-07-01T00:00:00.000Z",
+    });
 
     expect(createConversationExport).toHaveBeenCalledWith("proj-1", {
       mode: "filter",
@@ -261,7 +308,10 @@ describe("projects conversation commands", () => {
       timeoutMs: 5_000,
     });
 
-    expect(getConversationExport).toHaveBeenCalledWith("proj-1", "export-job-4");
+    expect(getConversationExport).toHaveBeenCalledWith(
+      "proj-1",
+      "export-job-4",
+    );
     expect(getConversationExport).toHaveBeenCalledTimes(2);
     expect(console.log).toHaveBeenCalledWith(
       "Conversation export completed: export-job-4",

@@ -1031,15 +1031,17 @@ async function main(): Promise<void> {
     .description("Load the full turn timeline for one session")
     .argument("<sessionId>", "Orchestrator session id")
     .option("--project <id>", "Project UUID")
+    .option("--tool-calls", "Include tool calls as tool turns")
     .option("--json", "Output JSON")
     .action(
       async (
         sessionId: string,
-        options: { project?: string; json?: boolean },
+        options: { project?: string; toolCalls?: boolean; json?: boolean },
       ) => {
         await runProjectsConversationGet({
           projectId: options.project,
           sessionId,
+          toolCalls: options.toolCalls,
           json: options.json,
         });
       },
