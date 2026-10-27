@@ -66,6 +66,17 @@ describe("projects session-settings commands", () => {
       expect(console.log).toHaveBeenCalledWith("stt_enabled=true");
     });
 
+    it("lists max_session_minutes", async () => {
+      listProjectSessionSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { max_session_minutes: 10 },
+      });
+
+      await runProjectsSessionSettingsList({});
+
+      expect(console.log).toHaveBeenCalledWith("max_session_minutes=10");
+    });
+
     it("uses explicit project id over linked config", async () => {
       listProjectSessionSettings.mockResolvedValue({
         project_id: "proj-2",
@@ -208,6 +219,46 @@ describe("projects session-settings commands", () => {
           value: "10",
         }),
       ).rejects.toThrow(/between 30 and 86400/);
+    });
+
+    it("sets max_session_minutes at the bounds 0 and 1440", async () => {
+      setProjectSessionSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      await runProjectsSessionSettingsSet({
+        name: "max_session_minutes",
+        value: "10",
+      });
+      expect(setProjectSessionSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "max_session_minutes",
+        10,
+      );
+      expect(console.log).toHaveBeenCalledWith("max_session_minutes=10");
+      for (const v of ["0", "1440"]) {
+        await runProjectsSessionSettingsSet({
+          name: "max_session_minutes",
+          value: v,
+        });
+      }
+      expect(setProjectSessionSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "max_session_minutes",
+        1440,
+      );
+    });
+
+    it("rejects invalid max_session_minutes values", async () => {
+      for (const v of ["-1", "1441", "2.5", "abc"]) {
+        await expect(
+          runProjectsSessionSettingsSet({
+            name: "max_session_minutes",
+            value: v,
+          }),
+        ).rejects.toThrow();
+      }
+      expect(setProjectSessionSetting).not.toHaveBeenCalled();
     });
   });
 });
