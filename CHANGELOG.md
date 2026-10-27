@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- `projects session-settings` supports `max_session_minutes` (0 = no limit, up to 1440): a session ends after that many minutes.
+
 ## [0.18.1] - 2026-10-27
 
 ### Added

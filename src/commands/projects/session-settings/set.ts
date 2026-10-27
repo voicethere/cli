@@ -35,6 +35,9 @@ function parseValue(
   if (!Number.isFinite(n)) {
     throw new Error(`Invalid number for ${key}`);
   }
+  if (key === "max_session_minutes" && !Number.isInteger(n)) {
+    throw new Error(`${key} must be a whole number of minutes`);
+  }
   const min = def.min ?? 0;
   const max = isIdleTimeoutSecondsKey(key)
     ? ABSOLUTE_IDLE_TIMEOUT_MAX_SECONDS

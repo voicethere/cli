@@ -5,6 +5,7 @@ export const SESSION_SETTING_KEYS = [
   "data_only_idle_timeout_seconds",
   "idle_timeout_voice_activity",
   "idle_timeout_dc_inbound",
+  "max_session_minutes",
   "stt_enabled",
   "conversation_history_enabled",
   "conversation_recording_enabled",
@@ -71,6 +72,14 @@ export const SESSION_SETTING_DEFS: Record<
     default: true,
     description:
       "When on, client→server data-channel messages reset the idle countdown. When off, data-channel traffic does not extend the session.",
+  },
+  max_session_minutes: {
+    type: "number",
+    default: 0,
+    min: 0,
+    max: 1440,
+    description: "Minutes after which a session is ended (0 = no limit).",
+    billingWarning: false,
   },
   stt_enabled: {
     type: "boolean",
