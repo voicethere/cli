@@ -20,8 +20,7 @@ export interface ConversationTimeWindowOptions extends ConversationTimeWindowQue
   cursor?: string;
 }
 
-export interface ProjectsConversationListOptions
-  extends ConversationTimeWindowOptions {
+export interface ProjectsConversationListOptions extends ConversationTimeWindowOptions {
   projectId?: string;
   limit?: number;
   q?: string;
@@ -110,6 +109,7 @@ export async function runProjectsConversationList(
 export interface ProjectsConversationGetOptions {
   projectId?: string;
   sessionId: string;
+  toolCalls?: boolean;
   json?: boolean;
 }
 
@@ -123,7 +123,11 @@ export async function runProjectsConversationGet(
 
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
-  const result = await api.getSessionConversation(projectId, sessionId);
+  const result = options.toolCalls
+    ? await api.getSessionConversation(projectId, sessionId, {
+        includeToolCalls: true,
+      })
+    : await api.getSessionConversation(projectId, sessionId);
 
   logVerbose(`found ${result.turns.length} turn(s)`);
   if (options.json) {
@@ -134,8 +138,7 @@ export async function runProjectsConversationGet(
   printSessionConversation(result);
 }
 
-export interface ProjectsConversationSearchOptions
-  extends ConversationTimeWindowOptions {
+export interface ProjectsConversationSearchOptions extends ConversationTimeWindowOptions {
   projectId?: string;
   query: string;
   limit?: number;
@@ -157,8 +160,7 @@ export async function runProjectsConversationSearch(
   });
 }
 
-export interface ProjectsConversationExportOptions
-  extends ConversationTimeWindowOptions {
+export interface ProjectsConversationExportOptions extends ConversationTimeWindowOptions {
   projectId?: string;
   session?: string;
   q?: string;
@@ -246,7 +248,9 @@ export async function runProjectsConversationExport(
   options: ProjectsConversationExportOptions = {},
 ): Promise<void> {
   if (options.output?.trim() && !options.wait) {
-    throw new Error("--output requires --wait (export must finish before download)");
+    throw new Error(
+      "--output requires --wait (export must finish before download)",
+    );
   }
 
   const projectId = options.projectId?.trim() || (await requireProjectId());
@@ -338,8 +342,24 @@ function printSessionConversation(result: SessionConversationResponse): void {
     `Session ${conversation.orchestratorSessionId} (${conversation.turnCount} turn(s))`,
   );
   for (const turn of result.turns) {
+    if (turn.role === "tool") {
+      const call = turn.toolCall;
+      const name = call?.tool ?? turn.text;
+      const duration =
+        typeof call?.durationMs === "number" ? ` (${call.durationMs} ms)` : "";
+      console.log(
+        `${turn.occurredAt}\t#${turn.turnIndex}\ttool ${name}${duration}${call?.isError ? " error" : ""}`,
+      );
+      continue;
+    }
     console.log(
       `${turn.occurredAt}\t#${turn.turnIndex}\t${turn.role}\t${turn.eventType}\t${turn.text}`,
     );
+  }
+  if (result.toolCallsUnavailable) {
+    console.log("Note: tool calls are unavailable for this session.");
+  }
+  if (result.toolCallsTruncated) {
+    console.log("Note: tool calls were truncated.");
   }
 }

@@ -1042,7 +1042,23 @@ export interface ProjectLogsResponse {
   logs: AgentLogEntry[];
 }
 
-export type ConversationRole = "user" | "agent";
+export type ConversationRole = "user" | "agent" | "tool";
+
+export interface ConversationToolCall {
+  tool: string;
+  source?: string;
+  kind?: string;
+  startedAt?: string;
+  durationMs?: number | null;
+  isError?: boolean;
+  input?: unknown;
+  output?: unknown;
+  redaction?: unknown;
+  truncated?: boolean;
+  callId?: string;
+  turnId?: string;
+  sessionId?: string;
+}
 
 export interface ConversationSessionSummary {
   id: string;
@@ -1059,6 +1075,7 @@ export interface ConversationTurn {
   eventType: string;
   text: string;
   occurredAt: string;
+  toolCall?: ConversationToolCall;
 }
 
 export interface ConversationSearchMatch {
@@ -1142,6 +1159,8 @@ export interface SessionConversationResponse {
   orchestrator_session_id?: string;
   conversation: Omit<ConversationSessionSummary, "createdAt">;
   turns: ConversationTurn[];
+  toolCallsUnavailable?: boolean;
+  toolCallsTruncated?: boolean;
 }
 
 export type ProjectWidgetPublishStatus =
@@ -2012,10 +2031,12 @@ export class VoicethereApi {
   async getSessionConversation(
     projectId: string,
     orchestratorSessionId: string,
+    options: { includeToolCalls?: boolean } = {},
   ): Promise<SessionConversationResponse> {
+    const suffix = options.includeToolCalls ? "?include=tool_calls" : "";
     return this.request<SessionConversationResponse>(
       "GET",
-      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/conversation`,
+      `/projects/${projectId}/sessions/${encodeURIComponent(orchestratorSessionId)}/conversation${suffix}`,
     );
   }
 

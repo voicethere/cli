@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-10-27
+
+### Added
+
+- `projects conversation get <sessionId> --tool-calls` also lists the session's tool calls as `tool <name> (<ms> ms)` lines, with `error` when the call failed. Without the flag the output is unchanged.
+
 ## [0.18.0] - 2026-10-26
 
 ### Added
