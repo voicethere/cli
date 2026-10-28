@@ -421,16 +421,17 @@ voicethere projects session-settings set conversation_history_enabled false
 voicethere projects session-settings set error_message "Sorry, something went wrong."
 ```
 
-| Key                              | Type                                  | Default  | Notes                                         |
-| -------------------------------- | ------------------------------------- | -------- | --------------------------------------------- |
-| `idle_timeout_enabled`           | bool                                  | `true`   | `false` keeps sessions billable longer        |
-| `idle_timeout_seconds`           | 30–120 (org may allow higher via API) | `30`     | Voice / both projects                         |
-| `data_only_idle_timeout_seconds` | 30–120 (org may allow higher via API) | `30`     | Data-only: no client→server DC traffic        |
-| `idle_timeout_voice_activity`    | bool                                  | `true`   | Reset on speech / agent TTS (voice / both)    |
-| `idle_timeout_dc_inbound`        | bool                                  | `true`   | Reset on client data-channel sends            |
-| `max_session_minutes`            | 0–1440                                | `0`      | Ends a session after N minutes (0 = no limit) |
-| `conversation_history_enabled`   | bool                                  | `true`   | `false` stops storing new STT/TTS transcripts |
-| `error_message`                  | string                                | _(none)_ | Crash TTS in voice mode                       |
+| Key                              | Type                                  | Default  | Notes                                                                                |
+| -------------------------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `idle_timeout_enabled`           | bool                                  | `true`   | `false` keeps sessions billable longer                                               |
+| `idle_timeout_seconds`           | 30–120 (org may allow higher via API) | `30`     | Voice / both projects                                                                |
+| `data_only_idle_timeout_seconds` | 30–120 (org may allow higher via API) | `30`     | Data-only: no client→server DC traffic                                               |
+| `idle_timeout_voice_activity`    | bool                                  | `true`   | Reset on speech / agent TTS (voice / both)                                           |
+| `idle_timeout_dc_inbound`        | bool                                  | `true`   | Reset on client data-channel sends                                                   |
+| `max_session_minutes`            | 0–1440                                | `0`      | Ends a session after N minutes (0 = no limit)                                        |
+| `conversation_history_enabled`   | bool                                  | `true`   | `false` stops storing new STT/TTS transcripts                                        |
+| `max_session_close_reason`       | string, at most 200 chars             | _(none)_ | Text the client shows when the time limit ends a session; `""` resets to the default |
+| `error_message`                  | string                                | _(none)_ | Crash TTS in voice mode                                                              |
 
 Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
 

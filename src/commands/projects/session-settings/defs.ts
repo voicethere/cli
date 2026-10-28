@@ -6,6 +6,7 @@ export const SESSION_SETTING_KEYS = [
   "idle_timeout_voice_activity",
   "idle_timeout_dc_inbound",
   "max_session_minutes",
+  "max_session_close_reason",
   "stt_enabled",
   "conversation_history_enabled",
   "conversation_recording_enabled",
@@ -80,6 +81,12 @@ export const SESSION_SETTING_DEFS: Record<
     max: 1440,
     description: "Minutes after which a session is ended (0 = no limit).",
     billingWarning: false,
+  },
+  max_session_close_reason: {
+    type: "string",
+    default: undefined,
+    description:
+      'Text the client shows when a session ends at the time limit (at most 200 characters, no control characters). Empty ("") resets to the default message.',
   },
   stt_enabled: {
     type: "boolean",

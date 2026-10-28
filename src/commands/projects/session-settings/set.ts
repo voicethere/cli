@@ -10,11 +10,27 @@ import {
   type SessionSettingKey,
 } from "./defs.js";
 
+const MAX_SESSION_CLOSE_REASON_LENGTH = 200;
+
 function parseValue(
   key: SessionSettingKey,
   raw: string,
-): boolean | number | string {
+): boolean | number | string | null {
   const def = SESSION_SETTING_DEFS[key];
+
+  if (key === "max_session_close_reason") {
+    const reason = raw.trim();
+    if (reason === "") return null;
+    if (reason.length > MAX_SESSION_CLOSE_REASON_LENGTH) {
+      throw new Error(
+        `${key} must be at most ${MAX_SESSION_CLOSE_REASON_LENGTH} characters`,
+      );
+    }
+    if (/[\u0000-\u001F\u007F]/.test(reason)) {
+      throw new Error(`${key} must not contain control characters`);
+    }
+    return reason;
+  }
 
   if (def.type === "string") {
     return raw.trim().slice(0, 500);
@@ -80,5 +96,5 @@ export async function runProjectsSessionSettingsSet(
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
   await api.setProjectSessionSetting(projectId, key, value);
-  console.log(`${key}=${String(value)}`);
+  console.log(`${key}=${value === null ? "" : String(value)}`);
 }
