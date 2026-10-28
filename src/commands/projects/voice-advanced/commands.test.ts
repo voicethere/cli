@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  parseVoiceAdvancedSettingValue,
   VOICE_ADVANCED_SETTING_DEFS,
   VOICE_ADVANCED_SETTING_KEYS,
 } from "./defs.js";
@@ -194,6 +195,20 @@ describe("projects voice-advanced commands", () => {
     await expect(
       runProjectsVoiceAdvancedSet({ name: "tts.phraseCache", value: "maybe" }),
     ).rejects.toThrow(/Invalid boolean/);
+  });
+
+  describe("vad.provider", () => {
+    it("vad.provider rejects silero", () => {
+      expect(() =>
+        parseVoiceAdvancedSettingValue("vad.provider", "silero"),
+      ).toThrow(/must be one of: energy/);
+    });
+
+    it("vad.provider accepts energy", () => {
+      expect(parseVoiceAdvancedSettingValue("vad.provider", "energy")).toBe(
+        "energy",
+      );
+    });
   });
 
   describe("tts.sentenceCase", () => {
