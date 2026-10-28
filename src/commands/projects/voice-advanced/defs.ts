@@ -84,8 +84,8 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
   "vad.provider": {
     type: "string",
     default: "energy",
-    enum: ["energy", "silero"],
-    description: "VAD provider (energy or silero).",
+    enum: ["energy"],
+    description: "VAD provider. Only energy (RMS level detector) is offered.",
   },
   "vad.threshold": {
     type: "number",
