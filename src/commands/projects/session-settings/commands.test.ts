@@ -77,6 +77,23 @@ describe("projects session-settings commands", () => {
       expect(console.log).toHaveBeenCalledWith("max_session_minutes=10");
     });
 
+    it("lists max_session_close_reason, empty when null", async () => {
+      listProjectSessionSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { max_session_close_reason: "Demo time is up." },
+      });
+      await runProjectsSessionSettingsList({});
+      expect(console.log).toHaveBeenCalledWith(
+        "max_session_close_reason=Demo time is up.",
+      );
+      listProjectSessionSettings.mockResolvedValue({
+        project_id: "proj-1",
+        settings: { max_session_close_reason: null },
+      });
+      await runProjectsSessionSettingsList({});
+      expect(console.log).toHaveBeenCalledWith("max_session_close_reason=");
+    });
+
     it("uses explicit project id over linked config", async () => {
       listProjectSessionSettings.mockResolvedValue({
         project_id: "proj-2",
@@ -258,6 +275,47 @@ describe("projects session-settings commands", () => {
           }),
         ).rejects.toThrow();
       }
+      expect(setProjectSessionSetting).not.toHaveBeenCalled();
+    });
+
+    it("sets max_session_close_reason, empty string sends null", async () => {
+      setProjectSessionSetting.mockResolvedValue({
+        project_id: "proj-1",
+        settings: {},
+      });
+      await runProjectsSessionSettingsSet({
+        name: "max_session_close_reason",
+        value: "Demo time is up.",
+      });
+      expect(setProjectSessionSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "max_session_close_reason",
+        "Demo time is up.",
+      );
+      await runProjectsSessionSettingsSet({
+        name: "max_session_close_reason",
+        value: "",
+      });
+      expect(setProjectSessionSetting).toHaveBeenLastCalledWith(
+        "proj-1",
+        "max_session_close_reason",
+        null,
+      );
+    });
+
+    it("rejects too long or control-character close reasons", async () => {
+      await expect(
+        runProjectsSessionSettingsSet({
+          name: "max_session_close_reason",
+          value: "a".repeat(201),
+        }),
+      ).rejects.toThrow(/at most 200 characters/);
+      await expect(
+        runProjectsSessionSettingsSet({
+          name: "max_session_close_reason",
+          value: "a\nb",
+        }),
+      ).rejects.toThrow(/control characters/);
       expect(setProjectSessionSetting).not.toHaveBeenCalled();
     });
   });

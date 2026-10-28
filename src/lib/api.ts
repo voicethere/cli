@@ -572,6 +572,7 @@ export interface ProjectSessionSettingsResponse {
     idle_timeout_voice_activity?: boolean;
     idle_timeout_dc_inbound?: boolean;
     max_session_minutes?: number;
+    max_session_close_reason?: string | null;
     conversation_history_enabled?: boolean;
     conversation_recording_enabled?: boolean;
     conversation_recording_metered_overage_enabled?: boolean;
@@ -1788,7 +1789,7 @@ export class VoicethereApi {
   async setProjectSessionSetting(
     projectId: string,
     key: ProjectSessionSettingKey,
-    value: boolean | number | string,
+    value: boolean | number | string | null,
   ): Promise<ProjectSessionSettingsResponse> {
     return this.request<ProjectSessionSettingsResponse>(
       "PATCH",

@@ -24,6 +24,6 @@ export async function runProjectsSessionSettingsList(
   for (const key of SESSION_SETTING_KEYS) {
     const value = result.settings[key];
     if (value === undefined) continue;
-    console.log(`${key}=${String(value)}`);
+    console.log(`${key}=${value === null ? "" : String(value)}`);
   }
 }

@@ -6,8 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.18.2] - 2026-10-28
+
 ### Added
 
+- `projects session-settings` supports `max_session_close_reason`: the text the client shows when a session ends at the time limit (at most 200 characters; `set max_session_close_reason ""` resets it to the default message).
 - `projects session-settings` supports `max_session_minutes` (0 = no limit, up to 1440): a session ends after that many minutes.
 
 ## [0.18.1] - 2026-10-27
