@@ -50,7 +50,9 @@ run "present with bullet" 0 "" 0.18.3
 run "last section with bullet" 0 "" 0.18.5
 run "missing" 1 'CHANGELOG.md has no entry for 0.19.0; add "## [0.19.0] - YYYY-MM-DD" with at least one bullet before tagging release/0.19.0' 0.19.0
 run "heading present, empty section" 1 "no entry for 0.18.4" 0.18.4
-run "0.18.3 does not match 0.18.30 only" 1 "no entry for 0.18" 0.18
+run "prefix 0.18 does not match 0.18.3 or 0.18.30" 1 "no entry for 0.18" 0.18
+printf '# Changelog\n\n## [0.18.30] - 2026-11-01\n\n### Fixed\n\n- Something.\n' > "$TMP/only-30.md"
+run "0.18.3 does not match 0.18.30" 1 "no entry for 0.18.3" 0.18.3 "$TMP/only-30.md"
 run "0.1803 does not match 0.18.3" 1 "no entry for 0.1803" 0.1803
 run "dots are literal" 1 "no entry for 0x18x3" 0x18x3
 run "missing file" 1 "no entry for 0.18.3" 0.18.3 "$TMP/nope.md"

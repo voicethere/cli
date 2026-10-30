@@ -58,10 +58,10 @@ jobs:
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing @voicethere/cli@${VERSION}"
 
       - name: Check CHANGELOG entry
         run: bash scripts/ci/check-changelog-entry.sh "${{ steps.version.outputs.version }}"
-          echo "Publishing @voicethere/cli@${VERSION}"
 
       - name: Set package version
         run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
