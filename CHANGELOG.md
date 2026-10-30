@@ -6,12 +6,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.18.3] - 2026-10-30
+
+### Changed
+
+- The release job now waits for the npm registry and skips a version that is already published.
+
 ## [0.18.2] - 2026-10-28
 
 ### Added
 
 - `projects session-settings` supports `max_session_close_reason`: the text the client shows when a session ends at the time limit (at most 200 characters; `set max_session_close_reason ""` resets it to the default message).
 - `projects session-settings` supports `max_session_minutes` (0 = no limit, up to 1440): a session ends after that many minutes.
+
+### Changed
+
+- `projects voice-advanced` accepts only `energy` for `vad.provider`. `silero` is no longer offered.
 
 ## [0.18.1] - 2026-10-27
 
@@ -26,6 +36,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 - `projects services list|show|set|delete|rotate-token` manage project services (your own container images). On update, flags you leave out keep their current value.
 - `projects registry-credentials list|set|delete` manage credentials for private registries. `set` reads the password from stdin only.
 - `services build <name> --push <repo:tag>` builds and pushes an image with local Docker buildx (linux/amd64 by default) and sets the service to the pushed digest. Only the image reference is sent to VoiceThere.
+
+## [0.17.1] - 2026-10-25
+
+### Changed
+
+- `canary status` prints `Previous version: finishing its calls` or `Previous version: stopped`, and `--json` output includes `previous_version_draining` (`null` when unknown).
+- When the previous version is still finishing its calls, starting a canary fails with a message to run `voicethere canary status` and retry once it has stopped.
+
+## [0.17.0] - 2026-10-24
+
+### Added
+
+- Canary deployments for Advanced and Ultimate projects: `deploy --build-id <id> --canary-pods <n>` runs a build on a whole number of pods and gives it the same share of new sessions. Calls in progress are never moved. `--routing customer-context --context-field <name>` sends sessions to the canary by a customer context field instead of by share. A canary deploy needs `--build-id` and the default `drain` mode.
+- `canary status|set|auto-abort|promote|abort` inspect and manage the running canary. `canary set --pods <n>` resizes it, `canary promote` makes it the stable build, `canary abort` sends new sessions back to the stable build. `promote` and `abort` ask for confirmation; `--yes` skips the prompt and is required without a terminal.
+- Auto-abort is on by default. `--auto-abort-rate <percent>` and `--auto-abort-min-sessions <n>` set the threshold on deploy, `canary auto-abort --rate <percent> --min-sessions <n>` changes it, and `--no-auto-abort` or `canary auto-abort --off` turns it off.
+- `deployments metrics [--project <id>] [--since 30m|24h|7d] [--json]` lists, for each build that ran sessions in the window, the sessions, failed sessions, failure rate and the most common failure reasons. The default window is `24h`.
 
 ## [0.16.10] - 2026-10-21
 
