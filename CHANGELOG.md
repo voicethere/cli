@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.18.4] - 2026-11-02
+
 ### Added
 
 - `projects session-settings` supports `idle_timeout_chat_activity` (default off): when on, a typed chat message resets the idle timer even if `idle_timeout_dc_inbound` is off. Keepalives never count.
