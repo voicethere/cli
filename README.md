@@ -428,6 +428,7 @@ voicethere projects session-settings set error_message "Sorry, something went wr
 | `data_only_idle_timeout_seconds` | 30–120 (org may allow higher via API) | `30`     | Data-only: no client→server DC traffic                                               |
 | `idle_timeout_voice_activity`    | bool                                  | `true`   | Reset on speech / agent TTS (voice / both)                                           |
 | `idle_timeout_dc_inbound`        | bool                                  | `true`   | Reset on client data-channel sends                                                   |
+| `idle_timeout_chat_activity`     | bool                                  | `false`  | Reset when the client sends a typed chat message                                     |
 | `max_session_minutes`            | 0–1440                                | `0`      | Ends a session after N minutes (0 = no limit)                                        |
 | `conversation_history_enabled`   | bool                                  | `true`   | `false` stops storing new STT/TTS transcripts                                        |
 | `max_session_close_reason`       | string, at most 200 chars             | _(none)_ | Text the client shows when the time limit ends a session; `""` resets to the default |
