@@ -571,6 +571,7 @@ export interface ProjectSessionSettingsResponse {
     data_only_idle_timeout_seconds?: number;
     idle_timeout_voice_activity?: boolean;
     idle_timeout_dc_inbound?: boolean;
+    idle_timeout_chat_activity?: boolean;
     max_session_minutes?: number;
     max_session_close_reason?: string | null;
     conversation_history_enabled?: boolean;

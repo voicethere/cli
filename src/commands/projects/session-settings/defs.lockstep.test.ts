@@ -12,6 +12,7 @@ const FROZEN_KEYS = [
   "data_only_idle_timeout_seconds",
   "idle_timeout_voice_activity",
   "idle_timeout_dc_inbound",
+  "idle_timeout_chat_activity",
   "max_session_minutes",
   "max_session_close_reason",
   "stt_enabled",

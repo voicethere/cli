@@ -5,6 +5,7 @@ export const SESSION_SETTING_KEYS = [
   "data_only_idle_timeout_seconds",
   "idle_timeout_voice_activity",
   "idle_timeout_dc_inbound",
+  "idle_timeout_chat_activity",
   "max_session_minutes",
   "max_session_close_reason",
   "stt_enabled",
@@ -73,6 +74,12 @@ export const SESSION_SETTING_DEFS: Record<
     default: true,
     description:
       "When on, client→server data-channel messages reset the idle countdown. When off, data-channel traffic does not extend the session.",
+  },
+  idle_timeout_chat_activity: {
+    type: "boolean",
+    default: false,
+    description:
+      "When on, a typed chat message from the client resets the idle countdown, even when data-channel resets are off. Keepalives and other data-channel messages never count through this setting.",
   },
   max_session_minutes: {
     type: "number",
