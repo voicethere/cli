@@ -57,6 +57,15 @@ describe("projects voice set", () => {
       /Unknown TTS provider: fishy/,
     );
   });
+
+  it("accepts the mistral vendor for STT and TTS and rejects a misspelling", () => {
+    expect(customerSttProviderIds()).toContain("mistral");
+    expect(customerTtsProviderIds()).toContain("mistral");
+    expect(() => assertVoiceProviders("mistral", "mistral")).not.toThrow();
+    expect(() => assertVoiceProviders("mistrall", "mistral")).toThrow(
+      /Unknown STT provider: mistrall/,
+    );
+  });
 });
 
 describe("projects voice catalog helpers", () => {

@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.18.5] - 2026-11-02
+
+### Added
+
+- `projects voice set` accepts `mistral` for STT and TTS (voice catalog 0.13.4).
+
 ## [0.18.4] - 2026-11-02
 
 ### Added
