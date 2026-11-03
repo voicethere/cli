@@ -106,6 +106,84 @@ describe("projects secrets commands", () => {
       ).rejects.toThrow(/secret value is required/);
       expect(createProjectSecret).not.toHaveBeenCalled();
     });
+
+    describe("value sources", () => {
+      const stdinOf = (text: string, isTTY = false) => ({
+        isTTY,
+        async *[Symbol.asyncIterator]() {
+          if (text) yield Buffer.from(text);
+        },
+      });
+
+      beforeEach(() => {
+        createProjectSecret.mockResolvedValue({ name: "K" });
+      });
+
+      it("reads the value from stdin and strips one trailing newline", async () => {
+        await runProjectsSecretsCreate({
+          name: "K",
+          valueStdin: true,
+          stdin: stdinOf("sk-abc\n"),
+        });
+        expect(createProjectSecret).toHaveBeenCalledWith(
+          "proj-1",
+          "K",
+          "sk-abc",
+        );
+      });
+
+      it("uses the positional value", async () => {
+        await runProjectsSecretsCreate({ name: "K", value: "sk-abc" });
+        expect(createProjectSecret).toHaveBeenCalledWith(
+          "proj-1",
+          "K",
+          "sk-abc",
+        );
+      });
+
+      it("rejects both sources without calling the API", async () => {
+        await expect(
+          runProjectsSecretsCreate({
+            name: "K",
+            value: "x",
+            valueStdin: true,
+            stdin: stdinOf("y"),
+          }),
+        ).rejects.toThrow(
+          "pass the secret value as an argument or with --value-stdin, not both",
+        );
+        expect(createProjectSecret).not.toHaveBeenCalled();
+      });
+
+      it("rejects neither source without calling the API", async () => {
+        await expect(runProjectsSecretsCreate({ name: "K" })).rejects.toThrow(
+          "secret value is required: pass it as an argument or with --value-stdin",
+        );
+        expect(createProjectSecret).not.toHaveBeenCalled();
+      });
+
+      it("refuses to read from a terminal", async () => {
+        await expect(
+          runProjectsSecretsCreate({
+            name: "K",
+            valueStdin: true,
+            stdin: stdinOf("", true),
+          }),
+        ).rejects.toThrow(/Refusing to read the secret value from a terminal/);
+        expect(createProjectSecret).not.toHaveBeenCalled();
+      });
+
+      it("rejects empty stdin", async () => {
+        await expect(
+          runProjectsSecretsCreate({
+            name: "K",
+            valueStdin: true,
+            stdin: stdinOf(""),
+          }),
+        ).rejects.toThrow("secret value from stdin is empty");
+        expect(createProjectSecret).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe("runProjectsSecretsDelete", () => {

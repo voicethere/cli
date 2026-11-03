@@ -432,13 +432,19 @@ async function main(): Promise<void> {
     .command("create")
     .description("Create a secret (delete + recreate to change value)")
     .argument("<name>", "Secret name (e.g. AGENT_API_KEY)")
-    .argument("<value>", "Secret value")
+    .argument("[value]", "Secret value (or use --value-stdin)")
+    .option("--value-stdin", "Read the secret value from stdin")
     .option("--project <id>", "Project UUID")
     .action(
-      async (name: string, value: string, options: { project?: string }) => {
+      async (
+        name: string,
+        value: string | undefined,
+        options: { project?: string; valueStdin?: boolean },
+      ) => {
         await runProjectsSecretsCreate({
           name,
           value,
+          valueStdin: options.valueStdin,
           projectId: options.project,
         });
       },
@@ -1840,7 +1846,9 @@ async function main(): Promise<void> {
 
   canary
     .command("status")
-    .description("Show the canary: builds, pods, traffic share, routing, auto-abort")
+    .description(
+      "Show the canary: builds, pods, traffic share, routing, auto-abort",
+    )
     .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .option("--json", "Output JSON")
     .action(async (options: { project?: string; json?: boolean }) => {
@@ -1853,7 +1861,10 @@ async function main(): Promise<void> {
     .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
     .option("--pods <n>", "Number of pods for the canary")
     .option("--routing <mode>", "round-robin or customer-context")
-    .option("--context-field <name>", "Required with --routing customer-context")
+    .option(
+      "--context-field <name>",
+      "Required with --routing customer-context",
+    )
     .action(
       async (options: {
         project?: string;

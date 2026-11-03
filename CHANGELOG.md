@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- `projects secrets create <name> --value-stdin` reads the secret value from stdin, so it stays out of process lists. The positional value is now optional; passing both or neither is an error.
+
 ## [0.18.5] - 2026-11-02
 
 ### Added

@@ -2,6 +2,10 @@ import { logStep } from "../../../lib/command-log.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireProjectId } from "../../../lib/project-config.js";
+import {
+  readSecretFromStdin,
+  type StdinLike,
+} from "../../../lib/stdin-secret.js";
 
 interface ProjectOption {
   projectId?: string;
@@ -34,29 +38,16 @@ export async function runRegistryCredentialsList(
   }
 }
 
-export interface StdinLike extends AsyncIterable<Buffer | string> {
-  isTTY?: boolean;
-}
+export type { StdinLike };
 
 export async function readPasswordFromStdin(
   stdin: StdinLike = process.stdin,
 ): Promise<string> {
-  if (stdin.isTTY) {
-    throw new Error(
+  return readSecretFromStdin(stdin, {
+    ttyMessage:
       "Refusing to read the password from a terminal. Pipe it in, e.g.: printf '%s' \"$REGISTRY_TOKEN\" | voicethere projects registry-credentials set <name> --host <registry> --username <user> --password-stdin",
-    );
-  }
-  const chunks: Buffer[] = [];
-  for await (const chunk of stdin) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  const password = Buffer.concat(chunks)
-    .toString("utf8")
-    .replace(/\r?\n$/, "");
-  if (!password) {
-    throw new Error("password from stdin is empty");
-  }
-  return password;
+    emptyMessage: "password from stdin is empty",
+  });
 }
 
 export interface RegistryCredentialsSetOptions extends ProjectOption {
