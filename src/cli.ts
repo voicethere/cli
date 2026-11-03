@@ -116,6 +116,7 @@ import {
   runSourcePull,
   runSourcePush,
 } from "./commands/source.js";
+import { runFlowExport, runFlowImport } from "./commands/flow.js";
 import { runSessionsBilling } from "./commands/sessions/billing.js";
 import { runSessionsList } from "./commands/sessions/list.js";
 import { runSessionsRecording } from "./commands/sessions/recording.js";
@@ -1693,6 +1694,30 @@ async function main(): Promise<void> {
         output: options.output,
         projectId: options.project,
       });
+    });
+
+  const flow = program
+    .command("flow")
+    .description("Export and import the project's conversation flow");
+
+  flow
+    .command("export")
+    .description(
+      "Write voicethere.flow.json (and the mocks file, if any) from the cloud project",
+    )
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .option("--out <path>", "Output path", "voicethere.flow.json")
+    .action(async (options: { project?: string; out: string }) => {
+      await runFlowExport({ projectId: options.project, out: options.out });
+    });
+
+  flow
+    .command("import")
+    .description("Validate a flow file and save it to the cloud project")
+    .argument("<file>", "Flow file, e.g. voicethere.flow.json")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(async (file: string, options: { project?: string }) => {
+      await runFlowImport(file, { projectId: options.project });
     });
 
   program

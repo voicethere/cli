@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- `voicethere flow export [--project <id>] [--out voicethere.flow.json]` saves the project's conversation flow (and its mocks file, if there is one) to disk.
+- `voicethere flow import <file> [--project <id>]` checks the flow on your machine first and only then saves it to the project. An invalid flow prints one line per error (node, path, code, message) and sends nothing. If the project changed in the meantime, the command asks you to export again.
+
+### Changed
+
+- `@voicethere/agent` is now 0.26.0, so new workspaces created by `init` start from that version.
+
 ## [0.19.0] - 2026-11-03
 
 ### Added

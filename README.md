@@ -159,6 +159,17 @@ voicethere source push   # upload local `.ts` / `.json` sources
 voicethere source pull   # download cloud workspace (does not delete extra local files)
 ```
 
+#### Conversation flow files
+
+A project built from the `flow-agent` template keeps its conversation in `voicethere.flow.json`. To edit it outside the dashboard:
+
+```bash
+voicethere flow export --out voicethere.flow.json
+voicethere flow import voicethere.flow.json
+```
+
+`export` also writes `voicethere.flow.mocks.json` next to the flow when the project has one. `import` validates the file locally before it sends anything, so a broken flow never reaches the project. If someone saved the flow in the dashboard since your export, `import` stops and asks you to export again.
+
 ### 3. New agent repo — create project and commit config (manual)
 
 From your agent project root (where you build `dist/agent.js`):
