@@ -143,6 +143,9 @@ describe("flow export/import", () => {
       JSON.stringify({ version: 1, start: "nope", nodes: [] }),
     );
     await expect(runFlowImport(file)).rejects.toThrow(/The flow is invalid/);
+    await expect(runFlowImport(file)).rejects.toThrow(
+      "- /models FLOW_SCHEMA is required",
+    );
     expect(getProjectSource).not.toHaveBeenCalled();
     expect(putProjectSource).not.toHaveBeenCalled();
     expect(requireCredentials).not.toHaveBeenCalled();
@@ -176,6 +179,62 @@ describe("flow export/import", () => {
     expect(console.log).toHaveBeenCalledWith("8");
   });
 
+  it("import uploads the sibling mocks file", async () => {
+    const file = join(dir, "voicethere.flow.json");
+    const text = `${JSON.stringify(VALID_FLOW)}\n`;
+    const mocks = `${JSON.stringify({ version: 1, nodes: {} })}\n`;
+    await writeFile(file, text);
+    await writeFile(join(dir, "voicethere.flow.mocks.json"), mocks);
+    // Replaces an existing project mocks file.
+    getProjectSource.mockResolvedValue(
+      workspace([{ path: "voicethere.flow.mocks.json", content: "old" }]),
+    );
+    putProjectSource.mockResolvedValue({ ...workspace(), revision: 8 });
+    await runFlowImport(file);
+    expect(putProjectSource.mock.calls[0]![1].files).toEqual([
+      { path: "agent.ts", content: AGENT_TS },
+      { path: "voicethere.flow.json", content: text },
+      { path: "voicethere.flow.mocks.json", content: mocks },
+    ]);
+
+    // Adds it when the project has none.
+    putProjectSource.mockClear();
+    getProjectSource.mockResolvedValue(workspace());
+    await runFlowImport(file);
+    expect(putProjectSource.mock.calls[0]![1].files).toContainEqual({
+      path: "voicethere.flow.mocks.json",
+      content: mocks,
+    });
+  });
+
+  it("import with invalid mocks makes no request", async () => {
+    const file = join(dir, "voicethere.flow.json");
+    await writeFile(file, JSON.stringify(VALID_FLOW));
+    await writeFile(
+      join(dir, "voicethere.flow.mocks.json"),
+      JSON.stringify({ version: 1, nodes: { ghost: [] } }),
+    );
+    await expect(runFlowImport(file)).rejects.toThrow(
+      /The mocks file is invalid/,
+    );
+    expect(getProjectSource).not.toHaveBeenCalled();
+    expect(putProjectSource).not.toHaveBeenCalled();
+  });
+
+  it("import without a local mocks file leaves project mocks unchanged", async () => {
+    const file = join(dir, "voicethere.flow.json");
+    await writeFile(file, JSON.stringify(VALID_FLOW));
+    getProjectSource.mockResolvedValue(
+      workspace([{ path: "voicethere.flow.mocks.json", content: "keep" }]),
+    );
+    putProjectSource.mockResolvedValue({ ...workspace(), revision: 8 });
+    await runFlowImport(file);
+    expect(putProjectSource.mock.calls[0]![1].files).toContainEqual({
+      path: "voicethere.flow.mocks.json",
+      content: "keep",
+    });
+  });
+
   it("import maps a 409 to the export-and-retry message", async () => {
     const file = join(dir, "f.json");
     await writeFile(file, JSON.stringify(VALID_FLOW));
@@ -204,22 +263,25 @@ describe("flow export/import", () => {
 
 const distCli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
 
-describe.skipIf(!existsSync(distCli))("flow command list and help", () => {
-  const help = (...args: string[]) =>
-    execFileSync(process.execPath, [distCli, ...args, "--help"], {
-      encoding: "utf8",
+describe.skipIf(!existsSync(distCli) && !process.env.CI)(
+  "flow command list and help",
+  () => {
+    const help = (...args: string[]) =>
+      execFileSync(process.execPath, [distCli, ...args, "--help"], {
+        encoding: "utf8",
+      });
+
+    it("lists flow in the top-level help", () => {
+      expect(help()).toMatch(/^\s+flow\b/m);
     });
 
-  it("lists flow in the top-level help", () => {
-    expect(help()).toMatch(/^\s+flow\b/m);
-  });
-
-  it("lists export and import with their options", () => {
-    const text = help("flow");
-    expect(text).toMatch(/export\b/);
-    expect(text).toMatch(/import\b/);
-    expect(help("flow", "export")).toMatch(/--out <path>/);
-    expect(help("flow", "export")).toMatch(/--project <id>/);
-    expect(help("flow", "import")).toMatch(/<file>/);
-  });
-});
+    it("lists export and import with their options", () => {
+      const text = help("flow");
+      expect(text).toMatch(/export\b/);
+      expect(text).toMatch(/import\b/);
+      expect(help("flow", "export")).toMatch(/--out <path>/);
+      expect(help("flow", "export")).toMatch(/--project <id>/);
+      expect(help("flow", "import")).toMatch(/<file>/);
+    });
+  },
+);

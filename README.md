@@ -168,7 +168,7 @@ voicethere flow export --out voicethere.flow.json
 voicethere flow import voicethere.flow.json
 ```
 
-`export` also writes `voicethere.flow.mocks.json` next to the flow when the project has one. `import` validates the file locally before it sends anything, so a broken flow never reaches the project. If someone saved the flow in the dashboard since your export, `import` stops and asks you to export again.
+`export` also writes `voicethere.flow.mocks.json` next to the flow when the project has one. `import` validates the file locally before it sends anything, so a broken flow never reaches the project. If `voicethere.flow.mocks.json` sits next to the flow file, `import` validates and uploads it too. If someone saved the flow in the dashboard since your export, `import` stops and asks you to export again.
 
 ### 3. New agent repo — create project and commit config (manual)
 

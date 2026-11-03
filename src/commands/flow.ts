@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { validateFlow } from "@voicethere/agent/flow/core";
+import { validateFlow, validateMocks } from "@voicethere/agent/flow/core";
 
 import { ApiError, type ProjectSourceFile } from "../lib/api.js";
 import { logCommandInfo, logStep } from "../lib/command-log.js";
@@ -118,6 +118,34 @@ export async function runFlowImport(
     );
   }
 
+  // The mocks file next to the local flow file goes up with it.
+  let mocksText: string | undefined;
+  try {
+    mocksText = await readFile(
+      join(dirname(resolve(path)), FLOW_MOCKS_FILENAME),
+      "utf8",
+    );
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+  if (mocksText !== undefined) {
+    let mocksDoc: unknown;
+    try {
+      mocksDoc = JSON.parse(mocksText);
+    } catch {
+      throw new Error(`${FLOW_MOCKS_FILENAME} is not valid JSON`);
+    }
+    const checked = validateMocks(mocksDoc, result.flow!);
+    if (!checked.ok) {
+      const lines = checked.errors.map(
+        (e) => `${e.nodeId ?? "-"} ${e.path || "/"} ${e.code} ${e.message}`,
+      );
+      throw new Error(
+        `The mocks file is invalid (${checked.errors.length} error(s)):\n${lines.join("\n")}`,
+      );
+    }
+  }
+
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
   const projectId = await resolveProject(options.projectId, options.startDir);
@@ -128,9 +156,16 @@ export async function runFlowImport(
     throw new Error(NO_FLOW_MESSAGE);
   }
 
-  const files = remote.files.map((f) =>
+  let files = remote.files.map((f) =>
     f.path === located.flowPath ? { ...f, content: text } : f,
   );
+  if (mocksText !== undefined) {
+    files = files.some((f) => f.path === located.mocksPath)
+      ? files.map((f) =>
+          f.path === located.mocksPath ? { ...f, content: mocksText } : f,
+        )
+      : [...files, { path: located.mocksPath, content: mocksText }];
+  }
   logStep(`Uploading the flow (revision ${remote.revision})`);
   try {
     const updated = await api.putProjectSource(projectId, {
