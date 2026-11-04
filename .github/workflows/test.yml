@@ -69,8 +69,25 @@ jobs:
       - name: Changelog guard tests
         run: bash scripts/ci/check-changelog-entry.test.sh
 
+      - name: Package version guard tests
+        run: bash scripts/ci/check-package-version.test.sh
+
       - name: Typecheck, test, and build
         run: npm run test:ci
+
+  package-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check package.json matches CHANGELOG
+        run: bash scripts/ci/check-package-version.sh
 
   skip:
     needs: changes
