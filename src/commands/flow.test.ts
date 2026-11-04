@@ -207,6 +207,46 @@ describe("flow export/import", () => {
     });
   });
 
+  it("import accepts a mocks file with route path none and a classifier error case", async () => {
+    const routeFlow = {
+      ...VALID_FLOW,
+      start: "pick",
+      nodes: [
+        {
+          id: "pick",
+          type: "route",
+          paths: [{ id: "billing", examples: ["my invoice"], next: "bye" }],
+          onNone: "bye",
+          onError: "bye",
+        },
+        { id: "bye", type: "end", reason: "done" },
+      ],
+    };
+    const file = join(dir, "voicethere.flow.json");
+    const text = `${JSON.stringify(routeFlow)}\n`;
+    const mocks = `${JSON.stringify({
+      version: 1,
+      nodes: {
+        pick: [
+          { name: "no match", route: { path: "none" } },
+          {
+            name: "classifier did not call",
+            route: { error: "LLM_CLASSIFIER_NO_CALL" },
+          },
+        ],
+      },
+    })}\n`;
+    await writeFile(file, text);
+    await writeFile(join(dir, "voicethere.flow.mocks.json"), mocks);
+    getProjectSource.mockResolvedValue(workspace());
+    putProjectSource.mockResolvedValue({ ...workspace(), revision: 8 });
+    await runFlowImport(file);
+    expect(putProjectSource.mock.calls[0]![1].files).toContainEqual({
+      path: "voicethere.flow.mocks.json",
+      content: mocks,
+    });
+  });
+
   it("import with invalid mocks makes no request", async () => {
     const file = join(dir, "voicethere.flow.json");
     await writeFile(file, JSON.stringify(VALID_FLOW));

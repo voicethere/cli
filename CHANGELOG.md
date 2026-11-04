@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-11-04
+
+### Fixed
+
+- `voicethere flow import` now accepts a mocks file whose route case uses the path `none` or a recorded classifier error such as `LLM_CLASSIFIER_NO_CALL`. Before, `none` was rejected as an unknown path.
+
+### Changed
+
+- `@voicethere/agent` is now 0.28.0, so new workspaces created by `init` start from that version.
+
 ## [0.20.0] - 2026-11-04
 
 ### Added
