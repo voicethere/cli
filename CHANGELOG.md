@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-04
+
 ### Added
 
 - `voicethere flow export [--project <id>] [--out voicethere.flow.json]` saves the project's conversation flow (and its mocks file, if there is one) to disk.
