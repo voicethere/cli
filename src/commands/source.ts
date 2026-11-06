@@ -252,7 +252,9 @@ export async function runSourceDiff(
     diff = await api.diffProjectSourceVersions(projectId, from, to);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
-      rethrowSourceApiError(error, from);
+      throw new Error(
+        `Version ${from} or ${to} not found. It may have been removed by your plan's version limit.`,
+      );
     }
     throw error;
   }

@@ -345,7 +345,7 @@ describe("source push/pull", () => {
   it("source diff maps 404 to the pruned-version message", async () => {
     diffProjectSourceVersions.mockRejectedValue(new ApiError(404, "not found"));
     await expect(runSourceDiff("1", "2")).rejects.toThrow(
-      "Version 1 not found. It may have been removed by your plan's version limit.",
+      "Version 1 or 2 not found. It may have been removed by your plan's version limit.",
     );
   });
 
