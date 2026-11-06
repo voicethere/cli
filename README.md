@@ -456,6 +456,26 @@ Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
 voicethere projects voice-advanced set connection.reconnectWindowSec 30
 ```
 
+## Speaker gate and adaptive VAD
+
+The speaker gate keeps other voices in the room from reaching your agent, and the adaptive VAD follows the background noise instead of using a fixed threshold. Both apply on the next **`voicethere deploy --wait`**.
+
+```bash
+voicethere projects voice-advanced set speakerGate.mode auto
+voicethere projects voice-advanced set vad.provider adaptive
+voicethere projects voice-advanced set vad.adaptive.noiseMarginDb 9
+```
+
+| Key                                | Values                          | Default       |
+| ---------------------------------- | ------------------------------- | ------------- |
+| `speakerGate.mode`                 | `disabled`, `auto`, `manual`    | `disabled`    |
+| `speakerGate.bargeIn`              | `caller_only`, `anyone`         | `caller_only` |
+| `speakerGate.suppressShortBargeIn` | bool                            | `false`       |
+| `vad.provider`                     | `energy`, `adaptive`            | `energy`      |
+| `vad.adaptive.noiseMarginDb`       | 0–30 (dB above the noise floor) | `6`           |
+| `vad.adaptive.useSpeechLevel`      | bool                            | `true`        |
+| `vad.adaptive.stuckActiveMs`       | 1000–60000                      | `8000`        |
+
 ## Language switch settings
 
 Spoken-language auto-switch and its wait behavior are advanced voice settings. They apply on the next **`voicethere deploy --wait`**. When the caller switches to a language whose models are not running yet, the runner starts them on demand and can play a short wait message in the language being left.

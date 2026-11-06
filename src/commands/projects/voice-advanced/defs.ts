@@ -19,6 +19,9 @@ const DEFAULT_WAIT_MESSAGES_JSON = JSON.stringify({
 export const VOICE_ADVANCED_SETTING_KEYS = [
   "vad.enabled",
   "vad.provider",
+  "vad.adaptive.noiseMarginDb",
+  "vad.adaptive.useSpeechLevel",
+  "vad.adaptive.stuckActiveMs",
   "vad.threshold",
   "vad.minSpeechDurationMs",
   "vad.minSilenceDurationMs",
@@ -59,6 +62,9 @@ export const VOICE_ADVANCED_SETTING_KEYS = [
   "languageId.autoSwitch.readyMessage.texts",
   "voice.allowedLanguages",
   "voice.profilesByLanguage",
+  "speakerGate.mode",
+  "speakerGate.bargeIn",
+  "speakerGate.suppressShortBargeIn",
   "events.mode",
 ] as const;
 
@@ -84,8 +90,31 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
   "vad.provider": {
     type: "string",
     default: "energy",
-    enum: ["energy"],
-    description: "VAD provider. Only energy (RMS level detector) is offered.",
+    enum: ["energy", "adaptive"],
+    description:
+      "VAD provider: energy (fixed RMS threshold) or adaptive (threshold follows the noise floor and the caller's level).",
+  },
+  "vad.adaptive.noiseMarginDb": {
+    type: "number",
+    default: 6,
+    min: 0,
+    max: 30,
+    description:
+      "Adaptive VAD: dB above the measured noise floor that counts as speech. Only used with vad.provider adaptive.",
+  },
+  "vad.adaptive.useSpeechLevel": {
+    type: "boolean",
+    default: true,
+    description:
+      "Adaptive VAD: raise the threshold toward the caller's own speech level. Only used with vad.provider adaptive.",
+  },
+  "vad.adaptive.stuckActiveMs": {
+    type: "number",
+    default: 8000,
+    min: 1000,
+    max: 60000,
+    description:
+      "Adaptive VAD: re-measure the noise floor when speech stays active this long without a pause. Only used with vad.provider adaptive.",
   },
   "vad.threshold": {
     type: "number",
@@ -348,6 +377,26 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
     description:
       'STT/TTS model per language used after a switch, as JSON, e.g. {"de":{"stt":"de","tts":"de-thorsten-high"}}.',
   },
+  "speakerGate.mode": {
+    type: "string",
+    default: "disabled",
+    enum: ["disabled", "auto", "manual"],
+    description:
+      "Speaker gate: disabled (every utterance reaches your agent), auto (only the enrolled caller does; other voices arrive as user_speech_ignored), manual (every utterance reaches your agent with a speaker label).",
+  },
+  "speakerGate.bargeIn": {
+    type: "string",
+    default: "caller_only",
+    enum: ["caller_only", "anyone"],
+    description:
+      "Who can interrupt the agent: caller_only or anyone. No effect while speakerGate.mode is disabled.",
+  },
+  "speakerGate.suppressShortBargeIn": {
+    type: "boolean",
+    default: false,
+    description:
+      "Do not let speech too short to check interrupt the agent. No effect while speakerGate.mode is disabled.",
+  },
   "events.mode": {
     type: "string",
     default: "both",
@@ -528,7 +577,10 @@ export function parseVoiceAdvancedSettingValue(
   if (n < min || n > max) {
     throw new Error(`${key} must be between ${min} and ${max}`);
   }
-  const keepFractional = key === "vad.threshold" || key === "tts.speed";
+  const keepFractional =
+    key === "vad.threshold" ||
+    key === "tts.speed" ||
+    key === "vad.adaptive.noiseMarginDb";
   return def.type === "number" && keepFractional ? n : Math.floor(n);
 }
 
