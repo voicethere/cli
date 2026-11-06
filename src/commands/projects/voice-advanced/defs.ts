@@ -5,17 +5,22 @@
  */
 const WAIT_MESSAGE_MAX_CHARS = 300;
 const DEFAULT_WAIT_MESSAGES_JSON = JSON.stringify({
-  de: "Einen Moment bitte, ich wechsle gerade in Ihre Sprache.",
-  en: "Please wait a moment while I switch to your language.",
-  es: "Un momento, por favor, estoy cambiando a su idioma.",
-  fr: "Un instant, s'il vous plaît, je passe dans votre langue.",
-  it: "Un momento, per favore, sto passando alla sua lingua.",
-  nl: "Een ogenblik, ik schakel over naar uw taal.",
-  pl: "Chwileczkę, przełączam się na Twój język.",
-  pt: "Um momento, por favor, estou mudando para o seu idioma.",
-  ru: "Одну минуту, я перехожу на ваш язык.",
+  de: "Einen Moment bitte, ich wechsle auf {language}.",
+  en: "One moment, switching to {language}.",
+  es: "Un momento, por favor, cambio al {language}.",
+  fr: "Un instant, je passe en {language}.",
+  it: "Un momento, cambio lingua: {language}.",
+  nl: "Een moment, ik schakel over naar het {language}.",
+  pl: "Chwileczkę, przełączam na język: {language}.",
+  pt: "Um momento, vou mudar para {language}.",
+  ru: "Одну минуту, переключаюсь на {language}.",
 });
 
+/**
+ * Lockstep with platform `src/lib/voice/voice-advanced-settings.ts`; checked by platform CI
+ * `cli-voice-advanced-lockstep` (`scripts/check-cli-voice-advanced-lockstep.ts`) against this file
+ * on `main`. Merge the CLI side first when adding a key.
+ */
 export const VOICE_ADVANCED_SETTING_KEYS = [
   "vad.enabled",
   "vad.provider",
@@ -132,7 +137,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
   },
   "vad.minSilenceDurationMs": {
     type: "number",
-    default: 1300,
+    default: 1100,
     min: 100,
     max: 10000,
     description: "Silence duration before speech end.",
@@ -162,7 +167,7 @@ export const VOICE_ADVANCED_SETTING_DEFS: Record<
   },
   "vad.sttGateHoldMs": {
     type: "number",
-    default: 1000,
+    default: 400,
     min: 0,
     max: 10000,
     description: "Keep STT open after speech end.",

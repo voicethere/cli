@@ -48,6 +48,25 @@ describe("projects voice-advanced commands", () => {
     requireProjectId.mockResolvedValue("proj-1");
   });
 
+  it("defaults follow the platform defs (lockstep)", () => {
+    const d = VOICE_ADVANCED_SETTING_DEFS;
+    expect(d["vad.minSilenceDurationMs"].default).toBe(1100);
+    expect(d["vad.sttGateHoldMs"].default).toBe(400);
+    expect(
+      JSON.parse(String(d["languageId.autoSwitch.waitMessage.texts"].default)),
+    ).toEqual({
+      de: "Einen Moment bitte, ich wechsle auf {language}.",
+      en: "One moment, switching to {language}.",
+      es: "Un momento, por favor, cambio al {language}.",
+      fr: "Un instant, je passe en {language}.",
+      it: "Un momento, cambio lingua: {language}.",
+      nl: "Een moment, ik schakel over naar het {language}.",
+      pl: "Chwileczkę, przełączam na język: {language}.",
+      pt: "Um momento, vou mudar para {language}.",
+      ru: "Одну минуту, переключаюсь на {language}.",
+    });
+  });
+
   it("lists every canonical voice-advanced key", () => {
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("noiseSuppression.enabled");
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.enabled");
