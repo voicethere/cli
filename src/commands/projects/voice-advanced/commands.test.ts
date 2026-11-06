@@ -60,7 +60,7 @@ describe("projects voice-advanced commands", () => {
     expect(VOICE_ADVANCED_SETTING_KEYS).toContain(
       "connection.reconnectWindowSec",
     );
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(43);
+    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(49);
     expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
       "voice.expectedLanguages",
     );
@@ -197,11 +197,118 @@ describe("projects voice-advanced commands", () => {
     ).rejects.toThrow(/Invalid boolean/);
   });
 
+  describe("speaker gate and adaptive VAD", () => {
+    const parse = parseVoiceAdvancedSettingValue;
+
+    it("parses valid values", () => {
+      expect(parse("speakerGate.mode", "auto")).toBe("auto");
+      expect(parse("speakerGate.mode", "manual")).toBe("manual");
+      expect(parse("speakerGate.mode", "disabled")).toBe("disabled");
+      expect(parse("speakerGate.bargeIn", "anyone")).toBe("anyone");
+      expect(parse("speakerGate.bargeIn", "caller_only")).toBe("caller_only");
+      expect(parse("speakerGate.suppressShortBargeIn", "true")).toBe(true);
+      expect(parse("vad.provider", "adaptive")).toBe("adaptive");
+      expect(parse("vad.adaptive.noiseMarginDb", "8")).toBe(8);
+      expect(parse("vad.adaptive.noiseMarginDb", "7.5")).toBe(7.5);
+      expect(parse("vad.adaptive.noiseMarginDb", "0")).toBe(0);
+      expect(parse("vad.adaptive.noiseMarginDb", "30")).toBe(30);
+      expect(parse("vad.adaptive.useSpeechLevel", "false")).toBe(false);
+      expect(parse("vad.adaptive.stuckActiveMs", "1000")).toBe(1000);
+      expect(parse("vad.adaptive.stuckActiveMs", "60000")).toBe(60000);
+    });
+
+    it("rejects invalid values", () => {
+      expect(() => parse("speakerGate.mode", "bogus")).toThrow(
+        /must be one of: disabled, auto, manual/,
+      );
+      expect(() => parse("speakerGate.bargeIn", "nobody")).toThrow(
+        /must be one of: caller_only, anyone/,
+      );
+      expect(() => parse("speakerGate.suppressShortBargeIn", "maybe")).toThrow(
+        /Invalid boolean/,
+      );
+      expect(() => parse("vad.adaptive.useSpeechLevel", "maybe")).toThrow(
+        /Invalid boolean/,
+      );
+      expect(() => parse("vad.adaptive.noiseMarginDb", "31")).toThrow(
+        /between 0 and 30/,
+      );
+      expect(() => parse("vad.adaptive.noiseMarginDb", "-1")).toThrow(
+        /between 0 and 30/,
+      );
+      expect(() => parse("vad.adaptive.stuckActiveMs", "999")).toThrow(
+        /between 1000 and 60000/,
+      );
+      expect(() => parse("vad.adaptive.stuckActiveMs", "60001")).toThrow(
+        /between 1000 and 60000/,
+      );
+    });
+
+    it("set sends the dotted key and typed value", async () => {
+      setProjectVoiceAdvancedSetting.mockResolvedValue({ settings: {} });
+      await runProjectsVoiceAdvancedSet({
+        name: "speakerGate.mode",
+        value: "auto",
+      });
+      await runProjectsVoiceAdvancedSet({
+        name: "vad.adaptive.noiseMarginDb",
+        value: "8",
+      });
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenNthCalledWith(
+        1,
+        "proj-1",
+        "speakerGate.mode",
+        "auto",
+      );
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenNthCalledWith(
+        2,
+        "proj-1",
+        "vad.adaptive.noiseMarginDb",
+        8,
+      );
+    });
+
+    it("list prints every new key from the nested API shape", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        settings: {
+          speakerGate: {
+            mode: "auto",
+            bargeIn: "caller_only",
+            suppressShortBargeIn: false,
+          },
+          vad: {
+            provider: "adaptive",
+            adaptive: {
+              noiseMarginDb: 8,
+              useSpeechLevel: true,
+              stuckActiveMs: 8000,
+            },
+          },
+        },
+      });
+      await runProjectsVoiceAdvancedList({});
+      const lines = (
+        console.log as unknown as ReturnType<typeof vi.fn>
+      ).mock.calls.map((c) => String(c[0]));
+      for (const line of [
+        "speakerGate.mode=auto",
+        "speakerGate.bargeIn=caller_only",
+        "speakerGate.suppressShortBargeIn=false",
+        "vad.provider=adaptive",
+        "vad.adaptive.noiseMarginDb=8",
+        "vad.adaptive.useSpeechLevel=true",
+        "vad.adaptive.stuckActiveMs=8000",
+      ]) {
+        expect(lines).toContain(line);
+      }
+    });
+  });
+
   describe("vad.provider", () => {
     it("vad.provider rejects silero", () => {
       expect(() =>
         parseVoiceAdvancedSettingValue("vad.provider", "silero"),
-      ).toThrow(/must be one of: energy/);
+      ).toThrow(/must be one of: energy, adaptive/);
     });
 
     it("vad.provider accepts energy", () => {
