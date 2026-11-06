@@ -6,9 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-06
+
 ### Added
 
 - `voicethere projects voice-advanced set` accepts the speaker gate settings `speakerGate.mode` (`disabled`, `auto`, `manual`), `speakerGate.bargeIn` (`caller_only`, `anyone`) and `speakerGate.suppressShortBargeIn`, and the adaptive VAD: `vad.provider adaptive` with `vad.adaptive.noiseMarginDb` (0 to 30), `vad.adaptive.useSpeechLevel` and `vad.adaptive.stuckActiveMs` (1000 to 60000). `list` prints them too.
+
+### Changed
+
+- `@voicethere/agent` is now 0.29.1, so new workspaces created by `init` start from that version.
 
 ## [0.20.1] - 2026-11-04
 
