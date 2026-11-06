@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-11-06
+
+### Fixed
+
+- `voicethere projects voice-advanced` defaults match the dashboard: `vad.minSilenceDurationMs` 1100, `vad.sttGateHoldMs` 400 and the language switch wait texts.
+
 ## [0.21.0] - 2026-11-06
 
 ### Added
