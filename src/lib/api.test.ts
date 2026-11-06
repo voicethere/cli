@@ -403,6 +403,73 @@ describe("VoicethereApi", () => {
     );
   });
 
+  it("sends the message field on putProjectSource", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            project_id: "p",
+            entry_path: "a.ts",
+            files: [],
+            revision: 3,
+          }),
+          { status: 200 },
+        ),
+      );
+    const api = new VoicethereApi(apiKey, apiBase);
+    await api.putProjectSource("proj-src", {
+      entry_path: "a.ts",
+      files: [],
+      revision: 2,
+      message: "tune greeting",
+    });
+    const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(init.body).toBe(
+      JSON.stringify({
+        entry_path: "a.ts",
+        files: [],
+        revision: 2,
+        message: "tune greeting",
+      }),
+    );
+  });
+
+  it("calls the source version endpoints with exact paths, query and body", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(
+        async () => new Response(JSON.stringify({}), { status: 200 }),
+      );
+    const api = new VoicethereApi(apiKey, apiBase);
+
+    await api.listProjectSourceVersions("proj-src");
+    await api.listProjectSourceVersions("proj-src", { limit: 5, before: 9 });
+    await api.getProjectSourceVersion("proj-src", 4);
+    await api.diffProjectSourceVersions("proj-src", 2, 6);
+    await api.restoreProjectSourceVersion("proj-src", 3, 7);
+
+    const calls = fetchMock.mock.calls as [URL, RequestInit][];
+    expect(calls[0]![0].toString()).toBe(
+      `${apiBase}/projects/proj-src/source/versions`,
+    );
+    expect(calls[0]![1].method).toBe("GET");
+    expect(calls[1]![0].toString()).toBe(
+      `${apiBase}/projects/proj-src/source/versions?limit=5&before=9`,
+    );
+    expect(calls[2]![0].toString()).toBe(
+      `${apiBase}/projects/proj-src/source/versions/4`,
+    );
+    expect(calls[3]![0].toString()).toBe(
+      `${apiBase}/projects/proj-src/source/versions/diff?from=2&to=6`,
+    );
+    expect(calls[4]![0].toString()).toBe(
+      `${apiBase}/projects/proj-src/source/versions/3/restore`,
+    );
+    expect(calls[4]![1].method).toBe("POST");
+    expect(calls[4]![1].body).toBe(JSON.stringify({ revision: 7 }));
+  });
+
   it("throws ApiError with server message", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
@@ -1106,7 +1173,10 @@ describe("VoicethereApi metrics and filters", () => {
 
 describe("canary error messages", () => {
   const cases: Array<[string, RegExp]> = [
-    ["plan_feature_unavailable", /^Error: Canary deployments need the Advanced or Ultimate plan\.$/],
+    [
+      "plan_feature_unavailable",
+      /^Error: Canary deployments need the Advanced or Ultimate plan\.$/,
+    ],
     ["canary_active", /canary is running/i],
     ["canary_already_active", /already running/],
     ["canary_not_active", /No canary is running/],
@@ -1126,7 +1196,9 @@ describe("canary error messages", () => {
   });
 
   it("leaves other codes alone", () => {
-    const error = new ApiError(400, "raw text", { error: { code: "invalid_request" } });
+    const error = new ApiError(400, "raw text", {
+      error: { code: "invalid_request" },
+    });
     expect(formatCliError(error)).toBe("Error: raw text");
   });
 });

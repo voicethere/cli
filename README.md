@@ -159,6 +159,15 @@ voicethere source push   # upload local `.ts` / `.json` sources
 voicethere source pull   # download cloud workspace (does not delete extra local files)
 ```
 
+Every save keeps a version you can list, compare and restore. This needs a platform release that includes source history:
+
+```bash
+voicethere source push --message "Tune the greeting"   # note stored with the version (max 200 characters)
+voicethere source history [--limit 20] [--json]        # list versions, current one marked *
+voicethere source diff 3 5                              # unified diff between versions (omit the second to compare with current)
+voicethere source restore 3 [--yes]                     # restore a version; the current files are kept as a new version
+```
+
 #### Conversation flow files
 
 A project built from the `flow-agent` template keeps its conversation in `voicethere.flow.json`. To edit it outside the dashboard:
