@@ -242,6 +242,52 @@ export interface PutProjectSourceInput {
   entry_path: string;
   files: ProjectSourceFile[];
   revision: number;
+  /** Optional note stored with the saved version (at most 200 characters). */
+  message?: string;
+}
+
+export interface SourceVersionActor {
+  type: "user" | "api_key" | "user_api_key" | "system";
+  user_id: string | null;
+  api_key_id: string | null;
+  user_api_key_id: string | null;
+}
+
+export interface SourceVersionSummary {
+  revision: number;
+  created_at: string;
+  source: string;
+  message: string | null;
+  actor: SourceVersionActor;
+  entry_path: string;
+  file_count: number;
+  total_bytes: number;
+  build_ids: string[];
+  is_current: boolean;
+}
+
+export interface SourceVersionListResponse {
+  versions: SourceVersionSummary[];
+  next_before: number | null;
+}
+
+export type SourceVersionResponse = SourceVersionSummary & {
+  files: ProjectSourceFile[];
+};
+
+export interface SourceVersionDiffFile {
+  path: string;
+  status: "added" | "removed" | "modified" | "unchanged";
+  before: string | null;
+  after: string | null;
+}
+
+export interface SourceVersionDiffResponse {
+  from: number;
+  to: number;
+  entry_path_from: string;
+  entry_path_to: string;
+  files: SourceVersionDiffFile[];
 }
 
 export interface Build {
@@ -1364,6 +1410,55 @@ export class VoicethereApi {
       "PUT",
       `/projects/${projectId}/source`,
       { json: input },
+    );
+  }
+
+  async listProjectSourceVersions(
+    projectId: string,
+    options: { limit?: number; before?: number } = {},
+  ): Promise<SourceVersionListResponse> {
+    const params = new URLSearchParams();
+    if (options.limit !== undefined) params.set("limit", String(options.limit));
+    if (options.before !== undefined) {
+      params.set("before", String(options.before));
+    }
+    const query = params.toString();
+    return this.request<SourceVersionListResponse>(
+      "GET",
+      `/projects/${projectId}/source/versions${query ? `?${query}` : ""}`,
+    );
+  }
+
+  async getProjectSourceVersion(
+    projectId: string,
+    revision: number,
+  ): Promise<SourceVersionResponse> {
+    return this.request<SourceVersionResponse>(
+      "GET",
+      `/projects/${projectId}/source/versions/${revision}`,
+    );
+  }
+
+  async diffProjectSourceVersions(
+    projectId: string,
+    from: number,
+    to: number,
+  ): Promise<SourceVersionDiffResponse> {
+    return this.request<SourceVersionDiffResponse>(
+      "GET",
+      `/projects/${projectId}/source/versions/diff?from=${from}&to=${to}`,
+    );
+  }
+
+  async restoreProjectSourceVersion(
+    projectId: string,
+    revision: number,
+    currentRevision: number,
+  ): Promise<ProjectSourceResponse> {
+    return this.request<ProjectSourceResponse>(
+      "POST",
+      `/projects/${projectId}/source/versions/${revision}/restore`,
+      { json: { revision: currentRevision } },
     );
   }
 

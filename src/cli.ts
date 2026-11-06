@@ -112,9 +112,12 @@ import {
 import { runInit } from "./commands/init.js";
 import { formatInitTemplateHelp } from "./lib/project-templates.js";
 import {
+  runSourceDiff,
   runSourceDownload,
+  runSourceHistory,
   runSourcePull,
   runSourcePush,
+  runSourceRestore,
 } from "./commands/source.js";
 import { runFlowExport, runFlowImport } from "./commands/flow.js";
 import { runSessionsBilling } from "./commands/sessions/billing.js";
@@ -1673,9 +1676,67 @@ async function main(): Promise<void> {
   source
     .command("push")
     .description("Upload local workspace sources to the cloud project")
-    .action(async () => {
-      await runSourcePush();
+    .option(
+      "--message <text>",
+      "Note stored with the saved version (max 200 characters)",
+    )
+    .action(async (options: { message?: string }) => {
+      await runSourcePush({ message: options.message });
     });
+
+  source
+    .command("history")
+    .description("List saved versions of the Code workspace")
+    .option("--limit <n>", "Number of versions to show (1-100)", "20")
+    .option("--json", "Print the versions as JSON")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(
+      async (options: { limit: string; json?: boolean; project?: string }) => {
+        await runSourceHistory({
+          limit: Number(options.limit),
+          json: options.json,
+          projectId: options.project,
+        });
+      },
+    );
+
+  source
+    .command("diff")
+    .description("Show what changed between two saved versions")
+    .argument("<from>", "Older revision")
+    .argument("[to]", "Newer revision (default: current)")
+    .option("--name-only", "Print status and path only")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(
+      async (
+        from: string,
+        to: string | undefined,
+        options: { nameOnly?: boolean; project?: string },
+      ) => {
+        await runSourceDiff(from, to, {
+          nameOnly: options.nameOnly,
+          projectId: options.project,
+        });
+      },
+    );
+
+  source
+    .command("restore")
+    .description("Restore the Code workspace to a saved version")
+    .argument("<revision>", "Revision to restore")
+    .option("--yes", "Skip the confirmation prompt")
+    .option("--project <id>", "Project UUID (default: .voicethere/config.json)")
+    .action(
+      async (
+        revision: string,
+        options: { yes?: boolean; project?: string },
+      ) => {
+        await runSourceRestore(revision, {
+          yes: options.yes,
+          projectId: options.project,
+        });
+      },
+    );
 
   source
     .command("pull")

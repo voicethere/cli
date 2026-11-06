@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+### Added
+
+- `voicethere source history` lists the saved versions of a project's Code workspace, as a table or with `--json`. `voicethere source diff <from> [to]` prints what changed between two versions, and `voicethere source restore <revision>` brings one back after a confirmation (`--yes` skips it and is required without a terminal). `voicethere source push --message <text>` stores a note of up to 200 characters with the version. These commands need a platform release that includes source history.
+
 ## [0.20.1] - 2026-11-04
 
 ### Fixed
