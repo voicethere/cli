@@ -26,13 +26,13 @@ describe("CUSTOMER_AGENT_VERSION", () => {
     expect(installed.version).toBe(CUSTOMER_AGENT_VERSION);
   });
 
-  it("pins ^0.28.0 in a language-switch workspace", () => {
+  it("pins ^0.29.1 in a language-switch workspace", () => {
     const parsed = JSON.parse(
       buildCustomerPackageJson({
         templateId: "language-switch",
         entryPath: "language-switch/agent.ts",
       }),
     ) as { dependencies: Record<string, string> };
-    expect(parsed.dependencies["@voicethere/agent"]).toBe("^0.28.0");
+    expect(parsed.dependencies["@voicethere/agent"]).toBe("^0.29.1");
   });
 });
