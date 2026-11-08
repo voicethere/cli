@@ -257,11 +257,11 @@ describe("projects voice-advanced", () => {
   describe("set against a platform without definitions", () => {
     const response = {
       settings: {
-        vad: { gateStt: true, sampleRate: "16000" },
+        vad: { gateStt: true, sampleRate: 16000 },
         tts: { speed: 0.9 },
       },
       defaults: {
-        vad: { gateStt: true, sampleRate: "16000" },
+        vad: { gateStt: true, sampleRate: 16000 },
         tts: { speed: 0.9 },
       },
     };

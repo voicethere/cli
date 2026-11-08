@@ -181,7 +181,7 @@ export function fallbackDefinition(
     typeof sample === "string"
       ? (typeof sample as "boolean" | "number" | "string")
       : undefined;
-  const type = sampleType ?? engine?.type ?? "string";
+  const type = engine?.type ?? sampleType ?? "string";
 
   return {
     key,
@@ -190,7 +190,7 @@ export function fallbackDefinition(
     default: fromDefaults,
     // Without catalog facts a number may be fractional (`tts.speed`); the server checks it.
     integer: engine?.integer ?? false,
-    ...(engine?.enum && type === "string" ? { engineEnum: engine.enum } : {}),
+    ...(engine?.enum ? { engineEnum: engine.enum } : {}),
     ...(engine?.min !== undefined ? { engineMin: engine.min } : {}),
     ...(engine?.max !== undefined ? { engineMax: engine.max } : {}),
   };

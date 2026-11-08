@@ -459,7 +459,7 @@ Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
 
 ## Advanced voice settings
 
-`voicethere projects voice-advanced list` prints every setting of the project with its current value, its default and its range. The platform sends the list, so a key added there shows up without a CLI update. `set` checks the value against the voice engine's type, whole-number and range rules and against the platform's own limits before it sends anything. The server still has the final say.
+`voicethere projects voice-advanced list` prints every setting of the project with its current value, its default and its range. The platform sends the list, so a key added there shows up without a CLI update. `set` checks the value against the voice engine's type, whole-number and range rules and, when the platform sends them, against the platform's own limits before it sends anything. The server still has the final say.
 
 ```bash
 voicethere projects voice-advanced list
