@@ -84,7 +84,7 @@ import {
 import {
   formatVoiceAdvancedSettingsGroupHelp,
   voiceAdvancedSettingNamesHelp,
-} from "./commands/projects/voice-advanced/defs.js";
+} from "./commands/projects/voice-advanced/definitions.js";
 import { runProjectsList } from "./commands/projects/list.js";
 import { runProjectsShow } from "./commands/projects/show.js";
 import { runProjectsUse } from "./commands/projects/use.js";

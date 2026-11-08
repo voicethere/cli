@@ -3,10 +3,11 @@ import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 import {
+  describeRange,
   formatVoiceAdvancedSettingLine,
-  VOICE_ADVANCED_SETTING_KEYS,
-  type VoiceAdvancedSettingKey,
-} from "./defs.js";
+  keysFromSettings,
+  resolveDefinitions,
+} from "./definitions.js";
 
 export interface ProjectsVoiceAdvancedListOptions {
   projectId?: string;
@@ -21,14 +22,32 @@ export async function runProjectsVoiceAdvancedList(
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
   const result = await api.listProjectVoiceAdvancedSettings(projectId);
-  logVerbose(`found ${VOICE_ADVANCED_SETTING_KEYS.length} setting key(s)`);
 
-  for (const key of VOICE_ADVANCED_SETTING_KEYS) {
+  if (result.definitions) {
+    const defs = resolveDefinitions(result);
+    logVerbose(`found ${defs.length} setting key(s)`);
+    for (const def of defs) {
+      const line = formatVoiceAdvancedSettingLine(
+        result.settings,
+        def.key,
+        def.path,
+        def.default,
+      );
+      if (line) {
+        console.log(
+          `${line}  (default ${String(def.default)}${describeRange(def)})`,
+        );
+      }
+    }
+    return;
+  }
+
+  const keys = keysFromSettings(result.settings);
+  logVerbose(`found ${keys.length} setting key(s)`);
+  for (const key of keys) {
     const line = formatVoiceAdvancedSettingLine(result.settings, key);
     if (line) {
       console.log(line);
     }
   }
 }
-
-export { VOICE_ADVANCED_SETTING_KEYS, type VoiceAdvancedSettingKey };

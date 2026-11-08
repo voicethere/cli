@@ -672,61 +672,33 @@ export interface ProjectVoiceSettings {
   tts_voice?: string;
 }
 
-export type VoiceAdvancedSettingKey =
-  | "vad.enabled"
-  | "vad.provider"
-  | "vad.adaptive.noiseMarginDb"
-  | "vad.adaptive.useSpeechLevel"
-  | "vad.adaptive.stuckActiveMs"
-  | "vad.threshold"
-  | "vad.minSpeechDurationMs"
-  | "vad.minSilenceDurationMs"
-  | "vad.speechPadMs"
-  | "vad.sampleRate"
-  | "vad.gateStt"
-  | "vad.gateSttOpenOnPending"
-  | "vad.sttGateHoldMs"
-  | "vad.sttListenTimeoutMs"
-  | "vad.utteranceFinalizeTimeoutMs"
-  | "vad.bargeIn.enabled"
-  | "vad.bargeIn.useVad"
-  | "vad.bargeIn.flushTts"
-  | "vad.bargeIn.requireSttPartial"
-  | "vad.bargeIn.minSttPartialChars"
-  | "vad.bargeIn.agentPlaybackGuardMs"
-  | "tts.speed"
-  | "tts.postUtteranceSilenceMs"
-  | "tts.phraseCache"
-  | "tts.sentenceCase"
-  | "debug.ttsTextTrace"
-  | "connection.reconnectWindowSec"
-  | "speakerGate.mode"
-  | "speakerGate.bargeIn"
-  | "speakerGate.suppressShortBargeIn"
-  | "events.mode"
-  | "noiseSuppression.enabled"
-  | "languageId.enabled"
-  | "languageId.minSpeechMs"
-  | "languageId.timing"
-  | "languageId.autoSwitch.enabled"
-  | "languageId.autoSwitch.replayLastUtterance"
-  | "languageId.autoSwitch.finalHoldMs"
-  | "languageId.autoSwitch.minDwellMs"
-  | "languageId.autoSwitch.confirmUtterances"
-  | "languageId.autoSwitch.switchVoice"
-  | "languageId.autoSwitch.waitAudio"
-  | "languageId.autoSwitch.waitMessage.mode"
-  | "languageId.autoSwitch.waitMessage.skipWhenReady"
-  | "languageId.autoSwitch.waitMessage.texts"
-  | "languageId.autoSwitch.readyMessage.minSwitchMs"
-  | "languageId.autoSwitch.readyMessage.texts"
-  | "voice.allowedLanguages"
-  | "voice.profilesByLanguage";
+/** A voice-advanced setting key such as `vad.threshold`; the valid keys come from the API. */
+export type VoiceAdvancedSettingKey = string;
+
+/** One entry of `definitions` in the voice-advanced-settings response. */
+export interface VoiceAdvancedDefinition {
+  key: string;
+  /** Where `overrides`, `settings` and `defaults` hold this key. */
+  path: string[];
+  type: "boolean" | "number" | "string";
+  default: boolean | number | string;
+  min?: number;
+  max?: number;
+  integer?: boolean;
+  enum?: string[];
+  label: string;
+  description: string;
+  /** Voice engine config path, or null for a VoiceThere-only key. */
+  engineKey: string | null;
+}
 
 export interface ProjectVoiceAdvancedSettingsResponse {
   project_id: string;
   settings: Record<string, unknown>;
   overrides?: Record<string, unknown>;
+  defaults?: Record<string, unknown>;
+  /** Absent on platforms that predate the field. */
+  definitions?: VoiceAdvancedDefinition[];
 }
 
 export interface VoiceCatalogModel {

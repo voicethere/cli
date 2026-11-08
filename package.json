@@ -1,6 +1,6 @@
 {
   "name": "@voicethere/cli",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "VoiceThere cloud CLI — login, projects, and agent bundle upload",
   "type": "module",
   "bin": {
@@ -38,7 +38,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@node-webrtc-rust/voice-catalog": "0.13.4",
+    "@node-webrtc-rust/voice-catalog": "0.18.0",
     "@voicethere/agent": "0.29.1",
     "commander": "13.1.0",
     "diff": "5.2.0",
