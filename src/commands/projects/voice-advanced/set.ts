@@ -3,10 +3,10 @@ import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 import {
-  parseVoiceAdvancedSettingValue,
-  VOICE_ADVANCED_SETTING_KEYS,
-  type VoiceAdvancedSettingKey,
-} from "./defs.js";
+  fallbackDefinition,
+  parseVoiceAdvancedValue,
+  resolveDefinitions,
+} from "./definitions.js";
 
 export interface ProjectsVoiceAdvancedSetOptions {
   name: string;
@@ -18,18 +18,29 @@ export async function runProjectsVoiceAdvancedSet(
   options: ProjectsVoiceAdvancedSetOptions,
 ): Promise<void> {
   const projectId = options.projectId?.trim() || (await requireProjectId());
-  const key = options.name.trim() as VoiceAdvancedSettingKey;
-  if (!VOICE_ADVANCED_SETTING_KEYS.includes(key)) {
-    throw new Error(
-      `Unknown voice advanced setting ${key}. Valid: ${VOICE_ADVANCED_SETTING_KEYS.join(", ")}`,
-    );
-  }
-
-  const value = parseVoiceAdvancedSettingValue(key, options.value);
+  const key = options.name.trim();
   logStep(`Setting ${key} for project ${projectId}`);
 
   const credentials = await requireCredentials();
   const api = createApiFromCredentials(credentials);
+  const response = await api.listProjectVoiceAdvancedSettings(projectId);
+
+  let def;
+  if (response.definitions) {
+    def = resolveDefinitions(response).find((d) => d.key === key);
+    if (!def) {
+      throw new Error(
+        `Unknown voice advanced setting ${key}. Valid: ${response.definitions.map((d) => d.key).join(", ")}`,
+      );
+    }
+  } else {
+    logVerbose(
+      "platform returned no definitions; typing the value from defaults",
+    );
+    def = fallbackDefinition(key, response);
+  }
+
+  const value = parseVoiceAdvancedValue(def, options.value);
   await api.setProjectVoiceAdvancedSetting(projectId, key, value);
   console.log(`${key}=${String(value)}`);
 }

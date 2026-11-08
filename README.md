@@ -457,6 +457,18 @@ voicethere projects session-settings set error_message "Sorry, something went wr
 
 Boolean values for `set`: `true` / `false` / `1` / `0` / `yes` / `no`.
 
+## Advanced voice settings
+
+`voicethere projects voice-advanced list` prints every setting of the project with its current value, its default and its range. The platform sends the list, so a key added there shows up without a CLI update. `set` checks the value against the voice engine's type, whole-number and range rules and against the platform's own limits before it sends anything. The server still has the final say.
+
+```bash
+voicethere projects voice-advanced list
+voicethere projects voice-advanced set vad.threshold 0.05
+voicethere projects voice-advanced reset
+```
+
+Defaults are the values the runner uses with no override. `voicethere projects voice-advanced --help` lists the engine settings offline. Changes apply on the next **`voicethere deploy --wait`**.
+
 ## Reconnect window
 
 `connection.reconnectWindowSec` sets how long a dropped voice conversation is held for the client to reconnect: a whole number of seconds from 15 to 30 (default 15). A recovered conversation is billed including the interruption. An unrecovered one stops billing at the drop but holds an agent runner slot for the window. It applies on the next **`voicethere deploy --wait`**.

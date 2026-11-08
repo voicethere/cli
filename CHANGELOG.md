@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-08
+
+### Changed
+
+- `voicethere projects voice-advanced` no longer carries its own list of keys, defaults and ranges. The platform returns the definitions, and the voice engine facts (type, whole numbers, allowed values, range) come from `@node-webrtc-rust/voice-catalog` 0.18.0. A new setting shows up in `list` and works with `set` without a CLI update. Against a platform that does not return definitions yet, `set` takes the type from the project's current defaults and the server validates the value.
+- `list` prints each setting with its default and range.
+- Displayed defaults follow what the runner uses: `vad.threshold` 0.05, `vad.minSpeechDurationMs` 200, `vad.speechPadMs` 500 and `tts.postUtteranceSilenceMs` 1750 when unset.
+- `@node-webrtc-rust/voice-catalog` is now 0.18.0, which is licensed BUSL-1.1.
+- `set` no longer checks the shape of the JSON text settings (`voice.profilesByLanguage`, the wait and ready message texts) locally; the server rejects bad input.
+
 ## [0.22.0] - 2026-11-06
 
 ### Added

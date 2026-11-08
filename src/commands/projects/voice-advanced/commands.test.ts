@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { VoiceAdvancedDefinition } from "../../../lib/api.js";
 import {
-  parseVoiceAdvancedSettingValue,
-  VOICE_ADVANCED_SETTING_DEFS,
-  VOICE_ADVANCED_SETTING_KEYS,
-} from "./defs.js";
+  fallbackDefinition,
+  formatVoiceAdvancedSettingsGroupHelp,
+  parseVoiceAdvancedValue,
+  resolveDefinitions,
+} from "./definitions.js";
 import { runProjectsVoiceAdvancedList } from "./list.js";
 import {
   runProjectsVoiceAdvancedReset,
@@ -32,14 +34,91 @@ vi.mock("../../../lib/project-config.js", () => ({
   requireProjectId: (...args: unknown[]) => requireProjectId(...args),
 }));
 
-describe("projects voice-advanced commands", () => {
+function def(
+  partial: Partial<VoiceAdvancedDefinition> &
+    Pick<VoiceAdvancedDefinition, "key" | "type" | "default">,
+): VoiceAdvancedDefinition {
+  return {
+    path: partial.key.split("."),
+    label: partial.key,
+    description: `About ${partial.key}`,
+    engineKey: null,
+    ...partial,
+  };
+}
+
+const DEFINITIONS: VoiceAdvancedDefinition[] = [
+  def({
+    key: "vad.threshold",
+    type: "number",
+    default: 0.05,
+    engineKey: "vad.threshold",
+  }),
+  def({
+    key: "vad.minSpeechDurationMs",
+    type: "number",
+    default: 200,
+    engineKey: "vad.minSpeechDurationMs",
+  }),
+  def({
+    key: "vad.provider",
+    type: "string",
+    default: "energy",
+    enum: ["energy", "adaptive"],
+    engineKey: "vad.provider",
+  }),
+  def({
+    key: "vad.gateStt",
+    type: "boolean",
+    default: true,
+    engineKey: "vad.gateStt",
+  }),
+  def({
+    key: "vad.adaptive.stuckActiveMs",
+    type: "number",
+    default: 8000,
+    min: 1000,
+    max: 60000,
+    engineKey: "vad.adaptive.stuckActiveMs",
+  }),
+  def({
+    key: "vad.adaptive.noiseMarginDb",
+    type: "number",
+    default: 6,
+    engineKey: "vad.adaptive.noiseMarginDb",
+  }),
+  def({
+    key: "tts.speed",
+    type: "number",
+    default: 0.9,
+    integer: false,
+    min: 0.2,
+    max: 2,
+  }),
+  def({ key: "tts.phraseCache", type: "boolean", default: true }),
+  def({ key: "voice.profilesByLanguage", type: "string", default: "{}" }),
+];
+
+function resolve(key: string) {
+  const found = resolveDefinitions({ definitions: DEFINITIONS }).find(
+    (d) => d.key === key,
+  );
+  if (!found) {
+    throw new Error(`fixture has no ${key}`);
+  }
+  return found;
+}
+
+describe("projects voice-advanced", () => {
   beforeEach(() => {
     listProjectVoiceAdvancedSettings.mockReset();
     setProjectVoiceAdvancedSetting.mockReset();
     resetProjectVoiceAdvancedSettings.mockReset();
     requireCredentials.mockReset();
     requireProjectId.mockReset();
+    vi.restoreAllMocks();
     vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
 
     requireCredentials.mockResolvedValue({
       api_key: "vth_test",
@@ -48,759 +127,273 @@ describe("projects voice-advanced commands", () => {
     requireProjectId.mockResolvedValue("proj-1");
   });
 
-  it("defaults follow the platform defs (lockstep)", () => {
-    const d = VOICE_ADVANCED_SETTING_DEFS;
-    expect(d["vad.minSilenceDurationMs"].default).toBe(1100);
-    expect(d["vad.sttGateHoldMs"].default).toBe(400);
-    expect(
-      JSON.parse(String(d["languageId.autoSwitch.waitMessage.texts"].default)),
-    ).toEqual({
-      de: "Einen Moment bitte, ich wechsle auf {language}.",
-      en: "One moment, switching to {language}.",
-      es: "Un momento, por favor, cambio al {language}.",
-      fr: "Un instant, je passe en {language}.",
-      it: "Un momento, cambio lingua: {language}.",
-      nl: "Een moment, ik schakel over naar het {language}.",
-      pl: "Chwileczkę, przełączam na język: {language}.",
-      pt: "Um momento, vou mudar para {language}.",
-      ru: "Одну минуту, переключаюсь на {language}.",
-    });
-  });
-
-  it("lists every canonical voice-advanced key", () => {
-    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("noiseSuppression.enabled");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.enabled");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.minSpeechMs");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toContain(
-      "languageId.autoSwitch.enabled",
-    );
-    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("voice.profilesByLanguage");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toContain("tts.phraseCache");
-    expect(VOICE_ADVANCED_SETTING_KEYS).toContain(
-      "connection.reconnectWindowSec",
-    );
-    expect(VOICE_ADVANCED_SETTING_KEYS).toHaveLength(49);
-    expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
-      "voice.expectedLanguages",
-    );
-    for (const key of [
-      "languageId.autoSwitch.waitAudio",
-      "languageId.autoSwitch.waitMessage.mode",
-      "languageId.autoSwitch.waitMessage.skipWhenReady",
-      "languageId.autoSwitch.waitMessage.texts",
-      "languageId.autoSwitch.readyMessage.minSwitchMs",
-      "languageId.autoSwitch.readyMessage.texts",
-    ]) {
-      expect(VOICE_ADVANCED_SETTING_KEYS).toContain(key);
-    }
-  });
-
-  it("lists resolved advanced settings", async () => {
-    listProjectVoiceAdvancedSettings.mockResolvedValue({
-      project_id: "proj-1",
-      settings: {
-        vad: {
-          enabled: true,
-          bargeIn: { requireSttPartial: false },
-        },
-        noiseSuppression: { enabled: true },
-        events: { mode: "both" },
-      },
-    });
-
-    await runProjectsVoiceAdvancedList({});
-
-    expect(listProjectVoiceAdvancedSettings).toHaveBeenCalledWith("proj-1");
-    expect(console.log).toHaveBeenCalledWith("vad.enabled=true");
-    expect(console.log).toHaveBeenCalledWith(
-      "vad.bargeIn.requireSttPartial=false",
-    );
-    expect(console.log).toHaveBeenCalledWith("noiseSuppression.enabled=true");
-  });
-
-  it("sets noiseSuppression.enabled false", async () => {
-    setProjectVoiceAdvancedSetting.mockResolvedValue({
-      project_id: "proj-1",
-      settings: { noiseSuppression: { enabled: false } },
-    });
-
-    await runProjectsVoiceAdvancedSet({
-      name: "noiseSuppression.enabled",
-      value: "false",
-    });
-
-    expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
-      "proj-1",
-      "noiseSuppression.enabled",
-      false,
-    );
-    expect(console.log).toHaveBeenCalledWith("noiseSuppression.enabled=false");
-  });
-
-  it("sets a boolean advanced setting", async () => {
-    setProjectVoiceAdvancedSetting.mockResolvedValue({
-      project_id: "proj-1",
-      settings: { vad: { bargeIn: { requireSttPartial: false } } },
-    });
-
-    await runProjectsVoiceAdvancedSet({
-      name: "vad.bargeIn.requireSttPartial",
-      value: "false",
-    });
-
-    expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
-      "proj-1",
-      "vad.bargeIn.requireSttPartial",
-      false,
-    );
-    expect(console.log).toHaveBeenCalledWith(
-      "vad.bargeIn.requireSttPartial=false",
-    );
-  });
-
-  it("sets fractional tts.speed", async () => {
-    setProjectVoiceAdvancedSetting.mockResolvedValue({
-      project_id: "proj-1",
-      settings: { tts: { speed: 0.7 } },
-    });
-
-    await runProjectsVoiceAdvancedSet({
-      name: "tts.speed",
-      value: "0.7",
-    });
-
-    expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
-      "proj-1",
-      "tts.speed",
-      0.7,
-    );
-    expect(console.log).toHaveBeenCalledWith("tts.speed=0.7");
-  });
-
-  it("defines tts.phraseCache as a boolean that defaults to on", () => {
-    expect(VOICE_ADVANCED_SETTING_DEFS["tts.phraseCache"]).toMatchObject({
-      type: "boolean",
-      default: true,
-    });
-  });
-
-  it("sets tts.phraseCache true and false and rejects other values", async () => {
-    setProjectVoiceAdvancedSetting.mockResolvedValue({
-      project_id: "proj-1",
-      settings: {},
-    });
-
-    await runProjectsVoiceAdvancedSet({
-      name: "tts.phraseCache",
-      value: "false",
-    });
-    expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-      "proj-1",
-      "tts.phraseCache",
-      false,
-    );
-    expect(console.log).toHaveBeenCalledWith("tts.phraseCache=false");
-
-    await runProjectsVoiceAdvancedSet({
-      name: "tts.phraseCache",
-      value: "true",
-    });
-    expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-      "proj-1",
-      "tts.phraseCache",
-      true,
-    );
-
-    await expect(
-      runProjectsVoiceAdvancedSet({ name: "tts.phraseCache", value: "maybe" }),
-    ).rejects.toThrow(/Invalid boolean/);
-  });
-
-  describe("speaker gate and adaptive VAD", () => {
-    const parse = parseVoiceAdvancedSettingValue;
-
-    it("parses valid values", () => {
-      expect(parse("speakerGate.mode", "auto")).toBe("auto");
-      expect(parse("speakerGate.mode", "manual")).toBe("manual");
-      expect(parse("speakerGate.mode", "disabled")).toBe("disabled");
-      expect(parse("speakerGate.bargeIn", "anyone")).toBe("anyone");
-      expect(parse("speakerGate.bargeIn", "caller_only")).toBe("caller_only");
-      expect(parse("speakerGate.suppressShortBargeIn", "true")).toBe(true);
-      expect(parse("vad.provider", "adaptive")).toBe("adaptive");
-      expect(parse("vad.adaptive.noiseMarginDb", "8")).toBe(8);
-      expect(parse("vad.adaptive.noiseMarginDb", "7.5")).toBe(7.5);
-      expect(parse("vad.adaptive.noiseMarginDb", "0")).toBe(0);
-      expect(parse("vad.adaptive.noiseMarginDb", "30")).toBe(30);
-      expect(parse("vad.adaptive.useSpeechLevel", "false")).toBe(false);
-      expect(parse("vad.adaptive.stuckActiveMs", "1000")).toBe(1000);
-      expect(parse("vad.adaptive.stuckActiveMs", "60000")).toBe(60000);
-    });
-
-    it("rejects invalid values", () => {
-      expect(() => parse("speakerGate.mode", "bogus")).toThrow(
-        /must be one of: disabled, auto, manual/,
+  describe("parseVoiceAdvancedValue with API definitions", () => {
+    it("accepts a valid value of each type", () => {
+      expect(parseVoiceAdvancedValue(resolve("vad.gateStt"), "off")).toBe(
+        false,
       );
-      expect(() => parse("speakerGate.bargeIn", "nobody")).toThrow(
-        /must be one of: caller_only, anyone/,
+      expect(parseVoiceAdvancedValue(resolve("vad.gateStt"), "Yes")).toBe(true);
+      expect(parseVoiceAdvancedValue(resolve("vad.threshold"), "0.3")).toBe(
+        0.3,
       );
-      expect(() => parse("speakerGate.suppressShortBargeIn", "maybe")).toThrow(
-        /Invalid boolean/,
+      expect(
+        parseVoiceAdvancedValue(resolve("vad.minSpeechDurationMs"), "300"),
+      ).toBe(300);
+      expect(parseVoiceAdvancedValue(resolve("vad.provider"), "adaptive")).toBe(
+        "adaptive",
       );
-      expect(() => parse("vad.adaptive.useSpeechLevel", "maybe")).toThrow(
-        /Invalid boolean/,
-      );
-      expect(() => parse("vad.adaptive.noiseMarginDb", "31")).toThrow(
-        /between 0 and 30/,
-      );
-      expect(() => parse("vad.adaptive.noiseMarginDb", "-1")).toThrow(
-        /between 0 and 30/,
-      );
-      expect(() => parse("vad.adaptive.stuckActiveMs", "999")).toThrow(
-        /between 1000 and 60000/,
-      );
-      expect(() => parse("vad.adaptive.stuckActiveMs", "60001")).toThrow(
-        /between 1000 and 60000/,
-      );
+      expect(parseVoiceAdvancedValue(resolve("tts.speed"), "0.9")).toBe(0.9);
+      expect(
+        parseVoiceAdvancedValue(
+          resolve("voice.profilesByLanguage"),
+          ' {"de":{"stt":"de"}} ',
+        ),
+      ).toBe('{"de":{"stt":"de"}}');
     });
 
-    it("set sends the dotted key and typed value", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({ settings: {} });
-      await runProjectsVoiceAdvancedSet({
-        name: "speakerGate.mode",
-        value: "auto",
-      });
-      await runProjectsVoiceAdvancedSet({
-        name: "vad.adaptive.noiseMarginDb",
-        value: "8",
-      });
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenNthCalledWith(
-        1,
-        "proj-1",
-        "speakerGate.mode",
-        "auto",
-      );
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenNthCalledWith(
-        2,
-        "proj-1",
-        "vad.adaptive.noiseMarginDb",
-        8,
-      );
-    });
-
-    it("list prints every new key from the nested API shape", async () => {
-      listProjectVoiceAdvancedSettings.mockResolvedValue({
-        settings: {
-          speakerGate: {
-            mode: "auto",
-            bargeIn: "caller_only",
-            suppressShortBargeIn: false,
-          },
-          vad: {
-            provider: "adaptive",
-            adaptive: {
-              noiseMarginDb: 8,
-              useSpeechLevel: true,
-              stuckActiveMs: 8000,
-            },
-          },
-        },
-      });
-      await runProjectsVoiceAdvancedList({});
-      const lines = (
-        console.log as unknown as ReturnType<typeof vi.fn>
-      ).mock.calls.map((c) => String(c[0]));
-      for (const line of [
-        "speakerGate.mode=auto",
-        "speakerGate.bargeIn=caller_only",
-        "speakerGate.suppressShortBargeIn=false",
-        "vad.provider=adaptive",
-        "vad.adaptive.noiseMarginDb=8",
-        "vad.adaptive.useSpeechLevel=true",
-        "vad.adaptive.stuckActiveMs=8000",
-      ]) {
-        expect(lines).toContain(line);
-      }
-    });
-  });
-
-  describe("vad.provider", () => {
-    it("vad.provider rejects silero", () => {
+    it("rejects a non-number", () => {
       expect(() =>
-        parseVoiceAdvancedSettingValue("vad.provider", "silero"),
+        parseVoiceAdvancedValue(resolve("vad.threshold"), "abc"),
+      ).toThrow(/Invalid number/);
+      expect(() =>
+        parseVoiceAdvancedValue(resolve("vad.threshold"), ""),
+      ).toThrow(/Invalid number/);
+    });
+
+    it("rejects a fraction on an integer key", () => {
+      expect(() =>
+        parseVoiceAdvancedValue(resolve("vad.minSpeechDurationMs"), "200.5"),
+      ).toThrow(/must be an integer/);
+    });
+
+    it("rejects an invalid boolean", () => {
+      expect(() =>
+        parseVoiceAdvancedValue(resolve("vad.gateStt"), "maybe"),
+      ).toThrow(/Invalid boolean/);
+    });
+
+    it("rejects an enum value the API does not offer (silero) while the engine knows it", () => {
+      expect(() =>
+        parseVoiceAdvancedValue(resolve("vad.provider"), "silero"),
       ).toThrow(/must be one of: energy, adaptive/);
     });
 
-    it("vad.provider accepts energy", () => {
-      expect(parseVoiceAdvancedSettingValue("vad.provider", "energy")).toBe(
-        "energy",
-      );
+    it("rejects a value above the API cap but inside the engine range", () => {
+      expect(() =>
+        parseVoiceAdvancedValue(resolve("vad.adaptive.stuckActiveMs"), "60001"),
+      ).toThrow(/between 1000 and 60000/);
+    });
+
+    it("rejects a value outside the engine range that has no API cap", () => {
+      expect(() =>
+        parseVoiceAdvancedValue(resolve("vad.adaptive.noiseMarginDb"), "31"),
+      ).toThrow(/engine range/);
+    });
+
+    it("prints one warning when the API disagrees with the catalog and uses the catalog", () => {
+      const resolved = resolveDefinitions({
+        definitions: [
+          def({
+            key: "vad.minSpeechDurationMs",
+            type: "number",
+            default: 200,
+            integer: false,
+            engineKey: "vad.minSpeechDurationMs",
+          }),
+        ],
+      })[0];
+      const warnings = vi
+        .mocked(console.error)
+        .mock.calls.filter((c) => String(c[0]).includes("warning"));
+      expect(warnings).toHaveLength(1);
+      expect(String(warnings[0][0])).toContain("vad.minSpeechDurationMs");
+      expect(resolved.integer).toBe(true);
     });
   });
 
-  describe("tts.sentenceCase", () => {
-    it("is a string enum auto|off that defaults to auto", () => {
-      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("tts.sentenceCase");
-      expect(VOICE_ADVANCED_SETTING_DEFS["tts.sentenceCase"]).toMatchObject({
-        type: "string",
-        enum: ["auto", "off"],
-        default: "auto",
-      });
-    });
-
-    it("appears in the list output with default auto", async () => {
+  describe("set", () => {
+    it("sends the typed value for a key from definitions", async () => {
       listProjectVoiceAdvancedSettings.mockResolvedValue({
-        project_id: "proj-1",
-        settings: { tts: { sentenceCase: "auto" } },
-      });
-
-      await runProjectsVoiceAdvancedList({});
-
-      expect(console.log).toHaveBeenCalledWith("tts.sentenceCase=auto");
-    });
-
-    it.each(["off", "auto"])("sets %s", async (value) => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
         settings: {},
+        definitions: DEFINITIONS,
       });
-
-      await runProjectsVoiceAdvancedSet({ name: "tts.sentenceCase", value });
-
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-        "proj-1",
-        "tts.sentenceCase",
-        value,
-      );
-      expect(console.log).toHaveBeenCalledWith(`tts.sentenceCase=${value}`);
-    });
-
-    it("rejects bogus", async () => {
-      await expect(
-        runProjectsVoiceAdvancedSet({
-          name: "tts.sentenceCase",
-          value: "bogus",
-        }),
-      ).rejects.toThrow(/tts\.sentenceCase must be one of: auto, off/);
-    });
-  });
-
-  describe("debug.ttsTextTrace", () => {
-    it("is a boolean that defaults to off", () => {
-      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("debug.ttsTextTrace");
-      expect(VOICE_ADVANCED_SETTING_DEFS["debug.ttsTextTrace"]).toMatchObject({
-        type: "boolean",
-        default: false,
-      });
-    });
-
-    it.each([
-      ["on", true],
-      ["true", true],
-      ["off", false],
-      ["false", false],
-    ])("set %s sends %s", async (value, expected) => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-
       await runProjectsVoiceAdvancedSet({
-        name: "debug.ttsTextTrace",
-        value,
+        name: "vad.threshold",
+        value: "0.2",
       });
-
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-        "proj-1",
-        "debug.ttsTextTrace",
-        expected,
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        `debug.ttsTextTrace=${String(expected)}`,
-      );
-    });
-
-    it("rejects an invalid value", async () => {
-      await expect(
-        runProjectsVoiceAdvancedSet({
-          name: "debug.ttsTextTrace",
-          value: "maybe",
-        }),
-      ).rejects.toThrow(/Invalid boolean/);
-    });
-
-    it("list shows on until when the API returns an end time", async () => {
-      listProjectVoiceAdvancedSettings.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {
-          debug: {
-            ttsTextTrace: true,
-            ttsTextTraceUntil: "2026-10-17T08:00:00.000Z",
-          },
-        },
-      });
-
-      await runProjectsVoiceAdvancedList({});
-
-      expect(console.log).toHaveBeenCalledWith(
-        "debug.ttsTextTrace=true (on until 2026-10-17T08:00:00.000Z)",
-      );
-    });
-
-    it("list shows plain off when the trace is off", async () => {
-      listProjectVoiceAdvancedSettings.mockResolvedValue({
-        project_id: "proj-1",
-        settings: { debug: { ttsTextTrace: false, ttsTextTraceUntil: null } },
-      });
-
-      await runProjectsVoiceAdvancedList({});
-
-      expect(console.log).toHaveBeenCalledWith("debug.ttsTextTrace=false");
-    });
-  });
-
-  describe("connection.reconnectWindowSec", () => {
-    it("is a number 15-30 that defaults to 15", () => {
-      expect(
-        VOICE_ADVANCED_SETTING_DEFS["connection.reconnectWindowSec"],
-      ).toMatchObject({ type: "number", min: 15, max: 30, default: 15 });
-    });
-
-    it("appears in the list output with default 15", async () => {
-      listProjectVoiceAdvancedSettings.mockResolvedValue({
-        project_id: "proj-1",
-        settings: { connection: { reconnectWindowSec: 15 } },
-      });
-
-      await runProjectsVoiceAdvancedList({});
-
-      expect(console.log).toHaveBeenCalledWith(
-        "connection.reconnectWindowSec=15",
-      );
-    });
-
-    it("sets connection.reconnectWindowSec to 30", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: { connection: { reconnectWindowSec: 30 } },
-      });
-
-      await runProjectsVoiceAdvancedSet({
-        name: "connection.reconnectWindowSec",
-        value: "30",
-      });
-
       expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
         "proj-1",
-        "connection.reconnectWindowSec",
-        30,
+        "vad.threshold",
+        0.2,
       );
-      expect(console.log).toHaveBeenCalledWith(
-        "connection.reconnectWindowSec=30",
-      );
+      expect(console.log).toHaveBeenCalledWith("vad.threshold=0.2");
     });
 
-    it.each(["14", "31", "15.5", "abc"])("rejects %s", async (value) => {
+    it("lists the valid keys for an unknown key and sends nothing", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        settings: {},
+        definitions: DEFINITIONS,
+      });
       await expect(
-        runProjectsVoiceAdvancedSet({
-          name: "connection.reconnectWindowSec",
-          value,
-        }),
-      ).rejects.toThrow();
+        runProjectsVoiceAdvancedSet({ name: "vad.nope", value: "1" }),
+      ).rejects.toThrow(
+        /Unknown voice advanced setting vad\.nope\. Valid: vad\.threshold, /,
+      );
       expect(setProjectVoiceAdvancedSetting).not.toHaveBeenCalled();
     });
 
-    it("accepts 15", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
+    it("does not send an invalid value", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
         settings: {},
+        definitions: DEFINITIONS,
       });
+      await expect(
+        runProjectsVoiceAdvancedSet({ name: "vad.provider", value: "silero" }),
+      ).rejects.toThrow(/must be one of/);
+      expect(setProjectVoiceAdvancedSetting).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("set against a platform without definitions", () => {
+    const response = {
+      settings: {
+        vad: { gateStt: true, sampleRate: "16000" },
+        tts: { speed: 0.9 },
+      },
+      defaults: {
+        vad: { gateStt: true, sampleRate: "16000" },
+        tts: { speed: 0.9 },
+      },
+    };
+
+    it("sends a boolean for vad.gateStt, typed from defaults", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue(response);
       await runProjectsVoiceAdvancedSet({
-        name: "connection.reconnectWindowSec",
-        value: "15",
+        name: "vad.gateStt",
+        value: "false",
       });
       expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
         "proj-1",
-        "connection.reconnectWindowSec",
-        15,
-      );
-    });
-  });
-
-  it("rejects tts.speed outside 0.2–2.0", async () => {
-    await expect(
-      runProjectsVoiceAdvancedSet({ name: "tts.speed", value: "0.1" }),
-    ).rejects.toThrow(/between 0\.2 and 2/);
-  });
-
-  describe("language switch wait settings", () => {
-    const set = (name: string, value: string) =>
-      runProjectsVoiceAdvancedSet({ name, value });
-
-    it("rejects the removed voice.expectedLanguages key", async () => {
-      await expect(set("voice.expectedLanguages", "en,de")).rejects.toThrow(
-        /Unknown voice advanced setting voice\.expectedLanguages/,
-      );
-    });
-
-    it("accepts each waitAudio value and rejects others", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-      for (const value of ["buffer_replay", "first_utterance"]) {
-        await set("languageId.autoSwitch.waitAudio", value);
-        expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-          "proj-1",
-          "languageId.autoSwitch.waitAudio",
-          value,
-        );
-      }
-      await expect(
-        set("languageId.autoSwitch.waitAudio", "all"),
-      ).rejects.toThrow(/must be one of: buffer_replay, first_utterance/);
-    });
-
-    it("accepts each waitMessage.mode value and rejects others", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-      for (const value of ["end_of_utterance", "immediate", "off"]) {
-        await set("languageId.autoSwitch.waitMessage.mode", value);
-        expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-          "proj-1",
-          "languageId.autoSwitch.waitMessage.mode",
-          value,
-        );
-      }
-      await expect(
-        set("languageId.autoSwitch.waitMessage.mode", "later"),
-      ).rejects.toThrow(/must be one of: end_of_utterance, immediate, off/);
-    });
-
-    it("parses waitMessage.skipWhenReady as a boolean", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-      await set("languageId.autoSwitch.waitMessage.skipWhenReady", "no");
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-        "proj-1",
-        "languageId.autoSwitch.waitMessage.skipWhenReady",
+        "vad.gateStt",
         false,
       );
-      await expect(
-        set("languageId.autoSwitch.waitMessage.skipWhenReady", "maybe"),
-      ).rejects.toThrow(/Invalid boolean/);
     });
 
-    it("validates waitMessage.texts JSON", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
+    it("sends a string for vad.sampleRate", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue(response);
+      await runProjectsVoiceAdvancedSet({
+        name: "vad.sampleRate",
+        value: "8000",
       });
-      const key = "languageId.autoSwitch.waitMessage.texts";
-      await set(key, '{"en":"One moment, switching."}');
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
         "proj-1",
-        key,
-        '{"en":"One moment, switching."}',
+        "vad.sampleRate",
+        "8000",
       );
-      await expect(set(key, "nope")).rejects.toThrow(/valid JSON object/);
-      await expect(set(key, "[]")).rejects.toThrow(
-        /JSON object keyed by language code/,
-      );
-      await expect(set(key, '{"english":"x"}')).rejects.toThrow(
-        /invalid language key/,
-      );
-      await expect(set(key, '{"en":3}')).rejects.toThrow(/non-empty string/);
-      await expect(set(key, '{"en":" "}')).rejects.toThrow(/non-empty string/);
-      await expect(
-        set(key, JSON.stringify({ en: "a".repeat(301) })),
-      ).rejects.toThrow(/at most 300 characters/);
     });
 
-    it("validates voice.profilesByLanguage shape", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-      const key = "voice.profilesByLanguage";
-      await set(key, '{"de":{"stt":"de","tts":"de-thorsten-high"}}');
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
+    it("sends a fractional number for a key the catalog does not know", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue(response);
+      await runProjectsVoiceAdvancedSet({ name: "tts.speed", value: "0.85" });
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
         "proj-1",
-        key,
-        '{"de":{"stt":"de","tts":"de-thorsten-high"}}',
+        "tts.speed",
+        0.85,
       );
-      await expect(set(key, "{")).rejects.toThrow(/valid JSON object/);
-      await expect(set(key, '{"german":{"stt":"de"}}')).rejects.toThrow(
-        /invalid language key/,
-      );
-      await expect(set(key, '{"de":"de"}')).rejects.toThrow(
-        /must be an object/,
-      );
-      await expect(set(key, '{"de":{"stt":5}}')).rejects.toThrow(
-        /must be a string/,
-      );
-      await expect(set(key, '{"de":{}}')).rejects.toThrow(/is empty/);
     });
 
-    it("sets languageId.timing to each allowed value and rejects others", async () => {
-      expect(VOICE_ADVANCED_SETTING_KEYS).toContain("languageId.timing");
-      expect(VOICE_ADVANCED_SETTING_KEYS).not.toContain(
-        "languageId.continuous",
+    it("still applies the engine facts of a catalog key", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue(response);
+      await expect(
+        runProjectsVoiceAdvancedSet({ name: "vad.sampleRate", value: "44100" }),
+      ).rejects.toThrow(/must be one of: 8000, 16000/);
+    });
+
+    it("sends an unknown key as text and shows the server's 400", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue(response);
+      setProjectVoiceAdvancedSetting.mockRejectedValue(
+        new Error("HTTP 400: unknown key vad.nope"),
       );
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
+      await expect(
+        runProjectsVoiceAdvancedSet({ name: "vad.nope", value: "1" }),
+      ).rejects.toThrow(/HTTP 400: unknown key vad\.nope/);
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledWith(
+        "proj-1",
+        "vad.nope",
+        "1",
+      );
+    });
+
+    it("reads the flat wait message path from defaults", () => {
+      const d = fallbackDefinition("languageId.autoSwitch.waitMessage.mode", {
         settings: {},
+        defaults: {
+          languageId: { autoSwitch: { waitMessageMode: "immediate" } },
+        },
       });
-      for (const value of ["early", "end_of_utterance", "continuous"]) {
-        await set("languageId.timing", value);
-        expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-          "proj-1",
-          "languageId.timing",
-          value,
-        );
+      expect(d.type).toBe("string");
+    });
+  });
+
+  describe("list", () => {
+    it("prints every key from definitions with its default", async () => {
+      listProjectVoiceAdvancedSettings.mockResolvedValue({
+        settings: {
+          vad: {
+            threshold: 0.07,
+            minSpeechDurationMs: 200,
+            provider: "energy",
+            gateStt: true,
+            adaptive: { stuckActiveMs: 8000, noiseMarginDb: 6 },
+          },
+          tts: { speed: 0.9, phraseCache: true },
+          voice: { profilesByLanguage: "{}" },
+        },
+        definitions: DEFINITIONS,
+      });
+      await runProjectsVoiceAdvancedList();
+      const lines = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
+      expect(lines).toHaveLength(DEFINITIONS.length);
+      for (const d of DEFINITIONS) {
+        expect(lines.some((l) => l.startsWith(`${d.key}=`))).toBe(true);
       }
-      await expect(set("languageId.timing", "true")).rejects.toThrow(
-        /must be one of: early, end_of_utterance, continuous/,
+      expect(lines).toContain("vad.threshold=0.07  (default 0.05)");
+      expect(lines).toContain(
+        "vad.adaptive.stuckActiveMs=8000  (default 8000 [1000–60000])",
       );
     });
 
-    it("defaults minSpeechMs to 1500 within 1000–5000", async () => {
-      expect(
-        VOICE_ADVANCED_SETTING_DEFS["languageId.minSpeechMs"],
-      ).toMatchObject({
-        default: 1500,
-        min: 1000,
-        max: 5000,
-      });
-      expect(VOICE_ADVANCED_SETTING_DEFS["languageId.timing"].default).toBe(
-        "early",
-      );
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-      await expect(set("languageId.minSpeechMs", "999")).rejects.toThrow(
-        /between 1000 and 5000/,
-      );
-    });
-
-    it("accepts finalHoldMs up to 10000 like the dashboard", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-      await set("languageId.autoSwitch.finalHoldMs", "10000");
-      await expect(
-        set("languageId.autoSwitch.finalHoldMs", "10001"),
-      ).rejects.toThrow(/between 0 and 10000/);
-    });
-
-    it("validates readyMessage.minSwitchMs as 0-15000", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-      const key = "languageId.autoSwitch.readyMessage.minSwitchMs";
-      expect(VOICE_ADVANCED_SETTING_DEFS[key]).toMatchObject({
-        default: 2000,
-        min: 0,
-        max: 15000,
-      });
-      await set(key, "0");
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-        "proj-1",
-        key,
-        0,
-      );
-      await set(key, "15000");
-      await expect(set(key, "15001")).rejects.toThrow(/between 0 and 15000/);
-      await expect(set(key, "-1")).rejects.toThrow(/between 0 and 15000/);
-      await expect(set(key, "soon")).rejects.toThrow(/Invalid number/);
-    });
-
-    it("validates readyMessage.texts JSON", async () => {
-      setProjectVoiceAdvancedSetting.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {},
-      });
-      const key = "languageId.autoSwitch.readyMessage.texts";
-      await set(key, '{"de":"Okay, machen wir auf Deutsch weiter."}');
-      expect(setProjectVoiceAdvancedSetting).toHaveBeenLastCalledWith(
-        "proj-1",
-        key,
-        '{"de":"Okay, machen wir auf Deutsch weiter."}',
-      );
-      await expect(set(key, "nope")).rejects.toThrow(/valid JSON object/);
-      await expect(set(key, '{"english":"x"}')).rejects.toThrow(
-        /invalid language key/,
-      );
-      await expect(
-        set(key, JSON.stringify({ de: "a".repeat(301) })),
-      ).rejects.toThrow(/at most 300 characters/);
-    });
-
-    it("lists the ready message settings from the flat API shape", async () => {
+    it("without definitions prints the keys found in settings, including the flat wait paths", async () => {
       listProjectVoiceAdvancedSettings.mockResolvedValue({
-        project_id: "proj-1",
         settings: {
-          languageId: {
-            autoSwitch: {
-              readyMessageMinSwitchMs: 3000,
-              readyMessageTexts: '{"de":"Okay."}',
-            },
+          vad: { gateStt: true },
+          debug: {
+            ttsTextTrace: true,
+            ttsTextTraceUntil: "2026-11-08T12:00:00Z",
           },
+          languageId: { autoSwitch: { waitMessageMode: "immediate" } },
         },
       });
-      await runProjectsVoiceAdvancedList({});
-      expect(console.log).toHaveBeenCalledWith(
-        "languageId.autoSwitch.readyMessage.minSwitchMs=3000",
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        'languageId.autoSwitch.readyMessage.texts={"de":"Okay."}',
-      );
+      await runProjectsVoiceAdvancedList();
+      const lines = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
+      expect(lines).toEqual([
+        "vad.gateStt=true",
+        "debug.ttsTextTrace=true (on until 2026-11-08T12:00:00Z)",
+        "languageId.autoSwitch.waitMessage.mode=immediate",
+      ]);
     });
+  });
 
-    it("lists the wait settings from the flat API shape", async () => {
-      listProjectVoiceAdvancedSettings.mockResolvedValue({
-        project_id: "proj-1",
-        settings: {
-          languageId: {
-            autoSwitch: {
-              waitAudio: "first_utterance",
-              waitMessageMode: "off",
-              waitMessageSkipWhenReady: false,
-              waitMessageTexts: '{"en":"Hi."}',
-            },
-          },
-        },
-      });
-      await runProjectsVoiceAdvancedList({});
-      expect(console.log).toHaveBeenCalledWith(
-        "languageId.autoSwitch.waitAudio=first_utterance",
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        "languageId.autoSwitch.waitMessage.mode=off",
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        "languageId.autoSwitch.waitMessage.skipWhenReady=false",
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        'languageId.autoSwitch.waitMessage.texts={"en":"Hi."}',
-      );
-    });
+  it("help lists engine keys from the catalog and points to list", () => {
+    const help = formatVoiceAdvancedSettingsGroupHelp();
+    expect(help).toContain("vad.threshold (0.15)");
+    expect(help).toContain("vad.provider (energy) [energy|adaptive|silero]");
+    expect(help).toContain("voicethere projects voice-advanced list");
   });
 
   it("resets advanced settings", async () => {
-    resetProjectVoiceAdvancedSettings.mockResolvedValue({
-      project_id: "proj-1",
-      settings: { vad: { gateStt: true }, events: { mode: "both" } },
-    });
-
-    await runProjectsVoiceAdvancedReset({});
-
+    resetProjectVoiceAdvancedSettings.mockResolvedValue({ settings: {} });
+    await runProjectsVoiceAdvancedReset();
     expect(resetProjectVoiceAdvancedSettings).toHaveBeenCalledWith("proj-1");
     expect(console.log).toHaveBeenCalledWith("reset=defaults");
   });
