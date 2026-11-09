@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/). Versioning foll
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-11-09
+
+### Added
+
+- `voicethere projects voice-advanced` lists and sets the speaker gate tuning keys `speakerGate.splitOnSpeakerChange`, `speakerGate.recheckOnOther`, `speakerGate.recheckMaxWindows`, `speakerGate.threshold`, `speakerGate.enrollSpeechMs`, `speakerGate.checkSpeechMs` and `speakerGate.minCheckSpeechMs`. They show up once the platform returns them; against a platform that does not, `set` types them from the voice engine catalog.
+- `set` checks the voice engine's cross-field rules locally, in every `speakerGate.mode`: `speakerGate.recheckMaxWindows` 1 is rejected while `speakerGate.recheckOnOther` or `speakerGate.splitOnSpeakerChange` is on, and `speakerGate.checkSpeechMs` must be at least `speakerGate.minCheckSpeechMs`. The error carries the engine's message. The server stays the final check.
+
+### Changed
+
+- `speakerGate.threshold` must be above 0 and below 1; 0 and 1 are rejected as outside the engine range. `list` shows such a range in parentheses.
+- `@node-webrtc-rust/voice-catalog` is now 0.18.2.
+
 ## [0.23.0] - 2026-11-08
 
 ### Changed

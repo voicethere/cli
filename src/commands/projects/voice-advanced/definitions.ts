@@ -1,7 +1,11 @@
 import {
+  VOICE_AGENT_CONSTRAINTS,
   VOICE_AGENT_SETTING_PATHS,
   VOICE_AGENT_SETTINGS,
+  checkVoiceAgentConstraints,
   type VoiceAgentSettingDef,
+  type VoiceAgentSettingPath,
+  type VoiceAgentSettingValue,
 } from "@node-webrtc-rust/voice-catalog";
 import type {
   ProjectVoiceAdvancedSettingsResponse,
@@ -27,6 +31,9 @@ export interface ResolvedDef {
   apiEnum?: readonly string[];
   engineMin?: number;
   engineMax?: number;
+  /** The engine excludes its min / max (it requires `value > min` / `value < max`). */
+  engineExclusiveMin?: boolean;
+  engineExclusiveMax?: boolean;
   /** Product cap from the API, applied after the engine range. */
   capMin?: number;
   capMax?: number;
@@ -130,6 +137,8 @@ function fromApiDefinition(api: VoiceAdvancedDefinition): ResolvedDef {
     ...(apiEnum ? { apiEnum } : {}),
     ...(engine.min !== undefined ? { engineMin: engine.min } : {}),
     ...(engine.max !== undefined ? { engineMax: engine.max } : {}),
+    ...(engine.exclusiveMin ? { engineExclusiveMin: true } : {}),
+    ...(engine.exclusiveMax ? { engineExclusiveMax: true } : {}),
     ...(api.min !== undefined ? { capMin: api.min } : {}),
     ...(api.max !== undefined ? { capMax: api.max } : {}),
   };
@@ -193,6 +202,8 @@ export function fallbackDefinition(
     ...(engine?.enum ? { engineEnum: engine.enum } : {}),
     ...(engine?.min !== undefined ? { engineMin: engine.min } : {}),
     ...(engine?.max !== undefined ? { engineMax: engine.max } : {}),
+    ...(engine?.exclusiveMin ? { engineExclusiveMin: true } : {}),
+    ...(engine?.exclusiveMax ? { engineExclusiveMax: true } : {}),
   };
 }
 
@@ -221,12 +232,17 @@ export function parseVoiceAdvancedValue(
     if (def.integer !== false && !Number.isInteger(n)) {
       throw new Error(`${key} must be an integer`);
     }
-    if (
-      (def.engineMin !== undefined && n < def.engineMin) ||
-      (def.engineMax !== undefined && n > def.engineMax)
-    ) {
+    const belowMin =
+      def.engineMin !== undefined &&
+      (def.engineExclusiveMin ? n <= def.engineMin : n < def.engineMin);
+    const aboveMax =
+      def.engineMax !== undefined &&
+      (def.engineExclusiveMax ? n >= def.engineMax : n > def.engineMax);
+    if (belowMin || aboveMax) {
+      const lo = def.engineExclusiveMin ? "above" : "at least";
+      const hi = def.engineExclusiveMax ? "below" : "at most";
       throw new Error(
-        `${key} must be between ${def.engineMin ?? "-inf"} and ${def.engineMax ?? "inf"} (engine range)`,
+        `${key} must be between ${def.engineMin ?? "-inf"} and ${def.engineMax ?? "inf"} (engine range: ${lo} ${def.engineMin ?? "-inf"}, ${hi} ${def.engineMax ?? "inf"})`,
       );
     }
     if (
@@ -249,6 +265,49 @@ export function parseVoiceAdvancedValue(
     throw new Error(`${key} must be one of: ${def.apiEnum.join(", ")}`);
   }
   return trimmed;
+}
+
+/**
+ * The engine's cross-field rules (R1: `recheckMaxWindows` 1 with a recheck on; R2: `checkSpeechMs`
+ * below `minCheckSpeechMs`) over the project's current settings plus the new value. They apply in
+ * every `speakerGate.mode`, as in the platform and the runner. Only rules the key takes part in are
+ * checked, so setting an unrelated key never fails on an older combination. The server stays final.
+ * Returns the engine's messages.
+ */
+export function checkConstraintsForSet(
+  key: string,
+  value: boolean | number | string,
+  response: Pick<ProjectVoiceAdvancedSettingsResponse, "defaults" | "settings">,
+): string[] {
+  const touched = VOICE_AGENT_CONSTRAINTS.filter(
+    (c) =>
+      c.path === key ||
+      c.gte === key ||
+      (c.when?.anyTrue as readonly string[] | undefined)?.includes(key),
+  );
+  if (touched.length === 0) {
+    return [];
+  }
+  const values: Partial<Record<VoiceAgentSettingPath, VoiceAgentSettingValue>> =
+    {};
+  for (const path of VOICE_AGENT_SETTING_PATHS) {
+    const parts = path.split(".");
+    const current =
+      getValueAtPath(response.settings, parts) ??
+      getValueAtPath(response.defaults, parts);
+    if (
+      typeof current === "boolean" ||
+      typeof current === "number" ||
+      typeof current === "string"
+    ) {
+      values[path] = current;
+    }
+  }
+  values[key as VoiceAgentSettingPath] = value;
+  const ids = new Set(touched.map((c) => c.id));
+  return checkVoiceAgentConstraints(values)
+    .filter((f) => ids.has(f.id))
+    .map((f) => f.message);
 }
 
 function flattenLeaves(
@@ -310,7 +369,9 @@ export function describeRange(def: ResolvedDef): string {
     return "";
   }
   if (def.type === "number" && min !== undefined && max !== undefined) {
-    return ` [${min}–${max}]`;
+    const open = def.capMin === undefined && def.engineExclusiveMin;
+    const close = def.capMax === undefined && def.engineExclusiveMax;
+    return ` ${open ? "(" : "["}${min}–${max}${close ? ")" : "]"}`;
   }
   const values = def.apiEnum ?? def.engineEnum;
   return values ? ` [${values.join("|")}]` : "";
@@ -372,5 +433,7 @@ function fromEngine(path: string, def: VoiceAgentSettingDef): ResolvedDef {
     ...(def.enum ? { engineEnum: def.enum } : {}),
     ...(def.min !== undefined ? { engineMin: def.min } : {}),
     ...(def.max !== undefined ? { engineMax: def.max } : {}),
+    ...(def.exclusiveMin ? { engineExclusiveMin: true } : {}),
+    ...(def.exclusiveMax ? { engineExclusiveMax: true } : {}),
   };
 }
