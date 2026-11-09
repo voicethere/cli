@@ -1,11 +1,14 @@
 import path from "node:path";
 import { defineConfig } from "vitest/config";
+import { localWorkerLimit } from "./vitest.workers";
 
-export default defineConfig({
+export default defineConfig(async () => ({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "vitest.workers.test.ts"],
     testTimeout: 15_000,
+    // Caps local vitest workers across concurrent runs on one machine; no effect in CI.
+    ...(await localWorkerLimit()),
   },
   resolve: {
     alias: {
@@ -15,4 +18,4 @@ export default defineConfig({
       ),
     },
   },
-});
+}));
