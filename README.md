@@ -494,7 +494,7 @@ voicethere projects voice-advanced set vad.adaptive.noiseMarginDb 9
 | `speakerGate.suppressShortBargeIn` | bool                            | `false`       |
 | `speakerGate.splitOnSpeakerChange` | bool                            | `false`       |
 | `speakerGate.recheckOnOther`       | bool                            | `true`        |
-| `speakerGate.recheckMaxWindows`    | whole number, 0 = no cap        | `12`          |
+| `speakerGate.recheckMaxWindows`    | whole number (platform: 1–24)  | `12`          |
 | `speakerGate.threshold`            | above 0 and below 1             | `0.459`       |
 | `speakerGate.enrollSpeechMs`       | whole number (ms)               | `3000`        |
 | `speakerGate.checkSpeechMs`        | whole number (ms)               | `1500`        |
@@ -506,7 +506,7 @@ voicethere projects voice-advanced set vad.adaptive.noiseMarginDb 9
 
 The platform may cap the speaker gate numbers below the engine range; `list` shows the range that applies. Two rules hold in every `speakerGate.mode`, and `set` checks them before it sends anything (the server still has the final say):
 
-- `speakerGate.recheckMaxWindows` must not be `1` while `speakerGate.recheckOnOther` or `speakerGate.splitOnSpeakerChange` is `true`. Use `0` (no cap), `2` or more, or turn both off first.
+- `speakerGate.recheckMaxWindows` must not be `1` while `speakerGate.recheckOnOther` or `speakerGate.splitOnSpeakerChange` is `true`. Use `2` or more, or turn both off first.
 - `speakerGate.checkSpeechMs` must be at least `speakerGate.minCheckSpeechMs`.
 
 `speakerGate.splitOnSpeakerChange` ends an utterance when the caller's speech runs straight into another voice, so the caller's text does not carry the other person's words.

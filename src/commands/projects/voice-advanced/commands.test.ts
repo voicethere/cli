@@ -112,8 +112,8 @@ const DEFINITIONS: VoiceAdvancedDefinition[] = [
     key: "speakerGate.recheckMaxWindows",
     type: "number",
     default: 12,
-    min: 0,
-    max: 50,
+    min: 1,
+    max: 24,
     engineKey: "speakerGate.recheckMaxWindows",
   }),
   def({
@@ -121,7 +121,7 @@ const DEFINITIONS: VoiceAdvancedDefinition[] = [
     type: "number",
     default: 0.459,
     integer: false,
-    min: 0.1,
+    min: 0.2,
     max: 0.8,
     engineKey: "speakerGate.threshold",
   }),
@@ -129,7 +129,7 @@ const DEFINITIONS: VoiceAdvancedDefinition[] = [
     key: "speakerGate.enrollSpeechMs",
     type: "number",
     default: 3000,
-    min: 1000,
+    min: 1500,
     max: 10000,
     engineKey: "speakerGate.enrollSpeechMs",
   }),
@@ -137,7 +137,7 @@ const DEFINITIONS: VoiceAdvancedDefinition[] = [
     key: "speakerGate.checkSpeechMs",
     type: "number",
     default: 1500,
-    min: 500,
+    min: 1000,
     max: 5000,
     engineKey: "speakerGate.checkSpeechMs",
   }),
@@ -145,7 +145,7 @@ const DEFINITIONS: VoiceAdvancedDefinition[] = [
     key: "speakerGate.minCheckSpeechMs",
     type: "number",
     default: 1500,
-    min: 500,
+    min: 1000,
     max: 5000,
     engineKey: "speakerGate.minCheckSpeechMs",
   }),
@@ -341,7 +341,7 @@ describe("projects voice-advanced", () => {
         expect(lines.some((l) => l.startsWith(`speakerGate.${k}=`))).toBe(true);
       }
       expect(lines).toContain(
-        "speakerGate.threshold=0.459  (default 0.459 [0.1–0.8])",
+        "speakerGate.threshold=0.459  (default 0.459 [0.2–0.8])",
       );
     });
 
@@ -367,7 +367,7 @@ describe("projects voice-advanced", () => {
           name: "speakerGate.threshold",
           value: "0.85",
         }),
-      ).rejects.toThrow(/between 0\.1 and 0\.8$/);
+      ).rejects.toThrow(/between 0\.2 and 0\.8$/);
       expect(setProjectVoiceAdvancedSetting).not.toHaveBeenCalled();
       await runProjectsVoiceAdvancedSet({
         name: "speakerGate.threshold",
@@ -408,7 +408,7 @@ describe("projects voice-advanced", () => {
       expect(setProjectVoiceAdvancedSetting).not.toHaveBeenCalled();
     });
 
-    it("R1 allows 1 window once both rechecks are off, and 0 with the split on", async () => {
+    it("R1 allows 1 window once both rechecks are off, and 2 with the split on", async () => {
       listProjectVoiceAdvancedSettings.mockResolvedValue({
         settings: gateSettings({
           recheckOnOther: false,
@@ -427,8 +427,15 @@ describe("projects voice-advanced", () => {
       });
       await runProjectsVoiceAdvancedSet({
         name: "speakerGate.recheckMaxWindows",
-        value: "0",
+        value: "2",
       });
+      expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledTimes(2);
+      await expect(
+        runProjectsVoiceAdvancedSet({
+          name: "speakerGate.recheckMaxWindows",
+          value: "0",
+        }),
+      ).rejects.toThrow(/between 1 and 24/);
       expect(setProjectVoiceAdvancedSetting).toHaveBeenCalledTimes(2);
     });
 
