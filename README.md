@@ -492,10 +492,24 @@ voicethere projects voice-advanced set vad.adaptive.noiseMarginDb 9
 | `speakerGate.mode`                 | `disabled`, `auto`, `manual`    | `disabled`    |
 | `speakerGate.bargeIn`              | `caller_only`, `anyone`         | `caller_only` |
 | `speakerGate.suppressShortBargeIn` | bool                            | `false`       |
+| `speakerGate.splitOnSpeakerChange` | bool                            | `false`       |
+| `speakerGate.recheckOnOther`       | bool                            | `true`        |
+| `speakerGate.recheckMaxWindows`    | whole number, 0 = no cap        | `12`          |
+| `speakerGate.threshold`            | above 0 and below 1             | `0.459`       |
+| `speakerGate.enrollSpeechMs`       | whole number (ms)               | `3000`        |
+| `speakerGate.checkSpeechMs`        | whole number (ms)               | `1500`        |
+| `speakerGate.minCheckSpeechMs`     | whole number (ms)               | `1500`        |
 | `vad.provider`                     | `energy`, `adaptive`            | `energy`      |
 | `vad.adaptive.noiseMarginDb`       | 0–30 (dB above the noise floor) | `6`           |
 | `vad.adaptive.useSpeechLevel`      | bool                            | `true`        |
 | `vad.adaptive.stuckActiveMs`       | 1000–60000                      | `8000`        |
+
+The platform may cap the speaker gate numbers below the engine range; `list` shows the range that applies. Two rules hold in every `speakerGate.mode`, and `set` checks them before it sends anything (the server still has the final say):
+
+- `speakerGate.recheckMaxWindows` must not be `1` while `speakerGate.recheckOnOther` or `speakerGate.splitOnSpeakerChange` is `true`. Use `0` (no cap), `2` or more, or turn both off first.
+- `speakerGate.checkSpeechMs` must be at least `speakerGate.minCheckSpeechMs`.
+
+`speakerGate.splitOnSpeakerChange` ends an utterance when the caller's speech runs straight into another voice, so the caller's text does not carry the other person's words.
 
 ## Language switch settings
 

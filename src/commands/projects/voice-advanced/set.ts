@@ -3,6 +3,7 @@ import { createApiFromCredentials } from "../../../lib/control-plane-auth.js";
 import { requireCredentials } from "../../../lib/config.js";
 import { requireProjectId } from "../../../lib/project-config.js";
 import {
+  checkConstraintsForSet,
   fallbackDefinition,
   parseVoiceAdvancedValue,
   resolveDefinitions,
@@ -41,6 +42,10 @@ export async function runProjectsVoiceAdvancedSet(
   }
 
   const value = parseVoiceAdvancedValue(def, options.value);
+  const broken = checkConstraintsForSet(key, value, response);
+  if (broken.length > 0) {
+    throw new Error(broken.join("\n"));
+  }
   await api.setProjectVoiceAdvancedSetting(projectId, key, value);
   console.log(`${key}=${String(value)}`);
 }
