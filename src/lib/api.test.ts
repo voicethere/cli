@@ -589,7 +589,7 @@ describe("VoicethereApi", () => {
         JSON.stringify({
           project_id: "proj-1",
           active_build_id: "build-1",
-          active_storage_path: "org/org-1/project/proj-1/active/bundle.js",
+          active_storage_path: "org/org-1/project/proj-1/builds/build-1/bundle.js",
         }),
         { status: 200 },
       ),
